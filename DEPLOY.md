@@ -2,9 +2,10 @@
 
 Three parts, in this order:
 
-1. **Sheet** — your collection (private, passphrase).
-2. **GitHub Pages** — the site itself (public URL).
-3. **Cloudflare Access** — makes the site private, so only your Google login opens it.
+1. **Sheet** — your collection (private, Google sign-in).
+2. **Google OAuth client** — who is allowed to reach it.
+3. **GitHub Pages** — the site itself (public URL).
+4. **Cloudflare Access** *(optional)* — makes the site itself private too.
 
 The site files hold no secrets: card data, artwork links, no collection. Your data only ever lives
 in your Sheet and in each browser's localStorage.
@@ -15,17 +16,36 @@ in your Sheet and in each browser's localStorage.
 
 1. New Google Sheet → **Extensions → Apps Script**.
 2. Delete the sample code, paste all of `apps_script.gs`.
-3. Change `const PASS = 'change-me';` to your own passphrase, save.
+3. Put your own Google address in `const ALLOWED = [...]`, save.
 4. **Deploy → New deployment → Web app**
    - *Execute as*: **Me**
-   - *Who has access*: **Anyone** ← required; the passphrase is the guard
-5. Copy the `https://script.google.com/macros/s/…/exec` URL. Keep it with the passphrase.
+   - *Who has access*: **Anyone** ← required; a browser `fetch` carries no Google session, so
+     the guard has to live inside the script (`verify_`), not in this setting
+5. Copy the `https://script.google.com/macros/s/…/exec` URL.
 
-Re-deploy (**Deploy → Manage deployments → edit → Version: New version**) after any script edit.
+Re-deploy (**Deploy → Manage deployments → edit → Version: New version**) after any script edit —
+editing alone changes nothing that is served.
 
 ---
 
-## 2. GitHub Pages
+## 2. Google OAuth client
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → new project.
+2. **APIs & Services → OAuth consent screen** → **External**, app name, your address as support and
+   developer contact. Add your own account under **Test users** — without it, sign-in is refused.
+3. **Credentials → Create OAuth client ID → Web application**.
+   - **Authorised JavaScript origins**: `https://simbs38.github.io` — origin only, no path, no
+     trailing slash. Add `http://localhost:8765` too if you want the sign-in button to work locally.
+   - Redirect URIs: leave empty; Google Identity Services does not use them.
+4. The **Client ID** goes in two places, and they must match or every call is rejected:
+   `CLIENT_ID` in `index.html`, and `CLIENT_ID` in `apps_script.gs`.
+
+The client ID is not a secret — it ships in the page. The lock is `ALLOWED` in the Apps Script plus
+the origin list above.
+
+---
+
+## 3. GitHub Pages
 
 The repo is already initialised and committed locally. Check whose account you are pushing as —
 `gh auth status` currently shows **andreGoncalvesNyra**; a personal project probably wants a
@@ -46,7 +66,7 @@ gh api repos/:owner/pokedex/pages --jq .html_url
 (Or by hand: repo → **Settings → Pages → Source: Deploy from a branch → main / (root)**.)
 
 Live in ~1 minute at `https://<user>.github.io/pokedex/`. Open it, hit **☁ Sign in**, paste the
-`/exec` URL + passphrase. On iPhone: **Share → Add to Home Screen**.
+`/exec` URL, then **Sign in with Google**. On iPhone: **Share → Add to Home Screen**.
 
 Pages needs a **public** repo on a free account. Nothing secret is in it — but never commit
 `collection.json` (already in `.gitignore`).
@@ -60,7 +80,7 @@ git commit -am "update" && git push
 
 ---
 
-## 3. Cloudflare Access (make the site private)
+## 4. Cloudflare Access (optional — make the site private)
 
 Access can only guard hostnames Cloudflare serves, and `github.io` is not one. So host the same
 repo on **Cloudflare Pages** (free, auto-deploys on every `git push`) and put Access in front.
@@ -102,10 +122,14 @@ directly.
 
 | Thing | Guard |
 |---|---|
-| Site (card list, prices, PDF) | Cloudflare Access — your email only |
-| Your collection (owned / favourites / proxies) | Passphrase in `apps_script.gs` |
+| Site (card list, prices, PDF) | Nothing — public, unless you add Cloudflare Access |
+| Your collection (owned / favourites / proxies) | `ALLOWED` in `apps_script.gs` — Google sign-in |
 | Sheet contents | Your Google account |
 
-Anyone who has both the `/exec` URL *and* the passphrase can read or overwrite the collection —
-that is the whole model, no accounts. Rotate by editing `PASS` and re-deploying the Apps Script.
-The **⇩ Backup** button writes `collection.json` locally as a safety copy.
+The `/exec` URL on its own is useless now: every call must carry a Google ID token that the script
+re-checks with Google, minted for this exact `CLIENT_ID`, for an address in `ALLOWED`. Add or revoke
+someone by editing `ALLOWED` and re-deploying.
+
+Tokens last about an hour. The page keeps working offline from `localStorage` regardless — an
+expired token only stops syncing, and Google re-issues one silently on the next load. The
+**⇩ Backup** button writes `collection.json` locally as a safety copy.

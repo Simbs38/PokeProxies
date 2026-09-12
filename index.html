@@ -5,6 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
     --bg: #0a0c14;
@@ -257,14 +258,13 @@
 <div id="login" hidden><div class="box" style="max-width:420px;padding:22px">
   <h2 style="margin:0 0 4px;font-size:19px">Sync my collection</h2>
   <p style="margin:0 0 16px;color:var(--dim);font-size:13px">
-    Paste the Apps Script URL and the passphrase from <code>apps_script.gs</code>. Both stay in this
-    browser, so you stay signed in — see DEPLOY.md.
+    Paste your Apps Script URL, then sign in with the Google account on the script's allow list.
+    Both stay in this browser — see DEPLOY.md.
   </p>
   <input id="l-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
-  <input id="l-pass" type="password" placeholder="passphrase" autocomplete="current-password">
+  <div id="l-gsi" style="margin-top:14px;display:flex;justify-content:center;min-height:44px"></div>
   <div style="display:flex;gap:8px;margin-top:14px">
-    <button class="pill" id="l-save" style="flex:1">Sign in</button>
-    <button class="pill" id="l-out">Sign out</button>
+    <button class="pill" id="l-out" style="flex:1">Sign out</button>
   </div>
   <p id="l-msg" style="margin:12px 0 0;color:var(--dim);font-size:12px"></p>
 </div></div>
@@ -567,7 +567,8 @@ restore.onclick = () => file.click();
 file.onchange = async () => { applyState(JSON.parse(await file.files[0].text())); push() };
 
 // ---- optional cloud sync: Google Apps Script + a Google Sheet, one passphrase ----
-const cfg = { url: store.get("syncUrl", ""), pass: store.get("syncPass", "") };
+const CLIENT_ID = "1081036062887-svjpkvhkiut32tou6cmfgiic1lr4gqea.apps.googleusercontent.com";
+const cfg = { url: store.get("syncUrl", ""), tok: store.get("syncTok", "") };
 let timer;
 
 function stateOut() { return { owned: [...owned], have: [...have], favs, seen } }
@@ -583,10 +584,10 @@ function applyState(d) {
 const status = (t, on) => { sync.textContent = t; sync.classList.toggle("on", !!on) };
 
 async function pull() {
-  if (!cfg.url) return status("☁ Sign in");
+  if (!cfg.url || !cfg.tok) return status("☁ Sign in");
   status("☁ Syncing…");
   try {
-    const d = await (await fetch(`${cfg.url}?pass=${encodeURIComponent(cfg.pass)}`)).json();
+    const d = await (await fetch(`${cfg.url}?idToken=${encodeURIComponent(cfg.tok)}`)).json();
     if (!d.ok) throw new Error(d.error || "wrong passphrase");
     // whichever side was written last wins — plain and predictable for one person, two devices
     if (d.state && (d.updated || 0) > store.get("updated", 0)) {
@@ -600,7 +601,7 @@ async function pull() {
 }
 
 function push(wait = 900) {
-  if (!cfg.url) return;
+  if (!cfg.url || !cfg.tok) return;
   clearTimeout(timer);
   timer = setTimeout(async () => {
     const updated = Date.now();
@@ -609,7 +610,7 @@ function push(wait = 900) {
       // text/plain keeps it a simple request: no CORS preflight, which Apps Script cannot answer
       const d = await (await fetch(cfg.url, {
         method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ pass: cfg.pass, updated, state: stateOut() }),
+        body: JSON.stringify({ idToken: cfg.tok, updated, state: stateOut() }),
       })).json();
       if (!d.ok) throw new Error(d.error || "rejected");
       store.set("updated", updated);
@@ -618,26 +619,41 @@ function push(wait = 900) {
   }, wait);
 }
 
-sync.onclick = () => {
-  document.getElementById("l-url").value = cfg.url;
-  document.getElementById("l-pass").value = cfg.pass;
-  document.getElementById("l-msg").textContent = "";
-  login.hidden = false;
-};
-login.addEventListener("click", e => { if (e.target === login) login.hidden = true });
-document.getElementById("l-save").onclick = async () => {
-  cfg.url = document.getElementById("l-url").value.trim().replace(/\/+$/, "");
-  cfg.pass = document.getElementById("l-pass").value;
-  store.set("syncUrl", cfg.url); store.set("syncPass", cfg.pass);
+// Google Identity Services hands us an ID token; the Apps Script verifies it and checks the
+// email against its allow list. The token expires after ~1h, so auto_select re-issues one on load.
+let gsiDrawn = false;
+function drawGsi() {
+  if (gsiDrawn || !window.google?.accounts?.id) return;
+  google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGoogle, auto_select: true });
+  google.accounts.id.renderButton(document.getElementById("l-gsi"),
+    { theme: "filled_black", size: "large", shape: "pill", text: "signin_with", width: 300 });
+  gsiDrawn = true;
+}
+
+async function onGoogle(res) {
+  const typed = document.getElementById("l-url").value.trim().replace(/\/+$/, "");
+  if (typed) cfg.url = typed;
+  cfg.tok = res.credential;
+  store.set("syncUrl", cfg.url); store.set("syncTok", cfg.tok);
   await pull();
   document.getElementById("l-msg").textContent = sync.textContent.replace("☁ ", "");
   if (sync.classList.contains("on")) login.hidden = true;
+}
+
+sync.onclick = () => {
+  document.getElementById("l-url").value = cfg.url;
+  document.getElementById("l-msg").textContent = "";
+  login.hidden = false;
+  drawGsi();
 };
+login.addEventListener("click", e => { if (e.target === login) login.hidden = true });
 document.getElementById("l-out").onclick = () => {
-  cfg.url = cfg.pass = "";
-  store.set("syncUrl", ""); store.set("syncPass", "");
+  cfg.tok = "";
+  store.set("syncTok", "");
+  window.google?.accounts?.id?.disableAutoSelect();
   login.hidden = true; status("☁ Sign in");
 };
+addEventListener("load", drawGsi);
 
 render();
 pull();

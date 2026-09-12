@@ -2,10 +2,14 @@
  * Pokédex Proxies — collection store on a Google Sheet.
  *
  * Holds one JSON blob (your proxies done / cards owned / favourites) and hands it
- * back to any device that knows the passphrase. See DEPLOY.md for the 5 steps.
+ * back to any device signed in as an allow-listed Google account. See DEPLOY.md.
  */
 
-const PASS = 'change-me';          // <- set this, then paste the same one in the website
+// Who may read or write this Sheet. The website signs the user in with Google and sends the
+// resulting ID token; nothing else opens the door, so a leaked /exec URL on its own is useless.
+const CLIENT_ID = '1081036062887-svjpkvhkiut32tou6cmfgiic1lr4gqea.apps.googleusercontent.com';
+const ALLOWED = ['you@gmail.com'];   // <- YOUR Google account, exactly as Google spells it
+
 const SHEET = 'state';
 const CHUNK = 40000;               // a Sheets cell tops out at 50k chars, so the JSON is split
 
@@ -16,6 +20,19 @@ function sheet_() {
 
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Google's tokeninfo does the signature and expiry work; we check who it is. */
+function verify_(tok) {
+  if (!tok) return null;
+  const r = UrlFetchApp.fetch(
+    'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(tok),
+    { muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) return null;          // expired, malformed or forged
+  const p = JSON.parse(r.getContentText());
+  if (p.aud !== CLIENT_ID) return null;                  // token minted for some other site
+  if (String(p.email_verified) !== 'true') return null;
+  return ALLOWED.indexOf(p.email) >= 0 ? p.email : null;
 }
 
 function read_(s) {
@@ -31,7 +48,7 @@ function write_(s, str) {
 
 function doGet(e) {
   const s = sheet_();
-  if ((e.parameter.pass || '') !== PASS) return json_({ ok: false, error: 'wrong passphrase' });
+  if (!verify_(e.parameter.idToken)) return json_({ ok: false, error: 'sign in with Google' });
   const raw = read_(s);
   return json_({
     ok: true,
@@ -43,7 +60,7 @@ function doGet(e) {
 function doPost(e) {
   let body;
   try { body = JSON.parse(e.postData.contents || '{}') } catch (err) { body = {} }
-  if ((body.pass || '') !== PASS) return json_({ ok: false, error: 'wrong passphrase' });
+  if (!verify_(body.idToken)) return json_({ ok: false, error: 'sign in with Google' });
 
   const s = sheet_(), state = body.state || {};
   const lock = LockService.getScriptLock();          // two devices saving at once
