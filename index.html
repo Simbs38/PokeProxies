@@ -37,8 +37,12 @@
   }
   .logo { font-weight: 800; letter-spacing: -.02em; margin-right: 14px; font-size: 20px }
   .logo em { color: var(--acc); font-style: normal }
-  nav { display: flex; gap: 8px; flex-wrap: wrap }
-  .tools { margin-left: auto; display: flex; gap: 8px }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; order: 2 }
+  .logo { order: 1 }
+  .toolbar { order: 3; margin-left: auto; display: flex; gap: 8px }
+  .tools { display: flex; gap: 8px }
+  #burger { order: 0; display: none }
+  .narrow { display: none }
   .pill {
     font: 600 14px Outfit, sans-serif; color: var(--dim);
     padding: 9px 18px; border: 1px solid var(--line); border-radius: 999px;
@@ -192,10 +196,33 @@
   @media (max-width: 720px) {
     #banner { grid-template-columns: 1fr; padding: 14px 12px 4px }
     header { padding: 10px 12px; gap: 8px }
-    .logo { font-size: 17px; margin-right: 6px; width: 100% }
-    nav, .tools { gap: 6px }
-    .tools { margin-left: 0; width: 100%; overflow-x: auto; padding-bottom: 2px }
-    .pill { padding: 7px 13px; font-size: 13px }
+    .logo { font-size: 17px; margin-right: 0 }
+    #burger { display: inline-block }
+    /* title row: ☰  Pokédex Proxies … ☁ */
+    .toolbar { display: contents }
+    #sync { order: 2; margin-left: auto; font-size: 0; padding: 6px 10px }
+    #sync::before { content: "☁"; font-size: 15px }
+    /* one inline row of collections; scrolls only if the labels outgrow the screen */
+    nav {
+      order: 5; width: 100%; flex-wrap: nowrap; overflow-x: auto;
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    }
+    nav::-webkit-scrollbar { display: none }
+    nav .pill { flex: 0 0 auto }
+    .wide { display: none }
+    .narrow { display: inline }
+    /* tools collapse into a dropdown under the burger */
+    .tools {
+      order: 6; position: absolute; top: 100%; left: 12px; z-index: 30;
+      display: none; flex-direction: column; align-items: stretch; gap: 6px;
+      width: 220px; padding: 8px; border-radius: 14px;
+      background: #11141d; border: 1px solid var(--line);
+      box-shadow: 0 20px 44px -20px #000;
+    }
+    body.menu .tools { display: flex }
+    .tools .pill { text-align: left }
+    nav { gap: 6px }
+    .pill { padding: 7px 12px; font-size: 13px }
     .pill.sm { padding: 6px 11px; font-size: 12px; white-space: nowrap }
     .hero { padding: 14px; gap: 14px }
     .hero .big { font-size: 25px }
@@ -250,19 +277,22 @@
 </style>
 
 <header>
+  <button class="pill sm" id="burger" aria-label="Menu" aria-expanded="false">☰</button>
   <div class="logo">Poké<em>dex</em> Proxies</div>
   <nav>
     <button class="pill" data-c="gen1">Gen 1</button>
     <button class="pill" data-c="gen2">Gen 2</button>
     <button class="pill" data-c="gen3">Gen 3</button>
-    <button class="pill" data-c="anniv">30 Years Anniversary</button>
+    <button class="pill" data-c="anniv"><span class="wide">30 Years Anniversary</span><span class="narrow">30 Years</span></button>
   </nav>
+  <div class="toolbar">
+  <button class="pill sm" id="sync">☁ Sign in</button>
   <div class="tools">
-    <button class="pill sm" id="sync">☁ Sign in</button>
     <button class="pill sm" id="pdf">🖨 Convert to PDF</button>
     <button class="pill sm" id="backup">⇩ Backup</button>
     <button class="pill sm" id="restore">⇧ Restore</button>
     <input type="file" id="file" accept=".json" hidden>
+  </div>
   </div>
 </header>
 
@@ -514,6 +544,16 @@ async function openCard(p) {
   }
 }
 
+const burger = document.getElementById("burger");
+const closeMenu = () => { document.body.classList.remove("menu"); burger.setAttribute("aria-expanded", "false") };
+burger.onclick = e => {
+  e.stopPropagation();
+  const open = !document.body.classList.toggle("menu");
+  burger.setAttribute("aria-expanded", String(!open));
+};
+document.querySelector(".tools").addEventListener("click", closeMenu);
+addEventListener("click", e => { if (!e.target.closest("header")) closeMenu() });
+
 document.querySelector("nav").addEventListener("click", e => {
   const b = e.target.closest(".pill");
   if (!b) return;
@@ -615,7 +655,7 @@ function applyState(d) {
   save(false); render();
 }
 
-const status = (t, on) => { sync.textContent = t; sync.classList.toggle("on", !!on) };
+const status = (t, on) => { sync.textContent = t; sync.title = t; sync.classList.toggle("on", !!on) };
 
 async function pull() {
   if (!cfg.url || !cfg.tok) return status("☁ Sign in");
