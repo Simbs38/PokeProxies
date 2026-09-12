@@ -74,7 +74,7 @@
 
   #list {
     padding: 22px; display: grid; gap: 14px;
-    grid-template-columns: repeat(auto-fill, minmax(182px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
   .card {
     position: relative; border: 1px solid var(--line); border-radius: var(--r);
@@ -180,7 +180,40 @@
     color: var(--fg); background: rgba(255,255,255,.05);
     border: 1px solid var(--line); border-radius: 12px;
   }
-  @media (max-width: 720px) { #banner { grid-template-columns: 1fr } }
+  /* ---- signed-out gate: the sync dialog becomes the whole page ---- */
+  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > footer { display: none }
+  body.locked #login { background: none; backdrop-filter: none }
+  #login .brand { display: none; font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-bottom: 10px }
+  #login .brand em { color: var(--acc); font-style: normal }
+  body.locked #login .brand { display: block }
+  body.locked #l-out { display: none }
+
+  /* ---- phones: two columns, tighter chrome ---- */
+  @media (max-width: 720px) {
+    #banner { grid-template-columns: 1fr; padding: 14px 12px 4px }
+    header { padding: 10px 12px; gap: 8px }
+    .logo { font-size: 17px; margin-right: 6px; width: 100% }
+    nav, .tools { gap: 6px }
+    .tools { margin-left: 0; width: 100%; overflow-x: auto; padding-bottom: 2px }
+    .pill { padding: 7px 13px; font-size: 13px }
+    .pill.sm { padding: 6px 11px; font-size: 12px; white-space: nowrap }
+    .hero { padding: 14px; gap: 14px }
+    .hero .big { font-size: 25px }
+    .ring { flex-basis: 74px; width: 74px; font-size: 16px }
+    .ring::before { width: 58px }
+    /* four stacked stat cards pushed every pokemon below the fold */
+    .stats { grid-template-columns: 1fr 1fr; gap: 8px }
+    .stat { padding: 10px 12px }
+    .stat .t { font-size: 12px }
+    .stat .v { font-size: 17px; margin: 1px 0 6px }
+    #list { padding: 12px; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) }
+    .card { padding: 8px 8px 12px }
+    .card .name { font-size: 13px }
+    .m-body { padding: 12px 2px 18px }
+    .strip { gap: 10px; padding: 6px 12px 12px }
+    .tcg { flex-basis: 150px }
+    .arrow { display: none }
+  }
 
   /* ---- printable proxy sheets: same card format as the site, 63x88mm, 3x3 per A4 ---- */
   #sheets { display: none }
@@ -256,6 +289,7 @@
 </div></div>
 
 <div id="login" hidden><div class="box" style="max-width:420px;padding:22px">
+  <div class="brand">Poké<em>dex</em> Proxies</div>
   <h2 style="margin:0 0 4px;font-size:19px">Sync my collection</h2>
   <p style="margin:0 0 16px;color:var(--dim);font-size:13px">
     Paste your Apps Script URL, then sign in with the Google account on the script's allow list.
@@ -523,7 +557,7 @@ document.getElementById("m-content").addEventListener("click", e => {
 
 function closeModal() { modal.hidden = true }
 modal.addEventListener("click", e => { if (e.target === modal) closeModal() });
-addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); login.hidden = true } });
+addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); if (cfg.tok) login.hidden = true } });
 
 // ---- backup / restore what only you know: proxies done, cards owned, favourites ----
 backup.onclick = () => {
@@ -588,7 +622,10 @@ async function pull() {
   status("☁ Syncing…");
   try {
     const d = await (await fetch(`${cfg.url}?idToken=${encodeURIComponent(cfg.tok)}`)).json();
-    if (!d.ok) throw new Error(d.error || "wrong passphrase");
+    if (!d.ok) {
+      if (/sign in/i.test(d.error || "")) { cfg.tok = ""; store.set("syncTok", ""); applyLock() }
+      throw new Error(d.error || "rejected");
+    }
     // whichever side was written last wins — plain and predictable for one person, two devices
     if (d.state && (d.updated || 0) > store.get("updated", 0)) {
       applyState(d.state);
@@ -637,7 +674,15 @@ async function onGoogle(res) {
   store.set("syncUrl", cfg.url); store.set("syncTok", cfg.tok);
   await pull();
   document.getElementById("l-msg").textContent = sync.textContent.replace("☁ ", "");
+  applyLock();
   if (sync.classList.contains("on")) login.hidden = true;
+}
+
+// Signed out: hide the app and leave the dialog up as the landing page. Cosmetic only — the
+// card data is public either way; the collection is what the Apps Script actually guards.
+function applyLock() {
+  document.body.classList.toggle("locked", !cfg.tok);
+  if (!cfg.tok) { login.hidden = false; drawGsi() }
 }
 
 sync.onclick = () => {
@@ -646,14 +691,15 @@ sync.onclick = () => {
   login.hidden = false;
   drawGsi();
 };
-login.addEventListener("click", e => { if (e.target === login) login.hidden = true });
+login.addEventListener("click", e => { if (e.target === login && cfg.tok) login.hidden = true });
 document.getElementById("l-out").onclick = () => {
   cfg.tok = "";
   store.set("syncTok", "");
   window.google?.accounts?.id?.disableAutoSelect();
-  login.hidden = true; status("☁ Sign in");
+  status("☁ Sign in"); applyLock();
 };
 addEventListener("load", drawGsi);
+applyLock();
 
 render();
 pull();
