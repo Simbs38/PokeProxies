@@ -56,7 +56,8 @@ def artwork_id(name, api):
             m = re.match(r"(.+)-([xy])$", core) if suffix == "-mega" else None
             cand = f"{m.group(1)}{suffix}-{m.group(2)}" if m else core + suffix
             return api.get(cand) or api.get(slug(name))
-    return api.get(slug(name))
+    # a few species only exist under a form slug in PokeAPI (deoxys -> deoxys-normal)
+    return api.get(slug(name)) or api.get(slug(name) + "-normal")
 
 
 def tokens(text):
@@ -160,6 +161,17 @@ def main():
     path = os.path.join(HERE, "data.js")
     with open(path, "w", encoding="utf-8") as f:
         f.write("window.DEX = " + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
+    # Browsers cache data.js hard, so a refresh would keep showing the old collections until a
+    # manual hard-reload. Stamp the tag with this run's timestamp instead.
+    page = os.path.join(HERE, "index.html")
+    if os.path.exists(page):
+        html = open(page, encoding="utf-8").read()
+        stamped = re.sub(r'<script src="data\.js(?:\?v=[^"]*)?">',
+                         f'<script src="data.js?v={time.strftime("%Y%m%d%H%M")}">', html, count=1)
+        if stamped != html:
+            open(page, "w", encoding="utf-8").write(stamped)
+            print("  cache-buster stamped into index.html")
+
     total = sum(len(v) for v in tcg.values())
     print(f"\n✓ {total} cards for {len(tcg)} species -> data.js ({os.path.getsize(path)/1e6:.1f} MB)")
     if failed:
