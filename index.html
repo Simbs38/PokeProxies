@@ -77,41 +77,41 @@
   .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--acc)) }
 
   #list {
-    padding: 22px; display: grid; gap: 14px;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    padding: 22px; display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
   }
   .card {
-    position: relative; border: 1px solid var(--line); border-radius: var(--r);
+    position: relative; border: 1px solid var(--line); border-radius: 13px;
     background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-    padding: 10px 12px 14px; cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s;
+    padding: 7px 7px 9px; cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s;
     text-align: center; user-select: none;
   }
   .card:hover { transform: translateY(-4px); border-color: #ffffff2b; box-shadow: 0 18px 30px -20px #000 }
-  .card .idx { position: absolute; top: 10px; left: 12px; font-size: 11px; color: var(--dim) }
+  .card .idx { position: absolute; top: 7px; left: 8px; font-size: 9px; color: var(--dim) }
   .card .tick {
-    position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
-    border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; color: transparent;
+    position: absolute; top: 6px; right: 6px; width: 17px; height: 17px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--line); display: grid; place-items: center; font-size: 10px; color: transparent;
   }
   .card > img {
     width: 100%; aspect-ratio: 1; object-fit: contain; display: block;
     filter: drop-shadow(0 10px 14px #0008);
     background: radial-gradient(closest-side, rgba(255,255,255,.09), transparent 72%);
   }
-  .card .dex { font-size: 12px; color: var(--acc); font-weight: 600 }
-  .card .row { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 2px }
+  .card .dex { font-size: 10px; color: var(--acc); font-weight: 600 }
+  .card .row { display: flex; gap: 4px; align-items: center; justify-content: center; margin-top: 1px; flex-wrap: wrap }
   .card .cnt {
-    font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px;
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 5px;
     background: rgba(59,125,216,.22); color: #bcd6ff; white-space: nowrap;
   }
-  .card .name { font-weight: 600; font-size: 14px; line-height: 1.2 }
+  .card .name { font-weight: 600; font-size: 11px; line-height: 1.15 }
   .card .mini {
-    width: 22px; aspect-ratio: 245/342; object-fit: cover; border-radius: 3px;
+    width: 15px; aspect-ratio: 245/342; object-fit: cover; border-radius: 3px;
     box-shadow: 0 0 0 1px var(--acc), 0 0 8px -1px var(--acc);
   }
-  .card .cards { margin-top: 8px; width: 100%; }
+  .card .cards { margin-top: 6px; width: 100%; padding: 5px 6px; font-size: 10px }
   .card .form {
-    display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 99px;
-    font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    display: inline-block; margin-top: 4px; padding: 1px 6px; border-radius: 99px;
+    font-size: 8px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
     background: rgba(255,255,255,.08); color: var(--dim);
   }
   .card.done { border-color: var(--acc); background: linear-gradient(180deg, #ffcb0522, rgba(255,255,255,.02)) }
@@ -191,6 +191,8 @@
   #login .brand em { color: var(--acc); font-style: normal }
   body.locked #login .brand { display: block }
   body.locked #l-out { display: none }
+  body.overview #list, body.overview footer { display: none }
+  body:not(.overview) #banner { grid-template-columns: 1fr }
 
   /* ---- phones: two columns, tighter chrome ---- */
   @media (max-width: 720px) {
@@ -233,9 +235,8 @@
     .stat { padding: 10px 12px }
     .stat .t { font-size: 12px }
     .stat .v { font-size: 17px; margin: 1px 0 6px }
-    #list { padding: 12px; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) }
-    .card { padding: 8px 8px 12px }
-    .card .name { font-size: 13px }
+    #list { padding: 12px; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)) }
+    .card { padding: 6px 6px 8px }
     .m-body { padding: 12px 2px 18px }
     .strip { gap: 10px; padding: 6px 12px 12px }
     .tcg { flex-basis: 150px }
@@ -284,6 +285,7 @@
     <button class="pill" data-c="gen2">Gen 2</button>
     <button class="pill" data-c="gen3">Gen 3</button>
     <button class="pill" data-c="anniv"><span class="wide">30 Years Anniversary</span><span class="narrow">30 Years</span></button>
+    <button class="pill" data-c="all">All</button>
   </nav>
   <div class="toolbar">
   <button class="pill sm" id="sync">☁ Sign in</button>
@@ -363,7 +365,8 @@ const save = (sync = true) => {
   if (sync && typeof push === "function") push();
 };
 
-let cur = location.hash.slice(1) in COLLECTIONS ? location.hash.slice(1) : "gen1";
+const HASH = location.hash.slice(1);
+let cur = HASH === "all" || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const count = k => COLLECTIONS[k].items.filter(p => owned.has(k + ":" + p.i)).length;
 const cardsOf = sp => DEX.tcg[sp] || null;
@@ -387,33 +390,41 @@ function filterForms(all, p) {
 }
 const cardsFor = p => filterForms(cardsOf(p.sp || SPECIES(p.name)), p);
 
+const bar = k => {
+  const a = count(k), b = COLLECTIONS[k].items.length;
+  return `<div class="stat">
+    <div class="t"><span>${COLLECTIONS[k].name}</span><span>${pct(a, b)}%</span></div>
+    <div class="v">${a} <span style="color:var(--dim);font-size:14px">/ ${b}</span></div>
+    <div class="bar"><i style="width:${pct(a, b)}%"></i></div>
+  </div>`;
+};
+
 function stats() {
   const keys = Object.keys(COLLECTIONS);
-  const h = keys.reduce((s, k) => s + count(k), 0);
-  const t = keys.reduce((s, k) => s + COLLECTIONS[k].items.length, 0);
+  const all = cur === "all";
+  // One ring for whatever is on screen: the open collection, or the lot on the All tab.
+  const scope = all ? keys : [cur];
+  const h = scope.reduce((s, k) => s + count(k), 0);
+  const t = scope.reduce((s, k) => s + COLLECTIONS[k].items.length, 0);
 
   banner.innerHTML = `
     <div class="hero">
       <div class="ring" style="--p:${pct(h, t)}"><span>${pct(h, t)}%</span></div>
       <div>
-        <h1>All collections</h1>
+        <h1>${all ? "All collections" : COLLECTIONS[cur].name}</h1>
         <div class="big">${h} <span style="color:var(--dim)">/ ${t}</span></div>
         <div class="sub">${have.size} TCG cards owned · ${Object.keys(favs).length} favourites picked</div>
       </div>
     </div>
-    <div class="stats">${keys.map(k => {
-      const a = count(k), b = COLLECTIONS[k].items.length;
-      return `<div class="stat">
-        <div class="t"><span>${COLLECTIONS[k].name}</span><span>${pct(a, b)}%</span></div>
-        <div class="v">${a} <span style="color:var(--dim);font-size:14px">/ ${b}</span></div>
-        <div class="bar"><i style="width:${pct(a, b)}%"></i></div>
-      </div>`;
-    }).join("")}</div>`;
+    ${all ? `<div class="stats">${keys.map(bar).join("")}</div>` : ""}`;
 }
 
 function render() {
   stats();
   document.querySelectorAll("nav .pill").forEach(b => b.classList.toggle("on", b.dataset.c === cur));
+  document.body.classList.toggle("overview", cur === "all");
+
+  if (cur === "all") { list.innerHTML = ""; foot.textContent = ""; return }
 
   const items = COLLECTIONS[cur].items;
   list.innerHTML = items.length ? items.map((p, n) => {
@@ -611,7 +622,7 @@ backup.onclick = () => {
 };
 // ---- proxy sheets -> print dialog (Save as PDF); 9 card-sized tiles per A4 page ----
 pdf.onclick = async () => {
-  const items = COLLECTIONS[cur].items;
+  const items = COLLECTIONS[cur]?.items || [];   // the All tab has no grid to print
   if (!items.length) return;
 
   const label = pdf.textContent;
