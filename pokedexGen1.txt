@@ -1,0 +1,291 @@
+Index 001 : 001 - Bulbasaur
+Index 002 : 002 - Ivysaur
+Index 003 : 003 - Venusaur
+Index 004 : 003 - Mega Venusaur
+Index 005 : 003 - Gigantamax Venusaur
+
+Index 006 : 004 - Charmander
+Index 007 : 005 - Charmeleon
+Index 008 : 006 - Charizard
+Index 009 : 006 - Mega Charizard X
+Index 010 : 006 - Mega Charizard Y
+Index 011 : 006 - Gigantamax Charizard
+
+Index 012 : 007 - Squirtle
+Index 013 : 008 - Wartortle
+Index 014 : 009 - Blastoise
+Index 015 : 009 - Mega Blastoise
+Index 016 : 009 - Gigantamax Blastoise
+
+Index 017 : 010 - Caterpie
+Index 018 : 011 - Metapod
+Index 019 : 012 - Butterfree
+Index 020 : 012 - Gigantamax Butterfree
+
+Index 021 : 013 - Weedle
+Index 022 : 014 - Kakuna
+Index 023 : 015 - Beedrill
+Index 024 : 015 - Mega Beedrill
+
+Index 025 : 016 - Pidgey
+Index 026 : 017 - Pidgeotto
+Index 027 : 018 - Pidgeot
+Index 028 : 018 - Mega Pidgeot
+
+Index 029 : 019 - Rattata
+Index 030 : 019 - Alolan Rattata
+Index 031 : 020 - Raticate
+Index 032 : 020 - Alolan Raticate
+
+Index 033 : 021 - Spearow
+Index 034 : 022 - Fearow
+
+Index 035 : 023 - Ekans
+Index 036 : 024 - Arbok
+
+Index 037 : 025 - Pikachu
+Index 038 : 025 - Gigantamax Pikachu
+
+Index 039 : 026 - Raichu
+Index 040 : 026 - Alolan Raichu
+
+Index 041 : 027 - Sandshrew
+Index 042 : 027 - Alolan Sandshrew
+Index 043 : 028 - Sandslash
+Index 044 : 028 - Alolan Sandslash
+
+Index 045 : 029 - Nidoran♀
+Index 046 : 030 - Nidorina
+Index 047 : 031 - Nidoqueen
+
+Index 048 : 032 - Nidoran♂
+Index 049 : 033 - Nidorino
+Index 050 : 034 - Nidoking
+
+Index 051 : 035 - Clefairy
+Index 052 : 036 - Clefable
+Index 053 : 036 - Mega Clefable
+
+Index 054 : 037 - Vulpix
+Index 055 : 037 - Alolan Vulpix
+Index 056 : 038 - Ninetales
+Index 057 : 038 - Alolan Ninetales
+
+Index 058 : 039 - Jigglypuff
+Index 059 : 040 - Wigglytuff
+
+Index 060 : 041 - Zubat
+Index 061 : 042 - Golbat
+
+Index 062 : 043 - Oddish
+Index 063 : 044 - Gloom
+Index 064 : 045 - Vileplume
+
+Index 065 : 046 - Paras
+Index 066 : 047 - Parasect
+
+Index 067 : 048 - Venonat
+Index 068 : 049 - Venomoth
+
+Index 069 : 050 - Diglett
+Index 070 : 050 - Alolan Diglett
+Index 071 : 051 - Dugtrio
+Index 072 : 051 - Alolan Dugtrio
+
+Index 073 : 052 - Meowth
+Index 074 : 052 - Alolan Meowth
+Index 075 : 052 - Galarian Meowth
+Index 076 : 052 - Gigantamax Meowth
+Index 077 : 053 - Persian
+Index 078 : 053 - Alolan Persian
+
+Index 079 : 054 - Psyduck
+Index 080 : 055 - Golduck
+
+Index 081 : 056 - Mankey
+Index 082 : 057 - Primeape
+
+Index 083 : 058 - Growlithe
+Index 084 : 058 - Hisuian Growlithe
+Index 085 : 059 - Arcanine
+Index 086 : 059 - Hisuian Arcanine
+
+Index 087 : 060 - Poliwag
+Index 088 : 061 - Poliwhirl
+Index 089 : 062 - Poliwrath
+
+Index 090 : 063 - Abra
+Index 091 : 064 - Kadabra
+Index 092 : 065 - Alakazam
+Index 093 : 065 - Mega Alakazam
+
+Index 094 : 066 - Machop
+Index 095 : 067 - Machoke
+Index 096 : 068 - Machamp
+Index 097 : 068 - Gigantamax Machamp
+
+Index 098 : 069 - Bellsprout
+Index 099 : 070 - Weepinbell
+Index 100 : 071 - Victreebel
+
+Index 101 : 072 - Tentacool
+Index 102 : 073 - Tentacruel
+
+Index 103 : 074 - Geodude
+Index 104 : 074 - Alolan Geodude
+Index 105 : 075 - Graveler
+Index 106 : 075 - Alolan Graveler
+Index 107 : 076 - Golem
+Index 108 : 076 - Alolan Golem
+
+Index 109 : 077 - Ponyta
+Index 110 : 077 - Galarian Ponyta
+Index 111 : 078 - Rapidash
+Index 112 : 078 - Galarian Rapidash
+
+Index 113 : 079 - Slowpoke
+Index 114 : 079 - Galarian Slowpoke
+Index 115 : 080 - Slowbro
+Index 116 : 080 - Galarian Slowbro
+Index 117 : 080 - Mega Slowbro
+
+Index 118 : 081 - Magnemite
+Index 119 : 082 - Magneton
+
+Index 120 : 083 - Farfetch'd
+Index 121 : 083 - Galarian Farfetch'd
+
+Index 122 : 084 - Doduo
+Index 123 : 085 - Dodrio
+
+Index 124 : 086 - Seel
+Index 125 : 087 - Dewgong
+
+Index 126 : 088 - Grimer
+Index 127 : 088 - Alolan Grimer
+Index 128 : 089 - Muk
+Index 129 : 089 - Alolan Muk
+
+Index 130 : 090 - Shellder
+Index 131 : 091 - Cloyster
+
+Index 132 : 092 - Gastly
+Index 133 : 093 - Haunter
+Index 134 : 094 - Gengar
+Index 135 : 094 - Mega Gengar
+Index 136 : 094 - Gigantamax Gengar
+
+Index 137 : 095 - Onix
+
+Index 138 : 096 - Drowzee
+Index 139 : 097 - Hypno
+
+Index 140 : 098 - Krabby
+Index 141 : 099 - Kingler
+Index 142 : 099 - Gigantamax Kingler
+
+Index 143 : 100 - Voltorb
+Index 144 : 100 - Hisuian Voltorb
+Index 145 : 101 - Electrode
+Index 146 : 101 - Hisuian Electrode
+
+Index 147 : 102 - Exeggcute
+Index 148 : 103 - Exeggutor
+Index 149 : 103 - Alolan Exeggutor
+
+Index 150 : 104 - Cubone
+Index 151 : 105 - Marowak
+Index 152 : 105 - Alolan Marowak
+
+Index 153 : 106 - Hitmonlee
+Index 154 : 107 - Hitmonchan
+
+Index 155 : 108 - Lickitung
+
+Index 156 : 109 - Koffing
+Index 157 : 110 - Weezing
+Index 158 : 110 - Galarian Weezing
+
+Index 159 : 111 - Rhyhorn
+Index 160 : 112 - Rhydon
+
+Index 161 : 113 - Chansey
+
+Index 162 : 114 - Tangela
+
+Index 163 : 115 - Kangaskhan
+Index 164 : 115 - Mega Kangaskhan
+
+Index 165 : 116 - Horsea
+Index 166 : 117 - Seadra
+
+Index 167 : 118 - Goldeen
+Index 168 : 119 - Seaking
+
+Index 169 : 120 - Staryu
+Index 170 : 121 - Starmie
+Index 171 : 121 - Mega Starmie
+
+Index 172 : 122 - Mr. Mime
+Index 173 : 122 - Galarian Mr. Mime
+
+Index 174 : 123 - Scyther
+
+Index 175 : 124 - Jynx
+
+Index 176 : 125 - Electabuzz
+
+Index 177 : 126 - Magmar
+
+Index 178 : 127 - Pinsir
+Index 179 : 127 - Mega Pinsir
+
+Index 180 : 128 - Tauros
+Index 181 : 128 - Paldean Tauros
+
+Index 182 : 129 - Magikarp
+Index 183 : 130 - Gyarados
+Index 184 : 130 - Mega Gyarados
+
+Index 185 : 131 - Lapras
+Index 186 : 131 - Gigantamax Lapras
+
+Index 187 : 132 - Ditto
+
+Index 188 : 133 - Eevee
+Index 189 : 133 - Gigantamax Eevee
+
+Index 190 : 134 - Vaporeon
+Index 191 : 135 - Jolteon
+Index 192 : 136 - Flareon
+
+Index 193 : 137 - Porygon
+
+Index 194 : 138 - Omanyte
+Index 195 : 139 - Omastar
+
+Index 196 : 140 - Kabuto
+Index 197 : 141 - Kabutops
+
+Index 198 : 142 - Aerodactyl
+Index 199 : 142 - Mega Aerodactyl
+
+Index 200 : 143 - Snorlax
+Index 201 : 143 - Gigantamax Snorlax
+
+Index 202 : 144 - Articuno
+Index 203 : 144 - Galarian Articuno
+
+Index 204 : 145 - Zapdos
+Index 205 : 145 - Galarian Zapdos
+
+Index 206 : 146 - Moltres
+Index 207 : 146 - Galarian Moltres
+
+Index 208 : 147 - Dratini
+Index 209 : 148 - Dragonair
+Index 210 : 149 - Dragonite
+Index 211 : 149 - Mega Dragonite
+
+Index 212 : 150 - Mewtwo
+Index 213 : 151 - Mew

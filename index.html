@@ -1,0 +1,644 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pokédex Proxies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c14;
+    --fg: #eef1f7;
+    --dim: #98a0b5;
+    --card: rgba(255,255,255,.045);
+    --line: rgba(255,255,255,.09);
+    --acc: #ffcb05;
+    --blue: #3b7dd8;
+    --r: 18px;
+  }
+  * { box-sizing: border-box }
+  body {
+    margin: 0; color: var(--fg); background: var(--bg);
+    font: 16px/1.45 Outfit, system-ui, sans-serif;
+    background-image:
+      radial-gradient(60rem 30rem at 12% -10%, #2a75bb44, transparent 70%),
+      radial-gradient(50rem 26rem at 92% 0%, #ffcb0522, transparent 70%);
+    background-attachment: fixed;
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 14px 22px;
+    background: rgba(10,12,20,.72);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .logo { font-weight: 800; letter-spacing: -.02em; margin-right: 14px; font-size: 20px }
+  .logo em { color: var(--acc); font-style: normal }
+  nav { display: flex; gap: 8px; flex-wrap: wrap }
+  .tools { margin-left: auto; display: flex; gap: 8px }
+  .pill {
+    font: 600 14px Outfit, sans-serif; color: var(--dim);
+    padding: 9px 18px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--card); cursor: pointer; transition: .18s;
+  }
+  .pill.sm { padding: 7px 13px; font-size: 12px }
+  .pill:hover { color: var(--fg); border-color: #ffffff30 }
+  .pill.on {
+    color: #16181f; border-color: transparent; box-shadow: 0 6px 22px -8px var(--acc);
+    background: linear-gradient(180deg, #ffe066, var(--acc));
+  }
+
+  #banner { display: grid; gap: 14px; padding: 26px 22px 8px; grid-template-columns: minmax(240px, 320px) 1fr }
+  .hero, .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); backdrop-filter: blur(6px) }
+  .hero { display: flex; gap: 18px; align-items: center; padding: 20px }
+  .ring {
+    --p: 0; position: relative; flex: 0 0 96px; width: 96px; aspect-ratio: 1; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 800; font-size: 20px;
+    background: conic-gradient(var(--acc) calc(var(--p) * 1%), rgba(255,255,255,.08) 0);
+  }
+  .ring::before { content: ""; position: absolute; width: 76px; aspect-ratio: 1; border-radius: 50%; background: #12141d }
+  .ring > span { position: relative }
+  .hero h1 { margin: 0 0 2px; font-size: 15px; font-weight: 600; color: var(--dim) }
+  .hero .big { font-size: 30px; font-weight: 800; letter-spacing: -.02em }
+  .hero .sub { font-size: 13px; color: var(--dim) }
+
+  .stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) }
+  .stat { padding: 14px 16px }
+  .stat .t { font-size: 13px; color: var(--dim); display: flex; justify-content: space-between }
+  .stat .v { font-size: 20px; font-weight: 700; margin: 2px 0 8px }
+  .bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden }
+  .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--acc)) }
+
+  #list {
+    padding: 22px; display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(182px, 1fr));
+  }
+  .card {
+    position: relative; border: 1px solid var(--line); border-radius: var(--r);
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    padding: 10px 12px 14px; cursor: pointer; transition: transform .18s, border-color .18s, box-shadow .18s;
+    text-align: center; user-select: none;
+  }
+  .card:hover { transform: translateY(-4px); border-color: #ffffff2b; box-shadow: 0 18px 30px -20px #000 }
+  .card .idx { position: absolute; top: 10px; left: 12px; font-size: 11px; color: var(--dim) }
+  .card .tick {
+    position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; color: transparent;
+  }
+  .card > img {
+    width: 100%; aspect-ratio: 1; object-fit: contain; display: block;
+    filter: drop-shadow(0 10px 14px #0008);
+    background: radial-gradient(closest-side, rgba(255,255,255,.09), transparent 72%);
+  }
+  .card .dex { font-size: 12px; color: var(--acc); font-weight: 600 }
+  .card .row { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 2px }
+  .card .cnt {
+    font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px;
+    background: rgba(59,125,216,.22); color: #bcd6ff; white-space: nowrap;
+  }
+  .card .name { font-weight: 600; font-size: 14px; line-height: 1.2 }
+  .card .mini {
+    width: 22px; aspect-ratio: 245/342; object-fit: cover; border-radius: 3px;
+    box-shadow: 0 0 0 1px var(--acc), 0 0 8px -1px var(--acc);
+  }
+  .card .cards { margin-top: 8px; width: 100%; }
+  .card .form {
+    display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 99px;
+    font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    background: rgba(255,255,255,.08); color: var(--dim);
+  }
+  .card.done { border-color: var(--acc); background: linear-gradient(180deg, #ffcb0522, rgba(255,255,255,.02)) }
+  .card.done .tick { background: var(--acc); border-color: var(--acc); color: #16181f }
+  .empty { padding: 60px 22px; color: var(--dim); grid-column: 1/-1; text-align: center }
+  footer { padding: 8px 22px 40px; color: var(--dim); font-size: 12px }
+
+  /* ---- variations modal ---- */
+  #modal, #login {
+    position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 2vh 6px;
+    background: rgba(4,6,12,.74); backdrop-filter: blur(6px);
+  }
+  #modal[hidden], #login[hidden] { display: none }
+  .box {
+    width: min(1180px, 96vw); max-height: 94vh; overflow: auto;
+    border: 1px solid var(--line); border-radius: 22px; background: #11141d;
+  }
+  .m-head { display: flex; gap: 14px; align-items: center; padding: 18px 20px 14px }
+  .m-head > img { width: 56px; height: 56px; object-fit: contain }
+  .m-head h2 { margin: 0; font-size: 20px; letter-spacing: -.01em }
+  .m-head .sub { font-size: 13px; color: var(--dim) }
+  .m-head .x {
+    margin-left: auto; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--fg); font-size: 16px;
+  }
+  .m-tools { display: flex; gap: 8px; align-items: center; padding: 0 20px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+  .m-tools span { font-size: 12px; color: var(--dim); margin-right: 2px }
+  .m-tools .pill { padding: 6px 14px; font-size: 13px }
+  .m-body { display: flex; align-items: center; gap: 4px; padding: 16px 6px 22px }
+  .m-body > div { flex: 1; min-width: 0 }
+  .strip {
+    display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity;
+    padding: 6px 20px 14px; scrollbar-width: thin;
+  }
+  .tcg {
+    position: relative; flex: 0 0 190px; scroll-snap-align: start; background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px; padding: 10px; text-align: center;
+  }
+  .tcg img { width: 100%; aspect-ratio: 245/342; object-fit: contain; border-radius: 8px; background: #0006 }
+  .tcg .n { font-weight: 600; font-size: 13px; margin-top: 8px; line-height: 1.2 }
+  .tcg .s { font-size: 11px; color: var(--dim); margin-top: 3px }
+  .tcg .p { margin-top: 7px; font-weight: 800; color: var(--acc) }
+  .tcg .p small { display: block; font-weight: 400; font-size: 10px; color: var(--dim); text-transform: uppercase }
+  .tcg { cursor: pointer }
+  .tcg .own {
+    margin-top: 9px; padding: 8px 6px; border-radius: 10px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--dim);
+  }
+  .tcg .star {
+    position: absolute; top: 6px; right: 6px; z-index: 2; width: 34px; height: 34px; cursor: pointer;
+    border-radius: 50%; border: 1px solid var(--line); background: rgba(12,15,22,.85); color: var(--dim);
+    font-size: 15px;
+  }
+  .tcg.have { border-color: #4ade80; background: rgba(74,222,128,.10) }
+  .tcg.have .own { background: #4ade80; border-color: #4ade80; color: #0c1a10 }
+  .tcg.fav {
+    border-color: var(--acc);
+    box-shadow: 0 0 0 1px var(--acc), 0 0 22px -2px var(--acc), inset 0 0 26px -14px var(--acc);
+    animation: glow 1.8s ease-in-out infinite alternate;
+  }
+  .tcg.fav .star { background: var(--acc); border-color: var(--acc); color: #16181f }
+  @keyframes glow { to { box-shadow: 0 0 0 1px var(--acc), 0 0 34px 2px var(--acc), inset 0 0 26px -10px var(--acc) } }
+  .arrow {
+    flex: 0 0 38px; width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--line); background: rgba(20,23,32,.9); color: var(--fg); font-size: 16px;
+  }
+  .msg { padding: 40px 20px; text-align: center; color: var(--dim) }
+  #login input {
+    width: 100%; margin-top: 8px; padding: 11px 13px; font: 400 14px Outfit, sans-serif;
+    color: var(--fg); background: rgba(255,255,255,.05);
+    border: 1px solid var(--line); border-radius: 12px;
+  }
+  @media (max-width: 720px) { #banner { grid-template-columns: 1fr } }
+
+  /* ---- printable proxy sheets: same card format as the site, 63x88mm, 3x3 per A4 ---- */
+  #sheets { display: none }
+  @media print {
+    @page { size: A4; margin: 0 }
+    body > *:not(#sheets) { display: none !important }
+    body { background: #fff }
+    #sheets { display: block }
+    .sheet {
+      width: 210mm; height: 297mm; background: #0a0c14; page-break-after: always;
+      display: grid; grid-template-columns: repeat(3, 63mm); grid-template-rows: repeat(3, 88mm);
+      justify-content: center; align-content: center;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .sheet:last-child { page-break-after: auto }
+    .pcard {
+      position: relative; width: 63mm; height: 88mm; padding: 4mm 3mm 3mm;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1mm;
+      border-radius: 4mm; color: #eef1f7; text-align: center;
+      border: .3mm solid rgba(255,255,255,.22);
+      background: linear-gradient(180deg, #1b2130, #0d1119);
+      outline: .1mm dashed rgba(255,255,255,.25);   /* cut guide, no size change */
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .pcard .pidx { position: absolute; top: 3mm; left: 4mm; font-size: 7pt; color: #98a0b5 }
+    .pcard img { width: 46mm; height: 46mm; object-fit: contain }
+    .pcard .pdex { font-size: 9pt; font-weight: 700; color: #ffcb05 }
+    .pcard .pname { font-size: 13pt; font-weight: 700; line-height: 1.1 }
+    .pcard .pform {
+      margin-top: 1mm; padding: .6mm 2mm; border-radius: 4mm; font-size: 6.5pt; font-weight: 600;
+      letter-spacing: .04em; text-transform: uppercase; color: #cfd6e6; background: rgba(255,255,255,.12);
+    }
+  }
+</style>
+
+<header>
+  <div class="logo">Poké<em>dex</em> Proxies</div>
+  <nav>
+    <button class="pill" data-c="gen1">Gen 1</button>
+    <button class="pill" data-c="gen2">Gen 2</button>
+    <button class="pill" data-c="gen3">Gen 3</button>
+    <button class="pill" data-c="anniv">30 Years Anniversary</button>
+  </nav>
+  <div class="tools">
+    <button class="pill sm" id="sync">☁ Sign in</button>
+    <button class="pill sm" id="pdf">🖨 Convert to PDF</button>
+    <button class="pill sm" id="backup">⇩ Backup</button>
+    <button class="pill sm" id="restore">⇧ Restore</button>
+    <input type="file" id="file" accept=".json" hidden>
+  </div>
+</header>
+
+<section id="banner"></section>
+<main id="list"></main>
+
+<div id="modal" hidden><div class="box">
+  <div class="m-head">
+    <img id="m-art" alt="">
+    <div><h2 id="m-name"></h2><div class="sub" id="m-sub"></div></div>
+    <button class="x" onclick="closeModal()">✕</button>
+  </div>
+  <div class="m-tools">
+    <span>Sort by</span>
+    <button class="pill" data-s="date">Date</button>
+    <button class="pill" data-s="price">Price</button>
+    <button class="pill" data-s="rarity">Rarity</button>
+  </div>
+  <div class="m-body">
+    <button class="arrow" onclick="strip?.scrollBy({left:-620,behavior:'smooth'})">‹</button>
+    <div id="m-content"><p class="msg">Loading…</p></div>
+    <button class="arrow" onclick="strip?.scrollBy({left:620,behavior:'smooth'})">›</button>
+  </div>
+</div></div>
+
+<div id="login" hidden><div class="box" style="max-width:420px;padding:22px">
+  <h2 style="margin:0 0 4px;font-size:19px">Sync my collection</h2>
+  <p style="margin:0 0 16px;color:var(--dim);font-size:13px">
+    Paste the Apps Script URL and the passphrase from <code>apps_script.gs</code>. Both stay in this
+    browser, so you stay signed in — see DEPLOY.md.
+  </p>
+  <input id="l-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+  <input id="l-pass" type="password" placeholder="passphrase" autocomplete="current-password">
+  <div style="display:flex;gap:8px;margin-top:14px">
+    <button class="pill" id="l-save" style="flex:1">Sign in</button>
+    <button class="pill" id="l-out">Sign out</button>
+  </div>
+  <p id="l-msg" style="margin:12px 0 0;color:var(--dim);font-size:12px"></p>
+</div></div>
+
+<div id="sheets"></div>
+<footer id="foot"></footer>
+
+<script src="data.js"></script>
+<script>
+const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
+const LABELS = { gen1: "Gen 1", gen2: "Gen 2", gen3: "Gen 3", anniv: "30 Years Anniversary" };
+const COLLECTIONS = Object.fromEntries(Object.keys(LABELS).map(k =>
+  [k, DEX.collections[k] || { name: LABELS[k], items: [] }]));
+
+const ART = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+const CARD_IMG = id => `https://images.pokemontcg.io/${id.slice(0, id.lastIndexOf("-"))}/${id.slice(id.lastIndexOf("-") + 1)}.png`;
+const FORM = /^(Mega|Gigantamax|Alolan|Galarian|Hisuian|Paldean)\b/;
+const SPECIES = n => n.replace(FORM, "").replace(/\s+[XY]$/, "").trim();
+
+// ponytail: localStorage throws on opaque origins (data:, sandboxes) -> fall back to in-memory
+const store = {
+  get: (k, d) => { try { return JSON.parse(localStorage.getItem("pkdx:" + k)) ?? d } catch { return d } },
+  set: (k, v) => { try { localStorage.setItem("pkdx:" + k, JSON.stringify(v)) } catch {} },
+};
+const owned = new Set(store.get("owned", []));   // proxy done, keyed "collection:index"
+const have  = new Set(store.get("have", []));    // real TCG cards owned, keyed card id
+const favs  = store.get("favs", {});             // "collection:index" -> {id, img}
+const seen  = store.get("seen", {});             // species -> {total, have}, feeds the grid badge
+const save = (sync = true) => {
+  store.set("owned", [...owned]); store.set("have", [...have]);
+  store.set("favs", favs); store.set("seen", seen);
+  if (sync && typeof push === "function") push();
+};
+
+let cur = location.hash.slice(1) in COLLECTIONS ? location.hash.slice(1) : "gen1";
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+const count = k => COLLECTIONS[k].items.filter(p => owned.has(k + ":" + p.i)).length;
+const cardsOf = sp => DEX.tcg[sp] || null;
+
+// TCG names its forms differently than the proxy list does: Mega -> "M X-EX" / "Mega X ex",
+// Gigantamax -> "X VMAX", regionals keep their word.
+const IS_MEGA = c => /\bmega\b/i.test(c.name) || /^m[\s-]/i.test(c.name);
+const IS_VMAX = c => /\bvmax\b/i.test(c.name);
+const REGIONS = ["Alolan", "Galarian", "Hisuian", "Paldean"];
+const word = w => new RegExp(`\\b${w}\\b`, "i");
+
+function filterForms(all, p) {
+  if (!all) return null;
+  const form = (p.name.match(FORM) || [])[0];
+  if (!form) return all.filter(c => !IS_MEGA(c) && !IS_VMAX(c) && !REGIONS.some(r => word(r).test(c.name)));
+  if (form === "Gigantamax") return all.filter(IS_VMAX);
+  if (form !== "Mega") return all.filter(c => word(form).test(c.name));
+  const letter = (p.name.match(/\s([XY])$/) || [])[1];      // Mega Charizard X vs Y
+  const other = letter === "X" ? "Y" : "X";
+  return all.filter(c => IS_MEGA(c) && (!letter || !word(other).test(c.name)));
+}
+const cardsFor = p => filterForms(cardsOf(p.sp || SPECIES(p.name)), p);
+
+function stats() {
+  const keys = Object.keys(COLLECTIONS);
+  const h = keys.reduce((s, k) => s + count(k), 0);
+  const t = keys.reduce((s, k) => s + COLLECTIONS[k].items.length, 0);
+
+  banner.innerHTML = `
+    <div class="hero">
+      <div class="ring" style="--p:${pct(h, t)}"><span>${pct(h, t)}%</span></div>
+      <div>
+        <h1>All collections</h1>
+        <div class="big">${h} <span style="color:var(--dim)">/ ${t}</span></div>
+        <div class="sub">${have.size} TCG cards owned · ${Object.keys(favs).length} favourites picked</div>
+      </div>
+    </div>
+    <div class="stats">${keys.map(k => {
+      const a = count(k), b = COLLECTIONS[k].items.length;
+      return `<div class="stat">
+        <div class="t"><span>${COLLECTIONS[k].name}</span><span>${pct(a, b)}%</span></div>
+        <div class="v">${a} <span style="color:var(--dim);font-size:14px">/ ${b}</span></div>
+        <div class="bar"><i style="width:${pct(a, b)}%"></i></div>
+      </div>`;
+    }).join("")}</div>`;
+}
+
+function render() {
+  stats();
+  document.querySelectorAll("nav .pill").forEach(b => b.classList.toggle("on", b.dataset.c === cur));
+
+  const items = COLLECTIONS[cur].items;
+  list.innerHTML = items.length ? items.map((p, n) => {
+    const id = cur + ":" + p.i, form = (p.name.match(FORM) || [])[0];
+    const local = cardsFor(p), s = seen[id], fav = favs[id];
+    const badge = local ? `${local.filter(c => have.has(c.id)).length}/${local.length}`
+                        : s ? `${s.have}/${s.total}` : "?/?";
+    return `<article class="card ${owned.has(id) ? "done" : ""}" data-id="${id}" data-n="${n}">
+      <span class="idx">#${String(p.i).padStart(3, "0")}</span>
+      <span class="tick" title="mark proxy done">✓</span>
+      <img loading="lazy" alt="${p.name}" src="${ART(p.id)}"
+           onerror="this.onerror=null;this.src='${ART(Number(p.dex))}'">
+      <div class="dex">${p.dex}</div>
+      <div class="row">
+        <span class="cnt" title="TCG cards you own / total prints">${badge}</span>
+        <span class="name">${p.name}</span>
+        ${fav ? `<img class="mini" alt="favourite print" src="${fav.img}">` : ""}
+      </div>
+      <button class="pill sm cards" data-act="cards">View cards</button>
+      ${form ? `<span class="form">${form}</span>` : ""}
+    </article>`;
+  }).join("") : `<p class="empty">Nothing here yet — add pokedex${cur === "anniv" ? "Anniversary" : cur.replace("gen", "Gen")}.txt and re-run fetch_data.py.</p>`;
+
+  const n = Object.values(DEX.tcg).reduce((s, v) => s + v.length, 0);
+  foot.textContent = DEX.fetched
+    ? `${n.toLocaleString()} TCG cards cached locally (data.js, fetched ${DEX.fetched}) · re-run python3 fetch_data.py --refresh to update prices`
+    : "No data.js yet — run python3 fetch_data.py to cache every card locally (the page falls back to the live API meanwhile).";
+}
+
+// ---- TCG variations popup ----
+const tcgCache = new Map();
+let view = { cards: [], entry: null, key: "date", dir: -1 };
+
+// ponytail: rarity names are unbounded, first keyword match wins
+const TIERS = [[/secret|hyper|gold/i, 9], [/special illustration/i, 8], [/illustration/i, 7],
+               [/ultra|gx|vmax|vstar|\bex\b/i, 6], [/double/i, 5], [/holo/i, 4],
+               [/^rare/i, 3], [/uncommon/i, 2], [/common/i, 1]];
+const rarityRank = c => (TIERS.find(([re]) => re.test(c.rarity || "")) || [0, 0])[1];
+const SORTS = { date: c => c.date || "", price: c => c.price[0] ?? -1, rarity: c => rarityRank(c) };
+
+function livePrice(c) {  // only used by the API fallback below
+  const tp = c.tcgplayer?.prices || {};
+  for (const k in tp) {
+    const v = tp[k].market ?? tp[k].mid;
+    if (v) return [v, `$${v.toFixed(2)}`, k.replace(/([a-z])([A-Z])/g, "$1 $2")];
+  }
+  const cm = c.cardmarket?.prices || {};
+  const v = cm.trendPrice ?? cm.averageSellPrice;
+  return v ? [v, `€${v.toFixed(2)}`, "cardmarket trend"] : [null, "—", "no price"];
+}
+
+async function variations(species, filter) {
+  const local = cardsFor(filter);
+  if (local) return local;                       // data.js: instant, offline
+  if (!tcgCache.has(species)) {                  // fallback while data.js is missing
+    // quoted wildcards make the API 500, and it randomly 502s -> unquoted token + retries
+    const token = species.split(/[^A-Za-z0-9]+/).sort((a, b) => b.length - a.length)[0];
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent("name:*" + token + "*")}` +
+                `&pageSize=250&select=id,name,number,rarity,set,tcgplayer,cardmarket`;
+    let data, err;
+    for (let i = 0; i < 4 && !data; i++) {
+      if (i) await new Promise(r => setTimeout(r, 400 * i));
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(`API ${r.status}`);
+        data = ((await r.json()).data || []).map(c => ({
+          id: c.id, name: c.name, number: c.number, total: c.set.printedTotal,
+          set: c.set.name, series: c.set.series, date: c.set.releaseDate,
+          rarity: c.rarity || "", price: livePrice(c),
+        }));
+      } catch (e) { err = e }
+    }
+    if (!data) throw err;
+    tcgCache.set(species, data);
+  }
+  return filterForms(tcgCache.get(species), filter);
+}
+
+function renderStrip(keepScroll) {
+  const { cards, entry, key, dir } = view;
+  const fav = favs[entry.id];
+  const at = keepScroll ? (window.strip?.scrollLeft ?? 0) : 0;
+  const sorted = [...cards].sort((a, b) => {
+    const x = SORTS[key](a), y = SORTS[key](b);
+    return (x < y ? -1 : x > y ? 1 : a.name.localeCompare(b.name)) * dir;
+  });
+
+  document.querySelectorAll(".m-tools .pill").forEach(b => b.classList.toggle("on", b.dataset.s === key));
+  document.getElementById("m-sub").textContent =
+    `${cards.filter(c => have.has(c.id)).length}/${cards.length} cards owned · ` +
+    `sorted by ${key} ${dir < 0 ? "▼" : "▲"} (click the pill again to flip)`;
+
+  document.getElementById("m-content").innerHTML = sorted.length
+    ? `<div class="strip" id="strip">${sorted.map(c => `
+        <div class="tcg ${have.has(c.id) ? "have" : ""} ${fav?.id === c.id ? "fav" : ""}" data-cid="${c.id}">
+          <img loading="lazy" alt="${c.name}" src="${CARD_IMG(c.id)}">
+          <div class="n">${c.name}</div>
+          <div class="s">${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}</div>
+          <div class="s">${c.series} · ${(c.date || "").slice(0, 4)}</div>
+          <div class="p">${c.price[1]}<small>${c.price[2]}</small></div>
+          <button class="star" data-act="fav" title="favourite print">★</button>
+          <div class="own">${have.has(c.id) ? "✓ I own this" : "＋ tap to mark owned"}</div>
+        </div>`).join("")}</div>`
+    : `<p class="msg">No TCG cards found.</p>`;
+
+  if (at) strip.scrollLeft = at;
+  else document.querySelector(".tcg.fav")?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+
+async function openCard(p) {
+  const sp = p.sp || SPECIES(p.name);
+  view = { cards: [], entry: { id: cur + ":" + p.i, species: sp }, key: view.key, dir: view.dir };
+  document.getElementById("m-art").src = ART(p.id);
+  document.getElementById("m-name").textContent = p.name;
+  document.getElementById("m-sub").textContent = `Loading TCG variations of ${sp}…`;
+  document.getElementById("m-content").innerHTML = `<p class="msg">Fetching cards…</p>`;
+  modal.hidden = false;
+  try {
+    view.cards = await variations(sp, p);
+    seen[view.entry.id] = { total: view.cards.length, have: view.cards.filter(c => have.has(c.id)).length };
+    save();
+    renderStrip();
+    render();
+  } catch (e) {
+    document.getElementById("m-sub").textContent = "";
+    document.getElementById("m-content").innerHTML =
+      `<p class="msg">Could not load cards (${e.message}). Run fetch_data.py for offline data, or try again.</p>`;
+  }
+}
+
+document.querySelector("nav").addEventListener("click", e => {
+  const b = e.target.closest(".pill");
+  if (!b) return;
+  cur = b.dataset.c; location.hash = cur; render(); scrollTo({ top: 0, behavior: "smooth" });
+});
+
+list.addEventListener("click", e => {
+  const c = e.target.closest(".card");
+  if (!c) return;
+  if (e.target.closest('[data-act="cards"]')) {
+    openCard(COLLECTIONS[cur].items[+c.dataset.n]);
+  } else {                                   // the badge itself marks the proxy done
+    owned.has(c.dataset.id) ? owned.delete(c.dataset.id) : owned.add(c.dataset.id);
+    c.classList.toggle("done", owned.has(c.dataset.id));
+    save(); stats();
+  }
+});
+
+document.querySelector(".m-tools").addEventListener("click", e => {
+  const b = e.target.closest(".pill");
+  if (!b || !view.cards.length) return;
+  view.dir = b.dataset.s === view.key ? -view.dir : -1;   // a new key starts high-to-low
+  view.key = b.dataset.s;
+  renderStrip();
+});
+
+document.getElementById("m-content").addEventListener("click", e => {
+  const t = e.target.closest(".tcg");
+  if (!t) return;
+  const card = view.cards.find(c => c.id === t.dataset.cid);
+  if (!e.target.closest('[data-act="fav"]')) {          // tapping the tile tags it owned
+    have.has(card.id) ? have.delete(card.id) : have.add(card.id);
+    seen[view.entry.id].have = view.cards.filter(c => have.has(c.id)).length;
+  } else if (favs[view.entry.id]?.id === card.id) {
+    delete favs[view.entry.id];
+  } else {
+    favs[view.entry.id] = { id: card.id, img: CARD_IMG(card.id) };
+  }
+  save(); renderStrip(true); render();
+});
+
+function closeModal() { modal.hidden = true }
+modal.addEventListener("click", e => { if (e.target === modal) closeModal() });
+addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); login.hidden = true } });
+
+// ---- backup / restore what only you know: proxies done, cards owned, favourites ----
+backup.onclick = () => {
+  const blob = new Blob([JSON.stringify({ owned: [...owned], have: [...have], favs, seen }, null, 1)],
+                        { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "collection.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+// ---- proxy sheets -> print dialog (Save as PDF); 9 card-sized tiles per A4 page ----
+pdf.onclick = async () => {
+  const items = COLLECTIONS[cur].items;
+  if (!items.length) return;
+
+  const label = pdf.textContent;
+  sheets.innerHTML = items.map((p, n) => {
+    const form = (p.name.match(FORM) || [])[0];
+    return (n % 9 === 0 ? (n ? "</div>" : "") + '<div class="sheet">' : "") + `
+      <div class="pcard">
+        <span class="pidx">#${String(p.i).padStart(3, "0")}</span>
+        <img src="${ART(p.id)}" alt="" onerror="this.onerror=null;this.src='${ART(Number(p.dex))}'">
+        <div class="pdex">${p.dex}</div>
+        <div class="pname">${p.name}</div>
+        ${form ? `<div class="pform">${form}</div>` : ""}
+      </div>`;
+  }).join("") + "</div>";
+
+  let done = 0;
+  const imgs = [...sheets.querySelectorAll("img")];
+  await Promise.all(imgs.map(img =>
+    (img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r }))
+      .then(() => { pdf.textContent = `Loading ${++done}/${imgs.length}…` })));
+
+  pdf.textContent = label;
+  window.print();   // pick "Save as PDF" in the dialog — that preview is the PDF
+};
+
+restore.onclick = () => file.click();
+file.onchange = async () => { applyState(JSON.parse(await file.files[0].text())); push() };
+
+// ---- optional cloud sync: Google Apps Script + a Google Sheet, one passphrase ----
+const cfg = { url: store.get("syncUrl", ""), pass: store.get("syncPass", "") };
+let timer;
+
+function stateOut() { return { owned: [...owned], have: [...have], favs, seen } }
+
+function applyState(d) {
+  owned.clear(); (d.owned || []).forEach(x => owned.add(x));
+  have.clear(); (d.have || []).forEach(x => have.add(x));
+  Object.keys(favs).forEach(k => delete favs[k]); Object.assign(favs, d.favs || {});
+  Object.keys(seen).forEach(k => delete seen[k]); Object.assign(seen, d.seen || {});
+  save(false); render();
+}
+
+const status = (t, on) => { sync.textContent = t; sync.classList.toggle("on", !!on) };
+
+async function pull() {
+  if (!cfg.url) return status("☁ Sign in");
+  status("☁ Syncing…");
+  try {
+    const d = await (await fetch(`${cfg.url}?pass=${encodeURIComponent(cfg.pass)}`)).json();
+    if (!d.ok) throw new Error(d.error || "wrong passphrase");
+    // whichever side was written last wins — plain and predictable for one person, two devices
+    if (d.state && (d.updated || 0) > store.get("updated", 0)) {
+      applyState(d.state);
+      store.set("updated", d.updated);
+    } else if (store.get("updated", 0) > (d.updated || 0)) {
+      push(0);
+    }
+    status("☁ Synced", true);
+  } catch (e) { status("☁ " + e.message) }
+}
+
+function push(wait = 900) {
+  if (!cfg.url) return;
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    const updated = Date.now();
+    status("☁ Saving…");
+    try {
+      // text/plain keeps it a simple request: no CORS preflight, which Apps Script cannot answer
+      const d = await (await fetch(cfg.url, {
+        method: "POST", headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ pass: cfg.pass, updated, state: stateOut() }),
+      })).json();
+      if (!d.ok) throw new Error(d.error || "rejected");
+      store.set("updated", updated);
+      status("☁ Synced", true);
+    } catch (e) { status("☁ " + e.message) }
+  }, wait);
+}
+
+sync.onclick = () => {
+  document.getElementById("l-url").value = cfg.url;
+  document.getElementById("l-pass").value = cfg.pass;
+  document.getElementById("l-msg").textContent = "";
+  login.hidden = false;
+};
+login.addEventListener("click", e => { if (e.target === login) login.hidden = true });
+document.getElementById("l-save").onclick = async () => {
+  cfg.url = document.getElementById("l-url").value.trim().replace(/\/+$/, "");
+  cfg.pass = document.getElementById("l-pass").value;
+  store.set("syncUrl", cfg.url); store.set("syncPass", cfg.pass);
+  await pull();
+  document.getElementById("l-msg").textContent = sync.textContent.replace("☁ ", "");
+  if (sync.classList.contains("on")) login.hidden = true;
+};
+document.getElementById("l-out").onclick = () => {
+  cfg.url = cfg.pass = "";
+  store.set("syncUrl", ""); store.set("syncPass", "");
+  login.hidden = true; status("☁ Sign in");
+};
+
+render();
+pull();
+</script>
