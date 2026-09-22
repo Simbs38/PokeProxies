@@ -80,6 +80,12 @@
     padding: 22px; display: grid; gap: 10px;
     grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
   }
+  #list.cardsgrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px }
+  #list.cardsgrid .tcg { width: 100% }
+  .tcg .idx {
+    position: absolute; top: 6px; left: 8px; z-index: 1; font-size: 9px; color: var(--dim);
+    background: rgba(12,15,22,.7); padding: 1px 5px; border-radius: 5px;
+  }
   .card {
     position: relative; border: 1px solid var(--line); border-radius: 13px;
     background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
@@ -236,6 +242,7 @@
     .stat .t { font-size: 12px }
     .stat .v { font-size: 17px; margin: 1px 0 6px }
     #list { padding: 12px; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)) }
+    #list.cardsgrid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px }
     .card { padding: 6px 6px 8px }
     .m-body { padding: 12px 2px 18px }
     .strip { gap: 10px; padding: 6px 12px 12px }
@@ -284,7 +291,7 @@
     <button class="pill" data-c="gen1">Gen 1</button>
     <button class="pill" data-c="gen2">Gen 2</button>
     <button class="pill" data-c="gen3">Gen 3</button>
-    <button class="pill" data-c="anniv"><span class="wide">30 Years Anniversary</span><span class="narrow">30 Years</span></button>
+    <button class="pill" data-c="anniv"><span class="wide">30th Celebration</span><span class="narrow">30th</span></button>
     <button class="pill" data-c="all">All</button>
   </nav>
   <div class="toolbar">
@@ -324,11 +331,9 @@
   <div class="brand">Poké<em>dex</em> Proxies</div>
   <h2 style="margin:0 0 4px;font-size:19px">Sync my collection</h2>
   <p style="margin:0 0 16px;color:var(--dim);font-size:13px">
-    Paste your Apps Script URL, then sign in with the Google account on the script's allow list.
-    Both stay in this browser — see DEPLOY.md.
+    Sign in with the Google account on the allow list to sync your collection.
   </p>
-  <input id="l-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
-  <div id="l-gsi" style="margin-top:14px;display:flex;justify-content:center;min-height:44px"></div>
+  <div id="l-gsi" style="margin-top:0;display:flex;justify-content:center;min-height:44px"></div>
   <div style="display:flex;gap:8px;margin-top:14px">
     <button class="pill" id="l-out" style="flex:1">Sign out</button>
   </div>
@@ -338,12 +343,13 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202609121912"></script>
+<script src="data.js?v=202609230006"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
-const LABELS = { gen1: "Gen 1", gen2: "Gen 2", gen3: "Gen 3", anniv: "30 Years Anniversary" };
+const LABELS = { gen1: "Gen 1", gen2: "Gen 2", gen3: "Gen 3", anniv: "30th Celebration" };
 const COLLECTIONS = Object.fromEntries(Object.keys(LABELS).map(k =>
-  [k, DEX.collections[k] || { name: LABELS[k], items: [] }]));
+  [k, DEX.collections[k] || { name: LABELS[k], items: [], kind: "species" }]));
+const kindOf = k => COLLECTIONS[k].kind || "species";
 
 const ART = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 const CARD_IMG = id => `https://images.pokemontcg.io/${id.slice(0, id.lastIndexOf("-"))}/${id.slice(id.lastIndexOf("-") + 1)}.png`;
@@ -368,7 +374,9 @@ const save = (sync = true) => {
 const HASH = location.hash.slice(1);
 let cur = HASH === "all" || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
-const count = k => COLLECTIONS[k].items.filter(p => owned.has(k + ":" + p.i)).length;
+const count = k => kindOf(k) === "cards"
+  ? COLLECTIONS[k].items.filter(p => have.has(p.id)).length
+  : COLLECTIONS[k].items.filter(p => owned.has(k + ":" + p.i)).length;
 const cardsOf = sp => DEX.tcg[sp] || null;
 
 // TCG names its forms differently than the proxy list does: Mega -> "M X-EX" / "Mega X ex",
@@ -426,27 +434,42 @@ function render() {
 
   if (cur === "all") { list.innerHTML = ""; foot.textContent = ""; return }
 
+  const kind = kindOf(cur);
+  list.classList.toggle("cardsgrid", kind === "cards");
   const items = COLLECTIONS[cur].items;
-  list.innerHTML = items.length ? items.map((p, n) => {
-    const id = cur + ":" + p.i, form = (p.name.match(FORM) || [])[0];
-    const local = cardsFor(p), s = seen[id], fav = favs[id];
-    const badge = local ? `${local.filter(c => have.has(c.id)).length}/${local.length}`
-                        : s ? `${s.have}/${s.total}` : "?/?";
-    return `<article class="card ${owned.has(id) ? "done" : ""}" data-id="${id}" data-n="${n}">
-      <span class="idx">#${String(p.i).padStart(3, "0")}</span>
-      <span class="tick" title="mark proxy done">✓</span>
-      <img loading="lazy" alt="${p.name}" src="${ART(p.id)}"
-           onerror="this.onerror=null;this.src='${ART(Number(p.dex))}'">
-      <div class="dex">${p.dex}</div>
-      <div class="row">
-        <span class="cnt" title="TCG cards you own / total prints">${badge}</span>
-        <span class="name">${p.name}</span>
-        ${fav ? `<img class="mini" alt="favourite print" src="${fav.img}">` : ""}
-      </div>
-      <button class="pill sm cards" data-act="cards">View cards</button>
-      ${form ? `<span class="form">${form}</span>` : ""}
-    </article>`;
-  }).join("") : `<p class="empty">Nothing here yet — add pokedex${cur === "anniv" ? "Anniversary" : cur.replace("gen", "Gen")}.txt and re-run fetch_data.py.</p>`;
+
+  if (kind === "cards") {
+    list.innerHTML = items.length ? items.map(p => `
+      <article class="tcg ${have.has(p.id) ? "have" : ""}" data-cid="${p.id}">
+        <span class="idx">#${String(p.i + 1).padStart(3, "0")}</span>
+        <img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">
+        <div class="n">${p.name}</div>
+        <div class="s">${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}</div>
+        <div class="p">${p.price[1]}<small>${p.price[2]}</small></div>
+        <div class="own">${have.has(p.id) ? "✓ I own this" : "＋ tap to mark owned"}</div>
+      </article>`).join("") : `<p class="empty">No cards cached yet — run python3 fetch_data.py.</p>`;
+  } else {
+    list.innerHTML = items.length ? items.map((p, n) => {
+      const id = cur + ":" + p.i, form = (p.name.match(FORM) || [])[0];
+      const local = cardsFor(p), s = seen[id], fav = favs[id];
+      const badge = local ? `${local.filter(c => have.has(c.id)).length}/${local.length}`
+                          : s ? `${s.have}/${s.total}` : "?/?";
+      return `<article class="card ${owned.has(id) ? "done" : ""}" data-id="${id}" data-n="${n}">
+        <span class="idx">#${String(p.i).padStart(3, "0")}</span>
+        <span class="tick" title="mark proxy done">✓</span>
+        <img loading="lazy" alt="${p.name}" src="${ART(p.id)}"
+             onerror="this.onerror=null;this.src='${ART(Number(p.dex))}'">
+        <div class="dex">${p.dex}</div>
+        <div class="row">
+          <span class="cnt" title="TCG cards you own / total prints">${badge}</span>
+          <span class="name">${p.name}</span>
+          ${fav ? `<img class="mini" alt="favourite print" src="${fav.img}">` : ""}
+        </div>
+        <button class="pill sm cards" data-act="cards">View cards</button>
+        ${form ? `<span class="form">${form}</span>` : ""}
+      </article>`;
+    }).join("") : `<p class="empty">Nothing here yet — add pokedex${cur.replace("gen", "Gen")}.txt and re-run fetch_data.py.</p>`;
+  }
 
   const n = Object.values(DEX.tcg).reduce((s, v) => s + v.length, 0);
   foot.textContent = DEX.fetched
@@ -572,6 +595,14 @@ document.querySelector("nav").addEventListener("click", e => {
 });
 
 list.addEventListener("click", e => {
+  const g = e.target.closest(".tcg");
+  if (g) {                                   // master-set tab: tapping a card marks it owned
+    have.has(g.dataset.cid) ? have.delete(g.dataset.cid) : have.add(g.dataset.cid);
+    g.classList.toggle("have", have.has(g.dataset.cid));
+    g.querySelector(".own").textContent = have.has(g.dataset.cid) ? "✓ I own this" : "＋ tap to mark owned";
+    save(); stats();
+    return;
+  }
   const c = e.target.closest(".card");
   if (!c) return;
   if (e.target.closest('[data-act="cards"]')) {
@@ -624,11 +655,19 @@ backup.onclick = () => {
 pdf.onclick = async () => {
   const items = COLLECTIONS[cur]?.items || [];   // the All tab has no grid to print
   if (!items.length) return;
+  const kind = kindOf(cur);
 
   const label = pdf.textContent;
   sheets.innerHTML = items.map((p, n) => {
-    const form = (p.name.match(FORM) || [])[0];
-    return (n % 9 === 0 ? (n ? "</div>" : "") + '<div class="sheet">' : "") + `
+    const body = kind === "cards" ? `
+      <div class="pcard">
+        <span class="pidx">${p.number}</span>
+        <img src="${p.img || CARD_IMG(p.id)}" alt="">
+        <div class="pdex">${p.rarity || p.set}</div>
+        <div class="pname">${p.name}</div>
+      </div>` : (() => {
+      const form = (p.name.match(FORM) || [])[0];
+      return `
       <div class="pcard">
         <span class="pidx">#${String(p.i).padStart(3, "0")}</span>
         <img src="${ART(p.id)}" alt="" onerror="this.onerror=null;this.src='${ART(Number(p.dex))}'">
@@ -636,6 +675,8 @@ pdf.onclick = async () => {
         <div class="pname">${p.name}</div>
         ${form ? `<div class="pform">${form}</div>` : ""}
       </div>`;
+    })();
+    return (n % 9 === 0 ? (n ? "</div>" : "") + '<div class="sheet">' : "") + body;
   }).join("") + "</div>";
 
   let done = 0;
@@ -651,9 +692,10 @@ pdf.onclick = async () => {
 restore.onclick = () => file.click();
 file.onchange = async () => { applyState(JSON.parse(await file.files[0].text())); push() };
 
-// ---- optional cloud sync: Google Apps Script + a Google Sheet, one passphrase ----
+// ---- optional cloud sync: Google Apps Script + a Google Sheet, Google sign-in only ----
 const CLIENT_ID = "1081036062887-svjpkvhkiut32tou6cmfgiic1lr4gqea.apps.googleusercontent.com";
-const cfg = { url: store.get("syncUrl", ""), tok: store.get("syncTok", "") };
+const SYNC_URL = "https://script.google.com/macros/s/AKfycbyH20bEGoFssSjdgS1qSuOsrsp6Ohheqjv6w73-pfsfPOdTqiO1s_CPxcDNz7WIJm4Q/exec";
+const cfg = { url: SYNC_URL, tok: store.get("syncTok", "") };
 let timer;
 
 function stateOut() { return { owned: [...owned], have: [...have], favs, seen } }
@@ -719,10 +761,8 @@ function drawGsi() {
 }
 
 async function onGoogle(res) {
-  const typed = document.getElementById("l-url").value.trim().replace(/\/+$/, "");
-  if (typed) cfg.url = typed;
   cfg.tok = res.credential;
-  store.set("syncUrl", cfg.url); store.set("syncTok", cfg.tok);
+  store.set("syncTok", cfg.tok);
   await pull();
   document.getElementById("l-msg").textContent = sync.textContent.replace("☁ ", "");
   applyLock();
@@ -737,7 +777,6 @@ function applyLock() {
 }
 
 sync.onclick = () => {
-  document.getElementById("l-url").value = cfg.url;
   document.getElementById("l-msg").textContent = "";
   login.hidden = false;
   drawGsi();
