@@ -40,9 +40,27 @@
   nav { display: flex; gap: 8px; flex-wrap: wrap; order: 2 }
   .logo { order: 1 }
   .toolbar { order: 3; margin-left: auto; display: flex; gap: 8px }
-  .tools { display: flex; gap: 8px }
-  #burger { order: 0; display: none }
+  #burger { order: 0 }
   .narrow { display: none }
+  /* the ☰ menu: view settings on top, one-off tools below */
+  .tools {
+    position: absolute; top: 100%; left: 22px; z-index: 30;
+    display: none; flex-direction: column; align-items: stretch; gap: 6px;
+    width: 250px; padding: 10px; border-radius: 14px;
+    background: #11141d; border: 1px solid var(--line);
+    box-shadow: 0 20px 44px -20px #000;
+  }
+  body.menu .tools { display: flex }
+  .tools .pill { text-align: left }
+  .tools .lbl { font-size: 11px; color: var(--dim); letter-spacing: .06em; text-transform: uppercase; margin: 2px 4px -2px }
+  .tools hr { width: 100%; border: 0; border-top: 1px solid var(--line); margin: 4px 0 }
+  .seg { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--card) }
+  .seg button {
+    flex: 1; padding: 6px 0; border: 0; border-radius: 999px; background: none; cursor: pointer;
+    font: 600 12px Outfit, sans-serif; color: var(--dim); transition: .18s;
+  }
+  .seg button:hover { color: var(--fg) }
+  .seg button.on { color: #16181f; background: linear-gradient(180deg, #ffe066, var(--acc)) }
   .pill {
     font: 600 14px Outfit, sans-serif; color: var(--dim);
     padding: 9px 18px; border: 1px solid var(--line); border-radius: 999px;
@@ -77,10 +95,10 @@
   .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--acc)) }
 
   #list {
-    padding: 22px; display: grid; gap: 10px;
-    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    --cols: 3;   /* Card Row Size, set from the menu */
+    padding: 22px; display: grid; gap: clamp(3px, calc(36px / var(--cols)), 14px);
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
   }
-  #list.cardsgrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px }
   #list.cardsgrid .tcg { width: 100% }
   .tcg .idx {
     position: absolute; top: 6px; left: 8px; z-index: 1; font-size: 9px; color: var(--dim);
@@ -123,7 +141,48 @@
   .card.done { border-color: var(--acc); background: linear-gradient(180deg, #ffcb0522, rgba(255,255,255,.02)) }
   .card.done .tick { background: var(--acc); border-color: var(--acc); color: #16181f }
   .empty { padding: 60px 22px; color: var(--dim); grid-column: 1/-1; text-align: center }
+  .hero .filt { color: var(--acc) }
   footer { padding: 8px 22px 40px; color: var(--dim); font-size: 12px }
+
+  /* ---- tiles size with Card Row Size: text grows at about half the rate of the tile, so 2-up
+     stays proportionate and 10-up stays tidy; small tiles drop the fine print ---- */
+  #list .card, #list .tcg { container-type: inline-size; padding: clamp(3px, 6%, 14px) }
+  #list .card .idx   { font-size: clamp(7px, calc(4.5px + 4.7cqi), 14px) }
+  #list .card .tick  { width: clamp(15px, calc(9px + 8.4cqi), 30px); height: auto; aspect-ratio: 1; font-size: clamp(9px, calc(5px + 5.3cqi), 17px) }
+  #list .card .dex   { font-size: clamp(8px, calc(5px + 5.3cqi), 17px) }
+  #list .card .cnt   { font-size: clamp(7px, calc(4.5px + 4.7cqi), 14px) }
+  #list .card .name  { font-size: clamp(9px, calc(5.5px + 5.8cqi), 20px) }
+  #list .card .mini  { width: clamp(12px, calc(7.5px + 7.9cqi), 28px) }
+  #list .card .cards { font-size: clamp(8px, calc(5px + 5.3cqi), 16px); padding: .5em .6em; white-space: nowrap }
+  #list .card .form  { font-size: clamp(7px, calc(4px + 4.2cqi), 13px) }
+  #list .tcg .idx    { font-size: clamp(7px, calc(4.5px + 3.5cqi), 13px) }
+  #list .tcg .n      { font-size: clamp(9px, calc(6.5px + 5cqi), 20px) }
+  #list .tcg .s      { font-size: clamp(8px, calc(5.5px + 4.2cqi), 15px) }
+  #list .tcg .p      { font-size: clamp(11px, calc(8px + 6.2cqi), 26px) }
+  #list .tcg .p small { font-size: clamp(7px, calc(5px + 3.8cqi), 13px) }
+  #list .tcg .own    { font-size: clamp(9px, calc(6px + 4.6cqi), 17px); padding: .65em .5em }
+  @container (max-width: 72px) {
+    #list .card :is(.idx, .dex, .row, .form) { display: none }
+    #list .card .cards { margin-top: 3px; padding: .3em 0 }
+  }
+  @container (max-width: 44px) { #list .card :is(.tick, .cards) { display: none } }
+  @container (max-width: 100px) { #list .tcg :is(.s, .p, .own) { display: none } }
+  @container (max-width: 56px) { #list .tcg :is(.idx, .n) { display: none } }
+
+  /* ---- touch fast-scroll: a thumb on the right edge, shown while scrolling, drag to jump ---- */
+  #scrub {
+    position: fixed; top: 0; right: 4px; z-index: 6; width: 30px; height: 54px;
+    display: grid; place-items: center; touch-action: none; cursor: grab;
+    border-radius: 99px; background: rgba(17,20,29,.92); border: 1px solid #ffffff30;
+    box-shadow: 0 8px 22px -10px #000; opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  #scrub::before { content: ""; width: 6px; height: 18px; border: solid var(--dim); border-width: 0 2px }
+  #scrub.on { opacity: 1; pointer-events: auto }
+  #scrub span {
+    position: absolute; right: 40px; display: none; white-space: nowrap; padding: 6px 12px;
+    border-radius: 99px; font-weight: 700; font-size: 14px; color: #16181f; background: var(--acc);
+  }
+  #scrub.drag span { display: block }
 
   /* ---- variations modal ---- */
   #modal, #login {
@@ -205,7 +264,6 @@
     #banner { grid-template-columns: 1fr; padding: 14px 12px 4px }
     header { padding: 10px 12px; gap: 8px }
     .logo { font-size: 17px; margin-right: 0 }
-    #burger { display: inline-block }
     /* title row: ☰  Pokédex Proxies … ☁ */
     .toolbar { display: contents }
     #sync { order: 2; margin-left: auto; font-size: 0; padding: 6px 10px }
@@ -219,16 +277,7 @@
     nav .pill { flex: 0 0 auto }
     .wide { display: none }
     .narrow { display: inline }
-    /* tools collapse into a dropdown under the burger */
-    .tools {
-      order: 6; position: absolute; top: 100%; left: 12px; z-index: 30;
-      display: none; flex-direction: column; align-items: stretch; gap: 6px;
-      width: 220px; padding: 8px; border-radius: 14px;
-      background: #11141d; border: 1px solid var(--line);
-      box-shadow: 0 20px 44px -20px #000;
-    }
-    body.menu .tools { display: flex }
-    .tools .pill { text-align: left }
+    .tools { order: 6; left: 12px }
     nav { gap: 6px }
     .pill { padding: 7px 12px; font-size: 13px }
     .pill.sm { padding: 6px 11px; font-size: 12px; white-space: nowrap }
@@ -241,9 +290,7 @@
     .stat { padding: 10px 12px }
     .stat .t { font-size: 12px }
     .stat .v { font-size: 17px; margin: 1px 0 6px }
-    #list { padding: 12px; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)) }
-    #list.cardsgrid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px }
-    .card { padding: 6px 6px 8px }
+    #list { padding: 12px }
     .m-body { padding: 12px 2px 18px }
     .strip { gap: 10px; padding: 6px 12px 12px }
     .tcg { flex-basis: 150px }
@@ -297,6 +344,15 @@
   <div class="toolbar">
   <button class="pill sm" id="sync">☁ Sign in</button>
   <div class="tools">
+    <span class="lbl">Card Row Size</span>
+    <div class="seg" data-pref="cols" data-def="3">
+      <button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="10">10</button>
+    </div>
+    <span class="lbl">Show</span>
+    <div class="seg" data-pref="show" data-def="all">
+      <button data-v="all">All</button><button data-v="owned">Owned</button><button data-v="missing">Missing</button>
+    </div>
+    <hr>
     <button class="pill sm" id="pdf">🖨 Convert to PDF</button>
     <button class="pill sm" id="backup">⇩ Backup</button>
     <button class="pill sm" id="restore">⇧ Restore</button>
@@ -340,6 +396,7 @@
   <p id="l-msg" style="margin:12px 0 0;color:var(--dim);font-size:12px"></p>
 </div></div>
 
+<div id="scrub"><span></span></div>
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
@@ -370,6 +427,18 @@ const save = (sync = true) => {
   store.set("favs", favs); store.set("seen", seen);
   if (sync && typeof push === "function") push();
 };
+
+// view settings from the ☰ menu; per device on purpose (phone and laptop want different grids)
+const prefs = {};
+document.querySelectorAll(".seg").forEach(s => {
+  const v = store.get(s.dataset.pref);
+  prefs[s.dataset.pref] = [...s.children].some(b => b.dataset.v === v) ? v : s.dataset.def;
+});
+function applyPrefs() {
+  list.style.setProperty("--cols", prefs.cols);
+  document.querySelectorAll(".seg button").forEach(b =>
+    b.classList.toggle("on", prefs[b.parentElement.dataset.pref] === b.dataset.v));
+}
 
 const HASH = location.hash.slice(1);
 let cur = HASH === "all" || HASH in COLLECTIONS ? HASH : "gen1";
@@ -422,6 +491,8 @@ function stats() {
         <h1>${all ? "All collections" : COLLECTIONS[cur].name}</h1>
         <div class="big">${h} <span style="color:var(--dim)">/ ${t}</span></div>
         <div class="sub">${have.size} TCG cards owned · ${Object.keys(favs).length} favourites picked</div>
+        ${!all && prefs.show !== "all"
+          ? `<div class="sub filt">Showing ${prefs.show} only · ${prefs.show === "owned" ? h : t - h}</div>` : ""}
       </div>
     </div>
     ${all ? `<div class="stats">${keys.map(bar).join("")}</div>` : ""}`;
@@ -437,10 +508,12 @@ function render() {
   const kind = kindOf(cur);
   list.classList.toggle("cardsgrid", kind === "cards");
   const items = COLLECTIONS[cur].items;
+  const has = kind === "cards" ? p => have.has(p.id) : p => owned.has(cur + ":" + p.i);
+  const shown = p => prefs.show === "all" || has(p) === (prefs.show === "owned");
 
   if (kind === "cards") {
-    list.innerHTML = items.length ? items.map(p => `
-      <article class="tcg ${have.has(p.id) ? "have" : ""}" data-cid="${p.id}">
+    list.innerHTML = items.length ? items.map((p, n) => !shown(p) ? "" : `
+      <article class="tcg ${have.has(p.id) ? "have" : ""}" data-cid="${p.id}" data-n="${n}">
         <span class="idx">#${String(p.i + 1).padStart(3, "0")}</span>
         <img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">
         <div class="n">${p.name}</div>
@@ -450,6 +523,7 @@ function render() {
       </article>`).join("") : `<p class="empty">No cards cached yet — run python3 fetch_data.py.</p>`;
   } else {
     list.innerHTML = items.length ? items.map((p, n) => {
+      if (!shown(p)) return "";
       const id = cur + ":" + p.i, form = (p.name.match(FORM) || [])[0];
       const local = cardsFor(p), s = seen[id], fav = favs[id];
       const badge = local ? `${local.filter(c => have.has(c.id)).length}/${local.length}`
@@ -470,6 +544,8 @@ function render() {
       </article>`;
     }).join("") : `<p class="empty">Nothing here yet — add pokedex${cur.replace("gen", "Gen")}.txt and re-run fetch_data.py.</p>`;
   }
+  if (!list.innerHTML) list.innerHTML = `<p class="empty">${prefs.show === "owned"
+    ? "Nothing marked owned in this collection yet." : "Nothing missing — this collection is complete. 🎉"}</p>`;
 
   const n = Object.values(DEX.tcg).reduce((s, v) => s + v.length, 0);
   foot.textContent = DEX.fetched
@@ -578,6 +654,7 @@ async function openCard(p) {
   }
 }
 
+const head = document.querySelector("header");
 const burger = document.getElementById("burger");
 const closeMenu = () => { document.body.classList.remove("menu"); burger.setAttribute("aria-expanded", "false") };
 burger.onclick = e => {
@@ -585,7 +662,25 @@ burger.onclick = e => {
   const open = !document.body.classList.toggle("menu");
   burger.setAttribute("aria-expanded", String(!open));
 };
-document.querySelector(".tools").addEventListener("click", closeMenu);
+
+// the grid reflows under a setting change; keep the card at the top of the screen at the top
+function stayPut(change) {
+  const a = [...list.children].find(c => c.getBoundingClientRect().bottom > head.offsetHeight);
+  const n = +a?.dataset.n, y = Math.max(a?.getBoundingClientRect().top, head.offsetHeight);
+  change();
+  const b = [...list.children].find(c => +c.dataset.n >= n);
+  if (b && scrollY) scrollBy(0, b.getBoundingClientRect().top - y);
+}
+
+document.querySelector(".tools").addEventListener("click", e => {
+  if (e.target.closest(".pill")) return closeMenu();     // tools close it; settings keep it open to compare
+  const b = e.target.closest(".seg button"), k = b?.parentElement.dataset.pref;
+  if (!b || prefs[k] === b.dataset.v) return;
+  stayPut(() => {
+    prefs[k] = b.dataset.v; store.set(k, prefs[k]); applyPrefs();
+    if (k === "show") render();
+  });
+});
 addEventListener("click", e => { if (!e.target.closest("header")) closeMenu() });
 
 document.querySelector("nav").addEventListener("click", e => {
@@ -639,7 +734,68 @@ document.getElementById("m-content").addEventListener("click", e => {
 
 function closeModal() { modal.hidden = true }
 modal.addEventListener("click", e => { if (e.target === modal) closeModal() });
-addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); if (cfg.tok) login.hidden = true } });
+addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeMenu(); if (cfg.tok) login.hidden = true } });
+
+// ---- wheel: eased glide; a gentle nudge moves a little, a fast spin or flick covers ground ----
+// Touch screens keep their native momentum (and get the drag thumb below instead).
+if (matchMedia("(pointer: fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  let target = 0, y = 0, then = 0, last = 0, rate = 0, raf = 0;
+  const glide = now => {
+    if (Math.abs(scrollY - y) > 2) return raf = 0;          // scrollbar, keys or a jump took over
+    target = Math.min(Math.max(target, 0), document.documentElement.scrollHeight - innerHeight);
+    y += (target - y) * (1 - Math.exp(-Math.min(Math.max(now - then, 1), 50) / 90));  // ~90ms ease-out
+    then = now;
+    if (Math.abs(target - y) < .5) y = target;
+    scrollTo(0, y);
+    raf = y === target ? 0 : requestAnimationFrame(glide);
+  };
+  addEventListener("wheel", e => {
+    if (e.ctrlKey || e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;   // zoom, sideways
+    if (e.target.closest("#modal, #login, .tools") || !list.offsetHeight) return;
+    e.preventDefault();
+    const d = e.deltaY * [1, 40, innerHeight][e.deltaMode], now = performance.now();
+    // how hard the wheel is going: |delta| summed, fading over ~160ms. Up to ~200px of it is
+    // a careful scroll and moves 1:1; past that the step ramps up to 4x.
+    rate = rate * Math.exp(-(now - last) / 160) + Math.abs(d);
+    last = now;
+    if (!raf) { target = y = scrollY; then = now; raf = requestAnimationFrame(glide) }
+    target += d * (1 + Math.min(3, Math.max(0, rate - 200) / 250));
+  }, { passive: false });
+}
+
+// ---- touch: grab the thumb on the right edge to race through a long grid ----
+if (matchMedia("(pointer: coarse)").matches) {
+  const tip = scrub.firstElementChild;
+  let grab = null, fade;
+  const range = () => [head.offsetHeight + 8, innerHeight - head.offsetHeight - scrub.offsetHeight - 24];
+  const room = () => document.documentElement.scrollHeight - innerHeight;
+  const label = () => {
+    const c = document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest(".card, .tcg");
+    const t = s => c.querySelector(s)?.textContent || "";
+    if (c) tip.textContent = c.matches(".card") ? `#${t(".dex")} ${t(".name")}` : `${t(".idx")} ${t(".n")}`;
+  };
+  const hideSoon = () => { clearTimeout(fade); fade = setTimeout(() => grab ?? scrub.classList.remove("on"), 1400) };
+  addEventListener("scroll", () => {
+    if (!list.offsetHeight || room() < innerHeight * 2) return scrub.classList.remove("on");
+    const [top, h] = range();
+    scrub.style.transform = `translateY(${top + h * Math.min(1, scrollY / room())}px)`;
+    scrub.classList.add("on");
+    if (grab !== null) label();
+    hideSoon();
+  }, { passive: true });
+  scrub.addEventListener("pointerdown", e => {
+    grab = e.clientY - scrub.getBoundingClientRect().top;
+    scrub.setPointerCapture(e.pointerId); scrub.classList.add("drag"); label();
+  });
+  scrub.addEventListener("pointermove", e => {
+    if (grab === null) return;
+    const [top, h] = range();
+    scrollTo(0, Math.min(1, Math.max(0, (e.clientY - grab - top) / h)) * room());
+  });
+  const drop = () => { grab = null; scrub.classList.remove("drag"); hideSoon() };
+  scrub.addEventListener("pointerup", drop);
+  scrub.addEventListener("pointercancel", drop);
+}
 
 // ---- backup / restore what only you know: proxies done, cards owned, favourites ----
 backup.onclick = () => {
@@ -791,6 +947,7 @@ document.getElementById("l-out").onclick = () => {
 addEventListener("load", drawGsi);
 applyLock();
 
+applyPrefs();
 render();
 pull();
 </script>
