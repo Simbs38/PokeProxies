@@ -846,7 +846,7 @@ file.onchange = async () => { applyState(JSON.parse(await file.files[0].text()))
 
 // ---- optional cloud sync: Google Apps Script + a Google Sheet, Google sign-in only ----
 const CLIENT_ID = "1081036062887-svjpkvhkiut32tou6cmfgiic1lr4gqea.apps.googleusercontent.com";
-const SYNC_URL = "https://script.google.com/macros/s/AKfycbyH20bEGoFssSjdgS1qSuOsrsp6Ohheqjv6w73-pfsfPOdTqiO1s_CPxcDNz7WIJm4Q/exec";
+const SYNC_URL = "https://script.google.com/macros/s/AKfycbwDljV7K2TLKfZPGuR9ZR1_lSVVITSrqmt16cBvmjCSL5zpFT3siq4sEHT__yU_1IbE/exec";
 const cfg = { url: SYNC_URL, tok: store.get("syncTok", "") };
 let timer;
 
