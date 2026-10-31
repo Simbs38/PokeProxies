@@ -185,11 +185,11 @@
   #scrub.drag span { display: block }
 
   /* ---- variations modal ---- */
-  #modal, #login {
+  #modal, #login, #dlg {
     position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 2vh 6px;
     background: rgba(4,6,12,.74); backdrop-filter: blur(6px);
   }
-  #modal[hidden], #login[hidden] { display: none }
+  #modal[hidden], #login[hidden], #dlg[hidden] { display: none }
   .box {
     width: min(1180px, 96vw); max-height: 94vh; overflow: auto;
     border: 1px solid var(--line); border-radius: 22px; background: #11141d;
@@ -250,7 +250,8 @@
     border: 1px solid var(--line); border-radius: 12px;
   }
   /* ---- signed-out gate: the sync dialog becomes the whole page ---- */
-  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > footer { display: none }
+  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview,
+  body.locked > footer { display: none }
   body.locked #login { background: none; backdrop-filter: none }
   #login .brand { display: none; font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-bottom: 10px }
   #login .brand em { color: var(--acc); font-style: normal }
@@ -258,6 +259,124 @@
   body.locked #l-out { display: none }
   body.overview #list, body.overview footer { display: none }
   body:not(.overview) #banner { grid-template-columns: 1fr }
+
+  /* ---- deckbuilder: My Decks list, then an editor with the card picker beside the deck ---- */
+  body.decking :is(#banner, #list, footer), body:not(.decking) #deckview { display: none }
+  #deckview { --hh: 64px; padding: 22px }
+  #deckview .sub, #dlg .sub { font-size: 13px; color: var(--dim) }
+  .dk-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px }
+  .dk-head > div { margin-right: auto }
+  .dk-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em }
+  .dk-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) }
+  .deck {
+    display: flex; gap: 14px; padding: 12px; cursor: pointer; transition: .18s;
+    border: 1px solid var(--line); border-radius: var(--r); background: var(--card);
+  }
+  .deck:hover { border-color: #ffffff2b; transform: translateY(-2px) }
+  .deck .dimg { flex: 0 0 92px }
+  .deck .dimg img { width: 92px; aspect-ratio: 245/342; object-fit: cover; border-radius: 7px; display: block }
+  .deck .dbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+  .deck .dn { font-weight: 700; font-size: 17px; overflow-wrap: anywhere }
+  .deck .ds { font-size: 12px; color: var(--dim) }
+  .deck .ds b { color: var(--fg) }
+  .deck .dw { font-size: 12px; color: #fbbf24 }
+  .deck .dok { font-size: 12px; color: #4ade80 }
+  .deck .dnote {
+    font-size: 12px; color: var(--dim); white-space: pre-line; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .deck .da { margin-top: auto; padding-top: 6px; display: flex; gap: 6px; flex-wrap: wrap }
+
+  .ed { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start }
+  .ed-bar { grid-column: 1/-1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap }
+  .eb-name { font-weight: 700; font-size: 18px; overflow-wrap: anywhere }
+  .eb-tally { margin-left: auto; font-size: 13px; color: var(--dim) }
+  .eb-tally b { color: var(--fg) }
+  .eb-tally .ok { color: #4ade80 }
+  .eb-tally .warn { color: #fbbf24 }
+  .eb-pane { display: none }
+  .pk-tools { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px }
+  .pk-cat { max-width: 420px }
+  :is(#pk-q, .dk-name, .dk-notes, #imp-name, #imp-text, #exp-text) {
+    width: 100%; padding: 10px 13px; font: 400 14px Outfit, sans-serif; color: var(--fg);
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 12px;
+  }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap }
+  .chip {
+    display: inline-flex; gap: 5px; align-items: center; padding: 5px 10px; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--card);
+    font: 600 12px Outfit, sans-serif; color: var(--dim); transition: .15s;
+  }
+  .chip:hover { color: var(--fg) }
+  .chip i { width: 9px; height: 9px; border-radius: 50% }
+  .chip.on { color: #16181f; background: var(--acc); border-color: var(--acc) }
+  .pk-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)) }
+  .pk { position: relative; cursor: pointer; user-select: none; transition: transform .15s }
+  .pk:hover { transform: translateY(-3px) }
+  .pk img { width: 100%; aspect-ratio: 245/342; object-fit: cover; border-radius: 7px; display: block; background: #0006 }
+  .pk.in img { box-shadow: 0 0 0 2px var(--acc), 0 0 16px -4px var(--acc) }
+  .pk .qty {
+    position: absolute; top: 5px; left: 5px; padding: 1px 7px; border-radius: 99px;
+    font-weight: 800; font-size: 13px; color: #16181f; background: var(--acc);
+  }
+  .pk .qty:empty { display: none }
+  .pk .zm {
+    position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; cursor: pointer;
+    border-radius: 50%; border: 1px solid var(--line); background: rgba(12,15,22,.85); font-size: 13px;
+  }
+  .pk .pn { margin-top: 4px; font-size: 11px; font-weight: 600; line-height: 1.2; text-align: center }
+
+  .dk {
+    position: sticky; top: calc(var(--hh) + 14px); max-height: calc(100vh - var(--hh) - 28px); overflow: auto;
+    display: flex; flex-direction: column; gap: 10px; padding: 14px;
+    border: 1px solid var(--line); border-radius: var(--r); background: var(--card);
+  }
+  .dk-tot { font-size: 13px; color: var(--dim) }
+  .dk-tot b { font-size: 26px; color: var(--fg) }
+  .cnts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px }
+  .cn { padding: 8px 4px; border: 1px solid var(--line); border-radius: 12px; text-align: center }
+  .cn b { display: block; font-size: 20px }
+  .cn span { display: block; font-size: 11px }
+  .cn small { font-size: 10px; color: var(--dim) }
+  .cn.ok { border-color: #4ade8066; background: rgba(74,222,128,.08) }
+  .cn.ok b { color: #4ade80 }
+  .cn.warn { border-color: #fbbf2466; background: rgba(251,191,36,.08) }
+  .cn.warn b { color: #fbbf24 }
+  .iss { margin: 0; padding-left: 18px; font-size: 12px; color: #fbbf24 }
+  .dk h3 { margin: 6px 0 0; font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em }
+  .ln { display: flex; gap: 8px; align-items: center; font-size: 13px }
+  .ln .th { width: 28px; aspect-ratio: 245/342; object-fit: cover; border-radius: 3px }
+  .ln .lq { width: 18px; text-align: right }
+  .ln .lnm { flex: 1; min-width: 0; line-height: 1.2; cursor: pointer }
+  .ln .lnm small { display: block; font-size: 10px; color: var(--dim) }
+  .ln button {
+    flex: 0 0 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px;
+    border: 1px solid var(--line); background: var(--card); color: var(--fg);
+  }
+  .ln button:disabled { opacity: .3; cursor: default }
+  .ln .cov { color: var(--dim) }
+  .ln .cov.on { color: var(--acc); border-color: var(--acc) }
+  .ln.rot { opacity: .6 }
+  .ln.rot small { color: #f87171 }
+  .dk-notes { min-height: 70px; resize: vertical }
+
+  #dlg .box { width: min(760px, 96vw) }
+  .zm-body { display: flex; gap: 18px; flex-wrap: wrap; padding: 0 20px 20px }
+  .zm-img { width: min(340px, 100%); aspect-ratio: 245/342; object-fit: contain; border-radius: 14px; background: #0006 }
+  .zm-side { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 10px }
+  .zm-side .lbl { font-size: 11px; color: var(--dim); letter-spacing: .06em; text-transform: uppercase }
+  .zm-prints { display: flex; gap: 6px; flex-wrap: wrap }
+  .zm-q { display: flex; gap: 12px; align-items: center }
+  .zm-q b { min-width: 24px; font-size: 22px; text-align: center }
+  .pill:disabled { opacity: .35; cursor: default }
+  .imp { display: flex; flex-direction: column; gap: 10px; padding: 0 20px 20px }
+  #imp-text, #exp-text { min-height: 260px; resize: vertical; font-family: ui-monospace, Menlo, monospace; font-size: 13px }
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; z-index: 40; transform: translate(-50%, 16px);
+    padding: 10px 18px; border-radius: 99px; font-size: 14px; opacity: 0; pointer-events: none;
+    background: #11141d; border: 1px solid var(--line); box-shadow: 0 14px 30px -12px #000; transition: .2s;
+  }
+  #toast.on { opacity: 1; transform: translate(-50%, 0) }
 
   /* ---- phones: two columns, tighter chrome ---- */
   @media (max-width: 720px) {
@@ -295,6 +414,22 @@
     .strip { gap: 10px; padding: 6px 12px 12px }
     .tcg { flex-basis: 150px }
     .arrow { display: none }
+    /* deckbuilder: one pane at a time, switched from a sticky bar that keeps the counts in view */
+    #deckview { padding: 12px }
+    .ed { grid-template-columns: minmax(0, 1fr); gap: 12px }
+    .ed-bar {
+      position: sticky; top: var(--hh); z-index: 4; margin: -12px -12px 0; padding: 8px 12px;
+      background: rgba(10,12,20,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    }
+    .eb-name { font-size: 15px }
+    .eb-pane { display: flex; width: 100% }
+    .ed[data-pane="cards"] .dk, .ed[data-pane="deck"] .pick { display: none }
+    .dk { position: static; max-height: none }
+    .pk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+    .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none }
+    .chip { flex: 0 0 auto }
+    .deck .dimg { flex-basis: 70px }
+    .deck .dimg img { width: 70px }
   }
 
   /* ---- printable proxy sheets: same card format as the site, 63x88mm, 3x3 per A4 ---- */
@@ -338,6 +473,7 @@
     <button class="pill" data-c="gen1">Gen 1</button>
     <button class="pill" data-c="anniv"><span class="wide">30th Celebration</span><span class="narrow">30th</span></button>
     <button class="pill" data-c="all">All</button>
+    <button class="pill" data-c="decks">Decks</button>
   </nav>
   <div class="toolbar">
   <button class="pill sm" id="sync">☁ Sign in</button>
@@ -361,6 +497,10 @@
 
 <section id="banner"></section>
 <main id="list"></main>
+<section id="deckview"></section>
+
+<div id="dlg" hidden><div class="box" id="dlg-box"></div></div>
+<div id="toast"></div>
 
 <div id="modal" hidden><div class="box">
   <div class="m-head">
@@ -398,7 +538,8 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202610312212"></script>
+<script src="data.js?v=202610312332"></script>
+<script src="cards.js?v=202610312332"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
 const LABELS = { gen1: "Gen 1", anniv: "30th Celebration" };
@@ -419,9 +560,10 @@ const store = {
 const have  = new Set(store.get("have", []));    // real TCG cards owned, keyed card id
 const favs  = store.get("favs", {});             // "collection:index" -> {id, img}
 const seen  = store.get("seen", {});             // this device only: species -> {total, have}, badge fallback
+const decks = store.get("decks", []);            // [{name, notes, cover, cards: [{id, n, name, cat}]}]
 Object.keys(favs).forEach(k => k.split(":")[0] in COLLECTIONS || delete favs[k]);   // Gen 2/3 leftovers
 const save = (sync = true) => {
-  store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen);
+  store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen); store.set("decks", decks);
   if (sync && typeof push === "function") push();
 };
 
@@ -438,7 +580,7 @@ function applyPrefs() {
 }
 
 const HASH = location.hash.slice(1);
-let cur = HASH === "all" || HASH in COLLECTIONS ? HASH : "gen1";
+let cur = HASH === "all" || HASH === "decks" || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const count = k => kindOf(k) === "cards"
   ? COLLECTIONS[k].items.filter(p => have.has(p.id)).length
@@ -501,9 +643,11 @@ function stats() {
 }
 
 function render() {
-  stats();
   document.querySelectorAll("nav .pill").forEach(b => b.classList.toggle("on", b.dataset.c === cur));
   document.body.classList.toggle("overview", cur === "all");
+  document.body.classList.toggle("decking", cur === "decks");
+  if (cur === "decks") return renderDecks();
+  stats();
 
   if (cur === "all") { list.innerHTML = ""; foot.textContent = ""; return }
 
@@ -688,7 +832,7 @@ addEventListener("click", e => { if (!e.target.closest("header")) closeMenu() })
 document.querySelector("nav").addEventListener("click", e => {
   const b = e.target.closest(".pill");
   if (!b) return;
-  cur = b.dataset.c; location.hash = cur; render(); scrollTo({ top: 0, behavior: "smooth" });
+  cur = b.dataset.c; location.hash = cur; openDeck(null); render(); scrollTo({ top: 0, behavior: "smooth" });
 });
 
 list.addEventListener("click", e => {
@@ -730,7 +874,9 @@ document.getElementById("m-content").addEventListener("click", e => {
 
 function closeModal() { modal.hidden = true }
 modal.addEventListener("click", e => { if (e.target === modal) closeModal() });
-addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeMenu(); if (cfg.tok) login.hidden = true } });
+addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeModal(); closeMenu(); dlg.hidden = true; if (cfg.tok) login.hidden = true }
+});
 
 // ---- wheel: eased glide; a gentle nudge moves a little, a fast spin or flick covers ground ----
 // Touch screens keep their native momentum (and get the drag thumb below instead).
@@ -793,9 +939,451 @@ if (matchMedia("(pointer: coarse)").matches) {
   scrub.addEventListener("pointercancel", drop);
 }
 
-// ---- backup / restore what only you know: cards owned, favourites ----
+// ---- deckbuilder: decks of Standard-legal cards (cards.js), synced to the Sheet's Decks tab ----
+const CARDS = window.CARDS || { cards: [], sets: {}, legal: [] };
+const PRINT = new Map();                  // print id -> [card, print]; a print is [id, set code, number, img?]
+const BY_CODE = new Map();                // "PAF 7" -> print id, for pasted deck lists
+CARDS.cards.forEach((c, k) => {
+  c.k = k;
+  c.p.forEach(p => { PRINT.set(p[0], [c, p]); BY_CODE.set(`${p[1]} ${p[2]}`.toUpperCase(), p[0]) });
+});
+const CAT = { P: "Pokémon", T: "Trainer", E: "Energy" };
+const RANGE = { "Pokémon": [12, 18], "Trainer": [30, 38], "Energy": [8, 14] };   // a healthy spread; tune freely
+const DECK_MAX = 60, COPIES = 4;
+const TYPES = { Grass: "#5fbd58", Fire: "#f26a4b", Water: "#4b9ef2", Lightning: "#f5d33f", Psychic: "#a46bd8",
+                Fighting: "#c4733b", Darkness: "#4a5568", Metal: "#9aa7b4", Dragon: "#c7a23a", Colorless: "#d9d9d9" };
+const KINDS = { Item: "Item", Supporter: "Supporter", Stadium: "Stadium", Tool: "Pokémon Tool" };
+const imgOf = p => p[3] || CARD_IMG(p[0]);
+const bigImg = u => u.endsWith("/small") ? u.slice(0, -5) + "large" : u.replace(/\.png$/, "_hires.png");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+const cardOf = l => PRINT.get(l.id)?.[0];          // undefined once a card has rotated out of cards.js
+const sum = (ls, f = () => true) => ls.reduce((s, l) => s + (f(l) ? l.n : 0), 0);
+const uniqueName = base => { let n = base, i = 2; while (decks.some(d => d.name === n)) n = `${base} ${i++}`; return n };
+const coverOf = d => d.cards.find(l => l.id === d.cover)
+  || d.cards.filter(l => l.cat === "Pokémon").sort((a, b) => b.n - a.n)[0];   // default: the most-run Pokémon
+const thumb = l => { const p = PRINT.get(l.id)?.[1]; return p ? imgOf(p) : CARD_IMG(l.id) };
+
+let open = null, pane = "cards", zoomCard = null, zoomPrint = null;
+const pick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "" };
+const dlgBox = document.getElementById("dlg-box");
+const lineOf = c => open.cards.find(l => cardOf(l) === c);
+const inDeck = c => sum(open.cards, l => cardOf(l) === c);
+
+function say(msg) {
+  toast.textContent = msg; toast.classList.add("on");
+  clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove("on"), 2200);
+}
+
+// The official limits: 60 cards, 4 of any one name (basic Energy excepted), 1 ACE SPEC.
+function blocked(d, c) {
+  if (sum(d.cards) >= DECK_MAX) return `A deck holds ${DECK_MAX} cards`;
+  if (!(c.c === "E" && c.sub.includes("Basic")) && sum(d.cards, l => l.name === c.n) >= COPIES)
+    return `Max ${COPIES} copies of ${c.n}`;
+  if (c.sub.includes("ACE SPEC") && d.cards.some(l => cardOf(l)?.sub.includes("ACE SPEC")))
+    return "Only 1 ACE SPEC per deck";
+  return "";
+}
+
+function tally(d) {
+  const t = { "Pokémon": 0, "Trainer": 0, "Energy": 0, total: 0, basics: 0, aces: 0, rotated: 0 }, names = {};
+  for (const l of d.cards) {
+    const c = cardOf(l);
+    t[l.cat] += l.n; t.total += l.n;
+    if (!c) t.rotated += l.n;
+    else if (c.sub.includes("ACE SPEC")) t.aces += l.n;
+    if (c?.c === "P" && c.sub.includes("Basic")) t.basics += l.n;
+    if (!(c?.c === "E" && c.sub.includes("Basic"))) names[l.name] = (names[l.name] || 0) + l.n;
+  }
+  t.over = Object.keys(names).filter(n => names[n] > COPIES);
+  return t;
+}
+
+// Under 60 or no Basic only warns (a deck in progress); imported lists can break the rest too.
+const issues = t => [
+  t.total < DECK_MAX && `${DECK_MAX - t.total} more card${DECK_MAX - t.total > 1 ? "s" : ""} to reach ${DECK_MAX}`,
+  t.total > DECK_MAX && `${t.total - DECK_MAX} card${t.total - DECK_MAX > 1 ? "s" : ""} over ${DECK_MAX}`,
+  !t.basics && "No Basic Pokémon",
+  ...t.over.map(n => `More than ${COPIES} ${n}`),
+  t.aces > 1 && "More than 1 ACE SPEC",
+  t.rotated && `Not legal: ${t.rotated} rotated card${t.rotated > 1 ? "s" : ""}`,
+].filter(Boolean);
+
+function openDeck(d) { open = d; pane = "cards"; dlg.hidden = true }
+
+function renderDecks() {
+  deckview.style.setProperty("--hh", head.offsetHeight + "px");
+  if (!CARDS.cards.length) {
+    deckview.innerHTML = `<p class="empty">No cards.js yet — run python3 fetch_data.py.</p>`;
+  } else if (open) renderEditor();
+  else renderDeckList();
+}
+
+function renderDeckList() {
+  deckview.innerHTML = `
+    <div class="dk-head">
+      <div><h1>My Decks</h1>
+        <div class="sub">Standard-legal cards: regulation marks ${CARDS.legal.join(", ")} + basic Energy · cards.js ${CARDS.fetched || ""}</div></div>
+      <button class="pill on" data-dk="new">＋ New deck</button>
+      <button class="pill" data-dk="import">⇧ Import list</button>
+    </div>
+    <div class="dk-grid">${decks.length ? decks.map((d, i) => {
+      const t = tally(d), probs = issues(t), cov = coverOf(d);
+      return `<article class="deck" data-i="${i}">
+        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}</div>
+        <div class="dbody">
+          <div class="dn">${esc(d.name)}</div>
+          <div class="ds"><b>${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
+          ${probs.length ? `<div class="dw">⚠ ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more)` : ""}</div>`
+                         : `<div class="dok">✓ Ready to play</div>`}
+          ${d.notes ? `<div class="dnote">${esc(d.notes)}</div>` : ""}
+          <div class="da">
+            <button class="pill sm" data-dk="edit">Edit</button>
+            <button class="pill sm" data-dk="dup">Duplicate</button>
+            <button class="pill sm" data-dk="del">Delete</button>
+          </div>
+        </div>
+      </article>`;
+    }).join("") : `<p class="empty">No decks yet — start one, or paste a list from Limitless or TCG Live.</p>`}</div>`;
+}
+
+function renderEditor() {
+  deckview.innerHTML = `
+    <div class="ed" data-pane="${pane}">
+      <div class="ed-bar">
+        <button class="pill sm" data-dk="back">← My Decks</button>
+        <span class="eb-name"></span>
+        <span class="eb-tally"></span>
+        <div class="seg eb-pane"><button data-show="cards">Cards</button><button data-show="deck">Deck</button></div>
+      </div>
+      <section class="pick">
+        <div class="pk-tools">
+          <input id="pk-q" type="search" placeholder="Search cards…" autocomplete="off" value="${esc(pick.q)}">
+          <div class="seg pk-cat">${Object.entries({ all: "All", ...CAT }).map(([v, t]) =>
+            `<button data-cat="${v}" class="${pick.cat === v ? "on" : ""}">${t}</button>`).join("")}</div>
+          <div class="chips"></div>
+        </div>
+        <div class="pk-grid"></div>
+      </section>
+      <aside class="dk"></aside>
+    </div>`;
+  renderChips(); renderGrid(); renderPanel();
+}
+
+function renderChips() {
+  const chip = (g, v, label = v) =>
+    `<button class="chip ${pick[g].has(v) ? "on" : ""}" data-chip="${g}" data-v="${v}">${label}</button>`;
+  let h = "";
+  if (pick.cat === "all" || pick.cat === "P") h +=
+    Object.entries(TYPES).map(([t, col]) => chip("types", t, `<i style="background:${col}"></i>${t}`)).join("") +
+    ["Basic", "Stage 1", "Stage 2"].map(s => chip("stages", s)).join("") +
+    `<button class="chip ${pick.ex ? "on" : ""}" data-chip="ex">ex</button>`;
+  if (pick.cat === "T") h += Object.keys(KINDS).map(k => chip("kinds", k)).join("");
+  deckview.querySelector(".chips").innerHTML = h;
+}
+
+function matches(c) {
+  if (pick.cat !== "all" && c.c !== pick.cat) return false;
+  if (pick.q && !c.n.toLowerCase().includes(pick.q)) return false;
+  if ((pick.types.size || pick.stages.size || pick.ex) && c.c !== "P") return false;   // Pokémon-only filters
+  if (pick.types.size && !c.t.some(t => pick.types.has(t))) return false;
+  if (pick.stages.size && ![...pick.stages].some(s => c.sub.includes(s))) return false;
+  if (pick.ex && !c.sub.includes("ex")) return false;
+  if (pick.kinds.size && ![...pick.kinds].some(k => c.sub.includes(KINDS[k]))) return false;
+  return true;
+}
+
+function renderGrid() {
+  const shown = CARDS.cards.filter(matches);
+  deckview.querySelector(".pk-grid").innerHTML = shown.length ? shown.map(c => {
+    const q = inDeck(c), l = q && lineOf(c);
+    return `<div class="pk ${q ? "in" : ""}" data-k="${c.k}">
+      <img loading="lazy" alt="" src="${imgOf(l ? PRINT.get(l.id)[1] : c.p[0])}">
+      <span class="qty">${q ? "×" + q : ""}</span>
+      <button class="zm" data-act="zoom" title="Show card">🔍</button>
+      <div class="pn">${c.n}</div>
+    </div>`;
+  }).join("") : `<p class="empty">No legal cards match these filters.</p>`;
+}
+
+function renderPanel() {
+  const d = open, t = tally(d), probs = issues(t), cov = coverOf(d)?.id;
+  const ok = k => t[k] >= RANGE[k][0] && t[k] <= RANGE[k][1];
+  const order = l => cardOf(l)?.k ?? 1e9;
+  const line = l => {
+    const c = cardOf(l), p = PRINT.get(l.id)?.[1];
+    return `<div class="ln ${c ? "" : "rot"}" data-id="${esc(l.id)}">
+      <img class="th" loading="lazy" alt="" src="${thumb(l)}">
+      <b class="lq">${l.n}</b>
+      <span class="lnm" ${c ? 'data-ln="zoom"' : ""}>${esc(l.name)}<small>${p ? `${p[1]} ${p[2]}` : "rotated — not legal"}</small></span>
+      <button class="cov ${l.id === cov ? "on" : ""}" data-ln="cover" title="Deck cover">★</button>
+      <button data-ln="dec" title="Remove one">−</button>
+      <button data-ln="inc" title="Add one" ${c && !blocked(d, c) ? "" : "disabled"}>+</button>
+    </div>`;
+  };
+  deckview.querySelector(".dk").innerHTML = `
+    <input class="dk-name" value="${esc(d.name)}" aria-label="Deck name" maxlength="60">
+    <div class="dk-tot"><b>${t.total}</b> / ${DECK_MAX} cards</div>
+    <div class="cnts">${Object.keys(RANGE).map(k => `
+      <div class="cn ${ok(k) ? "ok" : "warn"}"><b>${t[k]}</b><span>${k}</span><small>aim ${RANGE[k].join("–")}</small></div>`).join("")}
+    </div>
+    ${probs.length ? `<ul class="iss">${probs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    ${Object.values(CAT).map(k => {
+      const ls = d.cards.filter(l => l.cat === k).sort((a, b) => order(a) - order(b));
+      return ls.length ? `<h3>${k} · ${t[k]}</h3>${ls.map(line).join("")}` : "";
+    }).join("") || `<p class="sub">Tap a card to add it; 🔍 shows it up close.</p>`}
+    <textarea class="dk-notes" placeholder="Notes — matchups, cards to try…">${esc(d.notes)}</textarea>
+    <div><button class="pill sm" data-dk="export">⧉ Copy list</button></div>`;
+  const bar = deckview.querySelector(".ed-bar");
+  bar.querySelector(".eb-name").textContent = d.name;
+  bar.querySelector(".eb-tally").innerHTML = `<b>${t.total}</b>/${DECK_MAX} · ` + Object.keys(RANGE)
+    .map(k => `<span class="${ok(k) ? "ok" : "warn"}">${t[k]} ${k[0]}</span>`).join(" · ");
+  bar.querySelectorAll("[data-show]").forEach(b => {
+    b.classList.toggle("on", b.dataset.show === pane);
+    if (b.dataset.show === "deck") b.textContent = `Deck (${t.total})`;
+  });
+}
+
+// after any change: autosave, then refresh only what shows it (the picker grid keeps its scroll)
+function deckChanged(c) {
+  save();
+  const tile = c && deckview.querySelector(`.pk[data-k="${c.k}"]`);
+  if (tile) {
+    const q = inDeck(c), l = lineOf(c);
+    tile.classList.toggle("in", q > 0);
+    tile.querySelector(".qty").textContent = q ? "×" + q : "";
+    tile.querySelector("img").src = imgOf(l ? PRINT.get(l.id)[1] : c.p[0]);
+  }
+  renderPanel();
+  if (!dlg.hidden && zoomCard) renderZoom();
+}
+
+function addCard(c, id = lineOf(c)?.id || c.p[0][0]) {
+  const why = blocked(open, c);
+  if (why) return say(why);
+  const l = open.cards.find(x => x.id === id);
+  l ? l.n++ : open.cards.push({ id, n: 1, name: c.n, cat: CAT[c.c] });
+  deckChanged(c);
+}
+
+function removeCard(id) {
+  const i = open.cards.findIndex(l => l.id === id);
+  if (i < 0) return;
+  const c = cardOf(open.cards[i]);
+  if (--open.cards[i].n <= 0) { if (open.cover === id) open.cover = null; open.cards.splice(i, 1) }
+  deckChanged(c);
+}
+
+// ---- 🔍 a card up close: big image, its prints, − / + ----
+function openZoom(c, id) {
+  zoomCard = c; zoomPrint = id || lineOf(c)?.id || c.p[0][0];
+  dlg.hidden = false; renderZoom();
+}
+
+function renderZoom() {
+  const c = zoomCard, p = PRINT.get(zoomPrint)[1], q = inDeck(c), why = blocked(open, c);
+  dlgBox.innerHTML = `
+    <div class="m-head">
+      <div><h2>${c.n}</h2><div class="sub">${[CAT[c.c], ...c.sub, c.hp && c.hp + " HP"].filter(Boolean).join(" · ")}</div></div>
+      <button class="x" data-z="close">✕</button>
+    </div>
+    <div class="zm-body">
+      <img class="zm-img" alt="${c.n}" src="${bigImg(imgOf(p))}" onerror="this.onerror=null;this.src='${imgOf(p)}'">
+      <div class="zm-side">
+        <div class="lbl">Print · ${esc(CARDS.sets[p[1]] || p[1])}</div>
+        <div class="zm-prints">${c.p.map(x => `<button class="chip ${x[0] === zoomPrint ? "on" : ""}"
+          data-z="print" data-id="${x[0]}">${x[1]} ${x[2]}</button>`).join("")}</div>
+        <div class="lbl">In this deck</div>
+        <div class="zm-q">
+          <button class="pill" data-z="dec" ${q ? "" : "disabled"}>−</button><b>${q}</b>
+          <button class="pill" data-z="inc" ${why ? "disabled" : ""}>+</button>
+        </div>
+        ${why ? `<div class="sub">${why}</div>` : ""}
+      </div>
+    </div>`;
+}
+
+// picking another print moves the deck's copies of this card onto that art
+function choosePrint(c, id) {
+  zoomPrint = id;
+  const ls = open.cards.filter(l => cardOf(l) === c);
+  if (!ls.length) return renderZoom();
+  const n = sum(ls), cover = ls.some(l => l.id === open.cover);
+  open.cards = open.cards.filter(l => !ls.includes(l));
+  open.cards.push({ id, n, name: c.n, cat: CAT[c.c] });
+  if (cover) open.cover = id;
+  deckChanged(c);
+}
+
+// ---- deck lists as Pokémon TCG Live / Limitless write them: "4 Charmander PAF 7" ----
+const SYM = { G: "grass", R: "fire", W: "water", L: "lightning", P: "psychic", F: "fighting", D: "darkness", M: "metal" };
+const norm = s => s.toLowerCase().replace(/\{(\w)\}/g, (_, k) => SYM[k.toUpperCase()] || k)
+  .replace(/[’`]/g, "'").replace(/^basic\s+/, "").replace(/\s+/g, " ").trim();
+let BY_NAME;
+
+function parseList(text) {
+  BY_NAME ||= new Map([...CARDS.cards].reverse().map(c => [norm(c.n), c]));
+  const cards = [], miss = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const m = raw.trim().match(/^(\d+)x?\s+(.+?)(?:\s+([A-Za-z0-9-]{2,7})\s+([A-Za-z]{0,4}\d+[a-z]?))?$/);
+    if (!m) continue;                                  // section headers, "Total Cards: 60", blanks
+    const [, n, name, code, num] = m;
+    // exact print by set code + number first, then by name (a reprint, or a code we don't know)
+    let id = code && (BY_CODE.get(`${code} ${num}`.toUpperCase()) || BY_CODE.get(`${code} ${num.replace(/^0+/, "")}`.toUpperCase()));
+    const c = id ? PRINT.get(id)[0] : BY_NAME.get(norm(name));
+    if (!c) { miss.push(raw.trim()); continue }
+    id ||= c.p[0][0];
+    const l = cards.find(x => x.id === id);
+    l ? l.n += +n : cards.push({ id, n: +n, name: c.n, cat: CAT[c.c] });
+  }
+  return { cards, miss };
+}
+
+function listText(d) {
+  const t = tally(d);
+  return Object.values(CAT).map(k => {
+    const ls = d.cards.filter(l => l.cat === k);
+    return ls.length ? `${k}: ${t[k]}\n` + ls.map(l => {
+      const p = PRINT.get(l.id)?.[1];
+      return `${l.n} ${l.name}${p ? ` ${p[1]} ${p[2]}` : ""}`;
+    }).join("\n") : "";
+  }).filter(Boolean).join("\n\n") + `\n\nTotal Cards: ${t.total}`;
+}
+
+async function exportDeck(d) {
+  const text = listText(d);
+  try { await navigator.clipboard.writeText(text); say("Deck list copied") }
+  catch {                                              // no clipboard access: show it to copy by hand
+    zoomCard = null; dlg.hidden = false;
+    dlgBox.innerHTML = `
+      <div class="m-head"><div><h2>${esc(d.name)}</h2><div class="sub">Copy this list.</div></div>
+        <button class="x" data-z="close">✕</button></div>
+      <div class="imp"><textarea id="exp-text" readonly>${esc(text)}</textarea></div>`;
+    dlgBox.querySelector("textarea").select();
+  }
+}
+
+function openImport() {
+  zoomCard = null; dlg.hidden = false;
+  dlgBox.innerHTML = `
+    <div class="m-head">
+      <div><h2>Import a deck list</h2>
+        <div class="sub">Paste a list from Pokémon TCG Live or Limitless — lines like “4 Charmander PAF 7”.</div></div>
+      <button class="x" data-z="close">✕</button>
+    </div>
+    <div class="imp">
+      <input id="imp-name" placeholder="Deck name" maxlength="60">
+      <textarea id="imp-text" placeholder="Pokémon: 12&#10;4 Dreepy TWM 128&#10;…"></textarea>
+      <button class="pill on" data-z="import">Import</button>
+      <div class="sub" id="imp-out"></div>
+    </div>`;
+  dlgBox.querySelector("#imp-text").focus();
+}
+
+function doImport() {
+  const { cards, miss } = parseList(dlgBox.querySelector("#imp-text").value);
+  if (!cards.length) {
+    dlgBox.querySelector("#imp-out").textContent = "No card lines recognised — they look like “4 Charmander PAF 7”.";
+    return;
+  }
+  const d = { name: uniqueName(dlgBox.querySelector("#imp-name").value.trim() || "Imported deck"), notes: "", cover: null, cards };
+  decks.push(d); save(); openDeck(d); renderDecks();
+  if (!miss.length) return say(`Imported ${sum(cards)} cards`);
+  dlg.hidden = false;
+  dlgBox.querySelector(".imp").innerHTML = `
+    <p>Imported ${sum(cards)} cards into “${esc(d.name)}”. ${miss.length} line${miss.length > 1 ? "s" : ""} didn't match
+      a legal card and ${miss.length > 1 ? "were" : "was"} skipped:</p>
+    <textarea id="exp-text" readonly>${esc(miss.join("\n"))}</textarea>
+    <button class="pill on" data-z="close">Open the deck</button>`;
+}
+
+deckview.addEventListener("click", e => {
+  const act = e.target.closest("[data-dk]")?.dataset.dk, tile = e.target.closest(".deck");
+  if (act === "new") {
+    const d = { name: uniqueName("New deck"), notes: "", cover: null, cards: [] };
+    decks.push(d); save(); openDeck(d); return renderDecks();
+  }
+  if (act === "import") return openImport();
+  if (act === "back") { openDeck(null); return renderDecks() }
+  if (act === "export") return exportDeck(open);
+  if (tile) {
+    const i = +tile.dataset.i, d = decks[i];
+    if (act === "dup") {
+      decks.splice(i + 1, 0, { ...structuredClone(d), name: uniqueName(`${d.name} copy`) });
+      save(); return renderDecks();
+    }
+    if (act === "del") {
+      if (confirm(`Delete the deck “${d.name}”? This can't be undone.`)) { decks.splice(i, 1); save(); renderDecks() }
+      return;
+    }
+    openDeck(d); renderDecks(); return scrollTo(0, 0);          // Edit, or anywhere on the tile
+  }
+  if (!open) return;
+
+  const show = e.target.closest("[data-show]")?.dataset.show;
+  if (show) { pane = show; deckview.querySelector(".ed").dataset.pane = pane; return renderPanel() }
+  const cat = e.target.closest("[data-cat]")?.dataset.cat;
+  if (cat) {
+    pick.cat = cat;
+    if (cat !== "all" && cat !== "P") { pick.types.clear(); pick.stages.clear(); pick.ex = false }
+    if (cat !== "T") pick.kinds.clear();
+    deckview.querySelectorAll("[data-cat]").forEach(b => b.classList.toggle("on", b.dataset.cat === cat));
+    renderChips(); return renderGrid();
+  }
+  const chip = e.target.closest("[data-chip]");
+  if (chip) {
+    const g = chip.dataset.chip, v = chip.dataset.v;
+    if (g === "ex") pick.ex = !pick.ex;
+    else pick[g].has(v) ? pick[g].delete(v) : pick[g].add(v);
+    chip.classList.toggle("on"); return renderGrid();
+  }
+  const pk = e.target.closest(".pk");
+  if (pk) {
+    const c = CARDS.cards[+pk.dataset.k];
+    return e.target.closest('[data-act="zoom"]') ? openZoom(c) : addCard(c);
+  }
+  const ln = e.target.closest("[data-ln]");
+  if (ln) {
+    const id = ln.closest(".ln").dataset.id, c = cardOf({ id });
+    if (ln.dataset.ln === "inc" && c) addCard(c, id);
+    if (ln.dataset.ln === "dec") removeCard(id);
+    if (ln.dataset.ln === "zoom" && c) openZoom(c, id);
+    if (ln.dataset.ln === "cover") { open.cover = open.cover === id ? null : id; save(); renderPanel() }
+  }
+});
+
+let typing;
+deckview.addEventListener("input", e => {
+  if (e.target.id === "pk-q") {
+    clearTimeout(typing);
+    typing = setTimeout(() => { pick.q = e.target.value.trim().toLowerCase(); renderGrid() }, 120);
+  }
+  if (e.target.matches(".dk-notes")) { open.notes = e.target.value; save() }
+});
+
+deckview.addEventListener("change", e => {
+  if (!e.target.matches(".dk-name")) return;
+  const v = e.target.value.trim();
+  if (!v || decks.some(d => d !== open && d.name === v)) {
+    e.target.value = open.name;
+    return say(v ? `You already have a deck called “${v}”` : "A deck needs a name");
+  }
+  open.name = v; save();
+  deckview.querySelector(".eb-name").textContent = v;
+});
+
+dlg.addEventListener("click", e => {
+  const z = e.target.closest("[data-z]");
+  if (e.target === dlg || z?.dataset.z === "close") return dlg.hidden = true;
+  if (z?.dataset.z === "import") return doImport();
+  if (!z || !zoomCard) return;
+  if (z.dataset.z === "print") choosePrint(zoomCard, z.dataset.id);
+  if (z.dataset.z === "inc") addCard(zoomCard, lineOf(zoomCard)?.id || zoomPrint);
+  if (z.dataset.z === "dec") removeCard(lineOf(zoomCard)?.id);
+});
+
+// ---- backup / restore what only you know: cards owned, favourites, decks ----
 backup.onclick = () => {
-  const blob = new Blob([JSON.stringify({ have: [...have], favs }, null, 1)],
+  const blob = new Blob([JSON.stringify({ have: [...have], favs, decks }, null, 1)],
                         { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -872,7 +1460,14 @@ function tabsOut() {
   const known = new Map(Object.values(DEX.tcg).flat().map(c => [c.id, c]));
   const rest = [...have].filter(id => !placed.has(id));
   gen1.push([UNSORTED, "", rest.map(id => label(known.get(id)) || id).join("\n"), ""]);
-  return { gen1, anniv };
+  // one row per card per deck; a deck's notes ride on its first row, an empty deck keeps a bare row
+  const deckRows = decks.flatMap(d => {
+    const rows = d.cards.map(l => [d.name, String(l.n), l.name, l.id, l.cat, l.id === d.cover ? "✓" : "", ""]);
+    if (!rows.length) rows.push([d.name, "", "", "", "", "", ""]);
+    rows[0][6] = d.notes || "";
+    return rows;
+  });
+  return { gen1, anniv, decks: deckRows };
 }
 
 function fromTabs(t) {
@@ -884,6 +1479,16 @@ function fromTabs(t) {
     if (p && id) d.favs["gen1:" + p.i] = { id, img: CARD_IMG(id) };
   }
   for (const [, own, id] of t.anniv || []) if (own) d.have.push(id);
+  const byDeck = new Map();
+  for (const [deck, qty, name, id, cat, cover, notes] of t.decks || []) {
+    if (!deck) continue;
+    if (!byDeck.has(deck)) byDeck.set(deck, { name: deck, notes: "", cover: null, cards: [] });
+    const dk = byDeck.get(deck);
+    if (notes) dk.notes = notes;
+    if (id) dk.cards.push({ id, n: +qty || 1, name, cat });
+    if (id && cover) dk.cover = id;
+  }
+  d.decks = [...byDeck.values()];
   return d;
 }
 
@@ -891,6 +1496,10 @@ function applyState(d) {
   have.clear(); (d.have || []).forEach(x => have.add(x));
   Object.keys(favs).forEach(k => delete favs[k]);
   Object.entries(d.favs || {}).forEach(([k, v]) => { if (k.split(":")[0] in COLLECTIONS) favs[k] = v });
+  if (d.decks) {                 // the old state JSON and older backups carry none: keep this device's
+    decks.splice(0, decks.length, ...d.decks);
+    open &&= decks.find(x => x.name === open.name) || null;
+  }
   save(false); render();
 }
 
@@ -906,7 +1515,8 @@ async function pull() {
       throw new Error(d.error || "rejected");
     }
     // an old script would store this site's save as an empty JSON blob -> never write to one
-    if (!("tabs" in d)) throw new Error("update the Apps Script first");
+    // ...and one without the Decks tab would hand back no decks, wiping this device's on apply
+    if (!("tabs" in d) || (d.tabs && !("decks" in d.tabs))) throw new Error("update the Apps Script first");
     cfg.ready = true;
     // whichever side was written last wins — plain and predictable for one person, two devices.
     // No tabs yet = first run on the new script: the old state JSON comes along once to fill them.

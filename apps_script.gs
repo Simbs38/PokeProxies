@@ -1,8 +1,9 @@
 /**
  * Pokédex Proxies — collection store on a Google Sheet.
  *
- * Two readable tabs hold the collection, one row per Pokémon form / per card: "Gen 1" and
- * "30th Celebration". Only the website writes them; every save rewrites both. The old "state"
+ * Readable tabs hold the collection, one row per Pokémon form / per card: "Gen 1" and
+ * "30th Celebration", plus "Decks", one row per card in each deck. Only the website writes
+ * them; every save rewrites all of them. The old "state"
  * tab (one JSON blob) is handed to the site once to fill them, then left alone as a rollback
  * point. See DEPLOY.md.
  */
@@ -19,6 +20,7 @@ const allowed_ = () => (PROPS.getProperty('ALLOWED') || '').split(/[\s,]+/).filt
 const TABS = {
   gen1:  { name: 'Gen 1',            head: ['Pokémon', 'Owned', 'Card IDs', 'Favourite'] },
   anniv: { name: '30th Celebration', head: ['Pokémon', 'Owned', 'Card ID', 'Number', 'Rarity', 'Section'] },
+  decks: { name: 'Decks',            head: ['Deck', 'Qty', 'Card', 'Card ID', 'Category', 'Cover', 'Notes'] },
 };
 const LEGACY = 'state';
 const CHUNK = 40000;               // a Sheets cell tops out at 50k chars, so the JSON is split

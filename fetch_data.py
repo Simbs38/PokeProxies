@@ -26,6 +26,11 @@ ANNIV_KEY = "anniv"
 ANNIV_LABEL = "30th Celebration"
 ANNIV_SETS = ["me55", "me55c"]
 
+# Deckbuilder -> cards.js: every card legal in Standard (these regulation marks) plus the basic
+# Energies, which carry no mark and are always legal. Rotation = edit LEGAL and re-run.
+LEGAL = ["H", "I", "J"]
+CARD_FIELDS = "id,name,supertype,subtypes,types,hp,number,set,images,nationalPokedexNumbers,attacks,abilities"
+
 FORM = re.compile(r"^(Mega|Gigantamax|Alolan|Galarian|Hisuian|Paldean)\s+")
 SUFFIX = [("Mega ", "-mega"), ("Gigantamax ", "-gmax"), ("Alolan ", "-alola"),
           ("Galarian ", "-galar"), ("Hisuian ", "-hisui"), ("Paldean ", "-paldea-combat-breed")]
@@ -158,6 +163,60 @@ def anniv_master_set():
     return {"name": ANNIV_LABEL, "kind": "cards", "items": items}
 
 
+def query_all(q, fields):
+    """Every card matching q, paging past the 250 cap; None once the API gives up."""
+    cards, page, total = [], 1, None
+    while total is None or len(cards) < total:
+        res = get(f"{TCG}?{urllib.parse.urlencode({'q': q, 'pageSize': 250, 'page': page, 'select': fields})}",
+                  fatal=False)
+        if res is None:
+            return None
+        total = res.get("totalCount", 0)
+        cards += res.get("data", [])
+        page += 1
+    return cards
+
+
+def legal_cards():
+    """One entry per distinct card, every legal print of it inside (newest first): the picker
+    shows one tile per card and the deck chooses the art. Pokémon count as the same card only
+    when name, HP, attacks and abilities all match; Trainers and Energy go by name."""
+    raw = []
+    for q in [f"regulationMark:{m}" for m in LEGAL] + ["supertype:Energy subtypes:Basic set.id:sve"]:
+        got = query_all(q, CARD_FIELDS)
+        if got is None:
+            return None
+        raw += got
+    # newest set first; among the basic Energies prefer the prints that carry a set code
+    raw.sort(key=lambda c: (c["set"].get("releaseDate", ""), bool(c["set"].get("ptcgoCode"))), reverse=True)
+
+    groups, sets = {}, {}
+    for c in raw:
+        kind, key = c["supertype"][0], c["name"]          # P / T / E
+        if kind == "P":
+            key += json.dumps([c.get("hp"), [(a["name"], a.get("damage")) for a in c.get("attacks") or []],
+                               [a["name"] for a in c.get("abilities") or []]])
+        s = c["set"]
+        code = s.get("ptcgoCode") or s["id"].upper()      # the code deck lists use: "4 Pikachu 30C 29"
+        sets[code] = s["name"]
+        img = (c.get("images") or {}).get("small", "")
+        prt = [c["id"], code, c["number"]]
+        if img != f"https://images.pokemontcg.io/{s['id']}/{c['number']}.png":
+            prt.append(img)                               # newer sets live on another image host
+        if key not in groups:
+            hp = c.get("hp") or ""
+            groups[key] = {k: v for k, v in {
+                "n": c["name"], "c": kind, "sub": c.get("subtypes") or [], "t": c.get("types") or [],
+                "hp": int(hp) if hp.isdigit() else None,
+                "dex": (c.get("nationalPokedexNumbers") or [None])[0], "p": []}.items() if v is not None}
+        groups[key]["p"].append(prt)
+
+    order = {"P": 0, "T": 1, "E": 2}
+    cards = sorted(groups.values(), key=lambda g: (
+        order[g["c"]], g.get("dex", 9999), g["c"] == "E" and "Basic" not in g["sub"], g["n"]))
+    return {"fetched": time.strftime("%Y-%m-%d %H:%M"), "legal": LEGAL, "sets": sets, "cards": cards}
+
+
 def previous():
     """Reuse the last data.js so a re-run only fetches what is missing."""
     path = os.path.join(HERE, "data.js")
@@ -239,13 +298,24 @@ def main():
     path = os.path.join(HERE, "data.js")
     with open(path, "w", encoding="utf-8") as f:
         f.write("window.DEX = " + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
-    # Browsers cache data.js hard, so a refresh would keep showing the old collections until a
-    # manual hard-reload. Stamp the tag with this run's timestamp instead.
+
+    print(f"· Deckbuilder: legal cards ({'/'.join(LEGAL)}) + basic Energy …")
+    legal = legal_cards()
+    if legal is None:
+        print("  ! pokemontcg.io gave up — kept the previous cards.js, just run the script again")
+    else:
+        with open(os.path.join(HERE, "cards.js"), "w", encoding="utf-8") as f:
+            f.write("window.CARDS = " + json.dumps(legal, ensure_ascii=False, separators=(",", ":")) + ";\n")
+        prints = sum(len(g["p"]) for g in legal["cards"])
+        print(f"  {len(legal['cards'])} cards ({prints} prints) -> cards.js")
+
+    # Browsers cache data.js / cards.js hard, so a refresh would keep showing the old data until a
+    # manual hard-reload. Stamp the tags with this run's timestamp instead.
     page = os.path.join(HERE, "index.html")
     if os.path.exists(page):
         html = open(page, encoding="utf-8").read()
-        stamped = re.sub(r'<script src="data\.js(?:\?v=[^"]*)?">',
-                         f'<script src="data.js?v={time.strftime("%Y%m%d%H%M")}">', html, count=1)
+        stamped = re.sub(r'<script src="(data|cards)\.js(?:\?v=[^"]*)?">',
+                         lambda m: f'<script src="{m.group(1)}.js?v={time.strftime("%Y%m%d%H%M")}">', html)
         if stamped != html:
             open(page, "w", encoding="utf-8").write(stamped)
             print("  cache-buster stamped into index.html")
