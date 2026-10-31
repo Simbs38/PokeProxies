@@ -16,7 +16,9 @@ in your Sheet and in each browser's localStorage.
 
 1. New Google Sheet → **Extensions → Apps Script**.
 2. Delete the sample code, paste all of `apps_script.gs`.
-3. Put your own Google address in `const ALLOWED = [...]`, save.
+3. **Project Settings (⚙) → Script Properties → Add script property**: `ALLOWED` = your Google
+   address, exactly as Google spells it (comma-separate several). It lives outside the code, so
+   re-pasting the script never wipes it and your address stays out of the public repo.
 4. **Deploy → New deployment → Web app**
    - *Execute as*: **Me**
    - *Who has access*: **Anyone** ← required; a browser `fetch` carries no Google session, so
@@ -25,6 +27,20 @@ in your Sheet and in each browser's localStorage.
 
 Re-deploy (**Deploy → Manage deployments → edit → Version: New version**) after any script edit —
 editing alone changes nothing that is served.
+
+**What lands in the Sheet.** The site writes two tabs on every save, one row per entry:
+
+| Tab | Columns |
+|---|---|
+| `Gen 1` | Pokémon · Owned · Card IDs (one per line) · Favourite — plus a last `Unsorted` row for owned cards that match no Pokémon |
+| `30th Celebration` | Pokémon · Owned · Card ID · Number · Rarity · Section |
+
+They are for reading: the next save from any device rewrites them, so hand edits do not stick.
+
+**Switching over from the old `state` tab** (one JSON blob): re-deploy the script *first*. Until
+the `Gen 1` tab exists it still serves a cached old site as before. The first load of the new site
+copies the old JSON into the two tabs; from then on `state` is never written again and stays as a
+rollback point, and an old cached copy of the site gets "site updated — reload the page".
 
 ---
 
@@ -40,7 +56,7 @@ editing alone changes nothing that is served.
 4. The **Client ID** goes in two places, and they must match or every call is rejected:
    `CLIENT_ID` in `index.html`, and `CLIENT_ID` in `apps_script.gs`.
 
-The client ID is not a secret — it ships in the page. The lock is `ALLOWED` in the Apps Script plus
+The client ID is not a secret — it ships in the page. The lock is the `ALLOWED` script property plus
 the origin list above.
 
 ---
@@ -123,12 +139,12 @@ directly.
 | Thing | Guard |
 |---|---|
 | Site (card list, prices, PDF) | Nothing — public, unless you add Cloudflare Access |
-| Your collection (owned / favourites / proxies) | `ALLOWED` in `apps_script.gs` — Google sign-in |
+| Your collection (cards owned / favourites) | `ALLOWED` script property — Google sign-in |
 | Sheet contents | Your Google account |
 
 The `/exec` URL on its own is useless now: every call must carry a Google ID token that the script
 re-checks with Google, minted for this exact `CLIENT_ID`, for an address in `ALLOWED`. Add or revoke
-someone by editing `ALLOWED` and re-deploying.
+someone by editing the `ALLOWED` script property — it applies on the next call, no re-deploy.
 
 Tokens last about an hour. The page keeps working offline from `localStorage` regardless — an
 expired token only stops syncing, and Google re-issues one silently on the next load. The

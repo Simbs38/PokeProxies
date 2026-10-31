@@ -336,8 +336,6 @@
   <div class="logo">Poké<em>dex</em> Proxies</div>
   <nav>
     <button class="pill" data-c="gen1">Gen 1</button>
-    <button class="pill" data-c="gen2">Gen 2</button>
-    <button class="pill" data-c="gen3">Gen 3</button>
     <button class="pill" data-c="anniv"><span class="wide">30th Celebration</span><span class="narrow">30th</span></button>
     <button class="pill" data-c="all">All</button>
   </nav>
@@ -400,10 +398,10 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202609230006"></script>
+<script src="data.js?v=202610312212"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
-const LABELS = { gen1: "Gen 1", gen2: "Gen 2", gen3: "Gen 3", anniv: "30th Celebration" };
+const LABELS = { gen1: "Gen 1", anniv: "30th Celebration" };
 const COLLECTIONS = Object.fromEntries(Object.keys(LABELS).map(k =>
   [k, DEX.collections[k] || { name: LABELS[k], items: [], kind: "species" }]));
 const kindOf = k => COLLECTIONS[k].kind || "species";
@@ -418,13 +416,12 @@ const store = {
   get: (k, d) => { try { return JSON.parse(localStorage.getItem("pkdx:" + k)) ?? d } catch { return d } },
   set: (k, v) => { try { localStorage.setItem("pkdx:" + k, JSON.stringify(v)) } catch {} },
 };
-const owned = new Set(store.get("owned", []));   // proxy done, keyed "collection:index"
 const have  = new Set(store.get("have", []));    // real TCG cards owned, keyed card id
 const favs  = store.get("favs", {});             // "collection:index" -> {id, img}
-const seen  = store.get("seen", {});             // species -> {total, have}, feeds the grid badge
+const seen  = store.get("seen", {});             // this device only: species -> {total, have}, badge fallback
+Object.keys(favs).forEach(k => k.split(":")[0] in COLLECTIONS || delete favs[k]);   // Gen 2/3 leftovers
 const save = (sync = true) => {
-  store.set("owned", [...owned]); store.set("have", [...have]);
-  store.set("favs", favs); store.set("seen", seen);
+  store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen);
   if (sync && typeof push === "function") push();
 };
 
@@ -445,8 +442,13 @@ let cur = HASH === "all" || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const count = k => kindOf(k) === "cards"
   ? COLLECTIONS[k].items.filter(p => have.has(p.id)).length
-  : COLLECTIONS[k].items.filter(p => owned.has(k + ":" + p.i)).length;
+  : COLLECTIONS[k].items.filter(p => hasCard(k, p)).length;
 const cardsOf = sp => DEX.tcg[sp] || null;
+// a Pokémon tile counts as owned once any of its real cards is
+const hasCard = (k, p) => {
+  const local = cardsFor(p);
+  return local ? local.some(c => have.has(c.id)) : (seen[k + ":" + p.i]?.have || 0) > 0;
+};
 
 // TCG names its forms differently than the proxy list does: Mega -> "M X-EX" / "Mega X ex",
 // Gigantamax -> "X VMAX", regionals keep their word.
@@ -508,7 +510,7 @@ function render() {
   const kind = kindOf(cur);
   list.classList.toggle("cardsgrid", kind === "cards");
   const items = COLLECTIONS[cur].items;
-  const has = kind === "cards" ? p => have.has(p.id) : p => owned.has(cur + ":" + p.i);
+  const has = kind === "cards" ? p => have.has(p.id) : p => hasCard(cur, p);
   const shown = p => prefs.show === "all" || has(p) === (prefs.show === "owned");
 
   if (kind === "cards") {
@@ -528,9 +530,9 @@ function render() {
       const local = cardsFor(p), s = seen[id], fav = favs[id];
       const badge = local ? `${local.filter(c => have.has(c.id)).length}/${local.length}`
                           : s ? `${s.have}/${s.total}` : "?/?";
-      return `<article class="card ${owned.has(id) ? "done" : ""}" data-id="${id}" data-n="${n}">
+      return `<article class="card ${has(p) ? "done" : ""}" data-id="${id}" data-n="${n}">
         <span class="idx">#${String(p.i).padStart(3, "0")}</span>
-        <span class="tick" title="mark proxy done">✓</span>
+        <span class="tick" title="you own a card of this">✓</span>
         <img loading="lazy" alt="${p.name}" src="${ART(p.id)}"
              onerror="this.onerror=null;this.src='${ART(Number(p.dex))}'">
         <div class="dex">${p.dex}</div>
@@ -698,15 +700,9 @@ list.addEventListener("click", e => {
     save(); stats();
     return;
   }
+  // a Pokémon tile opens its prints; it turns owned by itself once one of them is
   const c = e.target.closest(".card");
-  if (!c) return;
-  if (e.target.closest('[data-act="cards"]')) {
-    openCard(COLLECTIONS[cur].items[+c.dataset.n]);
-  } else {                                   // the badge itself marks the proxy done
-    owned.has(c.dataset.id) ? owned.delete(c.dataset.id) : owned.add(c.dataset.id);
-    c.classList.toggle("done", owned.has(c.dataset.id));
-    save(); stats();
-  }
+  if (c) openCard(COLLECTIONS[cur].items[+c.dataset.n]);
 });
 
 document.querySelector(".m-tools").addEventListener("click", e => {
@@ -797,9 +793,9 @@ if (matchMedia("(pointer: coarse)").matches) {
   scrub.addEventListener("pointercancel", drop);
 }
 
-// ---- backup / restore what only you know: proxies done, cards owned, favourites ----
+// ---- backup / restore what only you know: cards owned, favourites ----
 backup.onclick = () => {
-  const blob = new Blob([JSON.stringify({ owned: [...owned], have: [...have], favs, seen }, null, 1)],
+  const blob = new Blob([JSON.stringify({ have: [...have], favs }, null, 1)],
                         { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -854,13 +850,47 @@ const SYNC_URL = "https://script.google.com/macros/s/AKfycbyH20bEGoFssSjdgS1qSuO
 const cfg = { url: SYNC_URL, tok: store.get("syncTok", "") };
 let timer;
 
-function stateOut() { return { owned: [...owned], have: [...have], favs, seen } }
+// The Sheet holds one row per Gen 1 form and one per 30th card, so it reads like a checklist.
+// Rows are matched back by name / card id, not position, so a reordered data.js still lands right.
+const UNSORTED = "Unsorted";
+const label = c => c ? `${c.id} (${c.set} ${c.number}/${c.total ?? "?"})` : "";
+const idsIn = cell => String(cell || "").split("\n").map(l => l.split(" ")[0]).filter(Boolean);
+
+function tabsOut() {
+  const placed = new Set();
+  const gen1 = COLLECTIONS.gen1.items.map(p => {
+    const all = cardsFor(p) || [], mine = all.filter(c => have.has(c.id)), fav = favs["gen1:" + p.i];
+    mine.forEach(c => placed.add(c.id));
+    return [p.name, mine.length ? "✓" : "", mine.map(label).join("\n"),
+            fav ? label(all.find(c => c.id === fav.id)) || fav.id : ""];
+  });
+  const anniv = COLLECTIONS.anniv.items.map(c => {
+    if (have.has(c.id)) placed.add(c.id);
+    return [c.name, have.has(c.id) ? "✓" : "", c.id, `${c.number}/${c.total ?? "?"}`, c.rarity, c.section];
+  });
+  // owned cards no row claims (a filter change, a dropped species) park here instead of vanishing
+  const known = new Map(Object.values(DEX.tcg).flat().map(c => [c.id, c]));
+  const rest = [...have].filter(id => !placed.has(id));
+  gen1.push([UNSORTED, "", rest.map(id => label(known.get(id)) || id).join("\n"), ""]);
+  return { gen1, anniv };
+}
+
+function fromTabs(t) {
+  const byName = new Map(COLLECTIONS.gen1.items.map(p => [p.name, p]));
+  const d = { have: [], favs: {} };
+  for (const [name, , ids, fav] of t.gen1 || []) {
+    d.have.push(...idsIn(ids));
+    const p = byName.get(name), id = idsIn(fav)[0];
+    if (p && id) d.favs["gen1:" + p.i] = { id, img: CARD_IMG(id) };
+  }
+  for (const [, own, id] of t.anniv || []) if (own) d.have.push(id);
+  return d;
+}
 
 function applyState(d) {
-  owned.clear(); (d.owned || []).forEach(x => owned.add(x));
   have.clear(); (d.have || []).forEach(x => have.add(x));
-  Object.keys(favs).forEach(k => delete favs[k]); Object.assign(favs, d.favs || {});
-  Object.keys(seen).forEach(k => delete seen[k]); Object.assign(seen, d.seen || {});
+  Object.keys(favs).forEach(k => delete favs[k]);
+  Object.entries(d.favs || {}).forEach(([k, v]) => { if (k.split(":")[0] in COLLECTIONS) favs[k] = v });
   save(false); render();
 }
 
@@ -870,24 +900,28 @@ async function pull() {
   if (!cfg.url || !cfg.tok) return status("☁ Sign in");
   status("☁ Syncing…");
   try {
-    const d = await (await fetch(`${cfg.url}?idToken=${encodeURIComponent(cfg.tok)}`)).json();
+    const d = await (await fetch(`${cfg.url}?v=2&idToken=${encodeURIComponent(cfg.tok)}`)).json();
     if (!d.ok) {
       if (/sign in/i.test(d.error || "")) { cfg.tok = ""; store.set("syncTok", ""); applyLock() }
       throw new Error(d.error || "rejected");
     }
-    // whichever side was written last wins — plain and predictable for one person, two devices
-    if (d.state && (d.updated || 0) > store.get("updated", 0)) {
-      applyState(d.state);
+    // an old script would store this site's save as an empty JSON blob -> never write to one
+    if (!("tabs" in d)) throw new Error("update the Apps Script first");
+    cfg.ready = true;
+    // whichever side was written last wins — plain and predictable for one person, two devices.
+    // No tabs yet = first run on the new script: the old state JSON comes along once to fill them.
+    const remote = d.tabs ? fromTabs(d.tabs) : d.legacy;
+    if (remote && (d.updated || 0) > store.get("updated", 0)) {
+      applyState(remote);
       store.set("updated", d.updated);
-    } else if (store.get("updated", 0) > (d.updated || 0)) {
-      push(0);
     }
+    if (!d.tabs || store.get("updated", 0) > (d.updated || 0)) push(0);
     status("☁ Synced", true);
   } catch (e) { status("☁ " + e.message) }
 }
 
 function push(wait = 900) {
-  if (!cfg.url || !cfg.tok) return;
+  if (!cfg.url || !cfg.tok || !cfg.ready) return;
   clearTimeout(timer);
   timer = setTimeout(async () => {
     const updated = Date.now();
@@ -896,7 +930,7 @@ function push(wait = 900) {
       // text/plain keeps it a simple request: no CORS preflight, which Apps Script cannot answer
       const d = await (await fetch(cfg.url, {
         method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ idToken: cfg.tok, updated, state: stateOut() }),
+        body: JSON.stringify({ idToken: cfg.tok, v: 2, updated, tabs: tabsOut() }),
       })).json();
       if (!d.ok) throw new Error(d.error || "rejected");
       store.set("updated", updated);

@@ -16,8 +16,8 @@ TCG = "https://api.pokemontcg.io/v2/cards"
 FIELDS = "id,name,number,rarity,set,tcgplayer,cardmarket"
 
 # pokedex*.txt -> collection key used by index.html
-FILES = {"gen1": "pokedexGen1.txt", "gen2": "pokedexGen2.txt", "gen3": "pokedexGen3.txt"}
-LABELS = {"gen1": "Gen 1", "gen2": "Gen 2", "gen3": "Gen 3"}
+FILES = {"gen1": "pokedexGen1.txt"}
+LABELS = {"gen1": "Gen 1"}
 
 # "anniv" isn't a species list like the others -> it's the master checklist of one real-world
 # release: every card from the set itself plus its Classic Collection insert (same shape as the
@@ -233,6 +233,8 @@ def main():
         print(f"  [{n:3}/{len(todo)}] {sp:22} {len(cards):3} cards" +
               (f"  (of {total} name matches)" if total and total != len(cards) else ""))
 
+    # previous() carries over every species ever fetched -> keep only the ones still listed
+    tcg = {sp: tcg[sp] for sp in wanted if sp in tcg}
     out = {"fetched": time.strftime("%Y-%m-%d %H:%M"), "collections": collections, "tcg": tcg}
     path = os.path.join(HERE, "data.js")
     with open(path, "w", encoding="utf-8") as f:
