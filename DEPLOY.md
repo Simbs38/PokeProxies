@@ -103,7 +103,8 @@ git commit -am "update" && git push
 ```
 
 Every run also rebuilds `cards.js`, the deckbuilder's list of Standard-legal cards (with their
-text and Cardmarket prices), and `meta.js`: up to 100 archetypes from the 150 biggest Limitless
+text and Cardmarket prices; where pokemontcg.io has no € yet — the newest sets, the 30th
+Celebration — the Cardmarket trend comes from TCGdex instead), and `meta.js`: up to 100 archetypes from the 150 biggest Limitless
 online Standard events of the last 4 weeks, with card usage (all lists and top-placing ones) and
 real archetype-vs-archetype match results — what the deck scores, tips and matchups are measured
 against. It takes a few minutes (about 300 requests to Limitless). So a plain

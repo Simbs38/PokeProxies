@@ -9,11 +9,15 @@ fetch of local JSON, a <script src> does not).
 Run:  python3 fetch_data.py
 """
 import glob, json, os, re, sys, time, urllib.parse, urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 POKEAPI = "https://pokeapi.co/api/v2/pokemon?limit=1400"
 TCG = "https://api.pokemontcg.io/v2/cards"
 FIELDS = "id,name,number,rarity,set,tcgplayer,cardmarket"
+# pokemontcg.io lags weeks behind on prices for the newest sets; TCGdex carries Cardmarket's already
+TCGDEX = "https://api.tcgdex.net/v2/en"
+TCGDEX_SETS = {"30th Celebration: Classic Collection": "30th Classic Collection"}   # where the names differ
 
 # pokedex*.txt -> collection key used by index.html
 FILES = {"gen1": "pokedexGen1.txt"}
@@ -108,6 +112,55 @@ def price(card):
     return [round(v, 2), f"€{v:,.2f}", "cardmarket trend"] if v else [None, "—", "no price"]
 
 
+_tcgdex = {}
+
+
+def tcgdex(path):
+    """One TCGdex call, remembered: the 30th set is asked for by both the collection and the legal cards."""
+    if path not in _tcgdex:
+        _tcgdex[path] = get(f"{TCGDEX}{path}", tries=3, fatal=False)
+    return _tcgdex[path]
+
+
+def tcgdex_eur(want):
+    """Cardmarket trend € from TCGdex for cards pokemontcg.io has no € for.
+    want: {key: (set name, number, card name)} -> {key: €}, only the ones TCGdex prices."""
+    sid = {s["name"]: s["id"] for s in tcgdex("/sets") or []
+           if not re.match(r"^(?:[A-Z]\d|P-[A-Z])", s["id"])}   # skip TCG Pocket's sets
+    norm = lambda t: re.sub(r"[^a-z0-9]", "", t.lower())
+    nnum = lambda n: n.lstrip("0") or "0"
+    by_set, ids = {}, {}                                  # ids: our key -> TCGdex card id
+    for k, (st, number, name) in want.items():
+        by_set.setdefault(TCGDEX_SETS.get(st, st), []).append((k, number, name))
+    for st, mine in by_set.items():
+        theirs = list((sid.get(st) and tcgdex(f"/sets/{sid[st]}") or {}).get("cards") or [])
+        same = lambda m, c: nnum(c["localId"]) == nnum(m[1])
+        rules = [lambda m, c: same(m, c) and norm(c["name"]) == norm(m[2])]
+        if sum(any(rules[0](m, c) for c in theirs) for m in mine) * 2 < len(mine):
+            # renumbered reprints (the Classic Collection keeps its vintage numbers): go by name,
+            # twins in order, and "Palkia LV.X" is plain "Palkia" there
+            rules += [lambda m, c: norm(c["name"]) == norm(m[2]), lambda m, c: norm(m[2]).startswith(norm(c["name"]))]
+        else:
+            rules += [same]                               # same set, same number: only the name is spelt differently
+        mine.sort(key=lambda m: (len(m[1]), m[1]))
+        theirs.sort(key=lambda c: (len(c["localId"]), c["localId"]))
+        for rule in rules:
+            for m in [m for m in mine if m[0] not in ids]:
+                hit = next((c for c in theirs if rule(m, c)), None)
+                if hit:
+                    ids[m[0]] = hit["id"]
+                    theirs.remove(hit)
+
+    def one(item):
+        cm = ((tcgdex(f"/cards/{item[1]}") or {}).get("pricing") or {}).get("cardmarket") or {}
+        v = cm.get("trend") or cm.get("avg30") or cm.get("avg")
+        return item[0], round(v, 2) if v else None
+    with ThreadPoolExecutor(6) as pool:
+        found = {k: v for k, v in pool.map(one, ids.items()) if v}
+    print(f"  TCGdex: € for {len(found)} of {len(want)} cards pokemontcg.io had no € for")
+    return found
+
+
 ANNIV_FIELDS = FIELDS + ",images"
 
 
@@ -171,6 +224,10 @@ def anniv_master_set():
                 "price": price(c),
             })
             i += 1
+    eur = tcgdex_eur({it["id"]: (it["set"], it["number"], it["name"]) for it in items if it["price"][0] is None})
+    for it in items:
+        if it["id"] in eur:
+            it["price"] = [eur[it["id"]], f"€{eur[it['id']]:,.2f}", "cardmarket trend"]
     return {"name": ANNIV_LABEL, "kind": "cards", "items": items}
 
 
@@ -336,6 +393,12 @@ def legal_cards():
                 "p": []}.items() if v is not None}
         # a print: [id, set code, number, image or "", Cardmarket €, TCGplayer $]
         groups[key]["p"].append([c["id"], code, c["number"], img] + eur_usd(c))
+
+    eur = tcgdex_eur({p[0]: (sets[p[1]], p[2], g["n"]) for g in groups.values() for p in g["p"] if p[4] is None})
+    for g in groups.values():
+        for p in g["p"]:
+            if p[4] is None and p[0] in eur:
+                p[4] = eur[p[0]]
 
     order = {"P": 0, "T": 1, "E": 2}
     cards = sorted(groups.values(), key=lambda g: (

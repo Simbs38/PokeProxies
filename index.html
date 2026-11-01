@@ -250,7 +250,7 @@
     border: 1px solid var(--line); border-radius: 12px;
   }
   /* ---- signed-out gate: the sync dialog becomes the whole page ---- */
-  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview, body.locked > #dataview, body.locked > #binderview,
+  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview, body.locked > #dataview, body.locked > #binderview, body.locked > #priceview,
   body.locked > footer { display: none }
   body.locked #login { background: none; backdrop-filter: none }
   #login .brand { display: none; font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-bottom: 10px }
@@ -308,6 +308,36 @@
   .vq b { min-width: 18px; font-size: 14px; color: var(--fg) }
   .vq.tile { margin-top: 4px }
   .ln .own { color: var(--dim) }
+
+  /* ---- Prices: everything owned, card by card ---- */
+  body.pricepage :is(#banner, #list, footer), body:not(.pricepage) #priceview { display: none }
+  #priceview { padding: 22px }
+  #priceview .sub { font-size: 13px; color: var(--dim) }
+  .pv-sum { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); max-width: 860px; margin-bottom: 14px }
+  .pv-c { text-align: left; font: inherit; color: var(--fg); cursor: pointer }
+  .pv-c:hover { border-color: #ffffff30 }
+  .pv-c.on { border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc) }
+  .pv-c .big b { font-size: 22px }
+  #priceview .pk-tools { max-width: 860px }
+  .pv-sort { max-width: 420px }
+  .pv-shown { margin: 0 0 6px 8px }
+  .pv-list { max-width: 860px }
+  .pv-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 86px; gap: 12px; align-items: center;
+    padding: 7px 8px; border-bottom: 1px solid var(--line); cursor: pointer }
+  .pv-row:hover { background: rgba(255,255,255,.04) }
+  .pv-row img, .pv-noimg { display: block; width: 40px; aspect-ratio: 245/342; object-fit: cover; border-radius: 4px; background: #0004 }
+  .pv-n { display: flex; flex-direction: column; min-width: 0 }
+  .pv-n b, .pv-n span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .pv-n b { font-size: 14px }
+  .pv-n span { font-size: 12px; color: var(--dim) }
+  .pv-q { font-size: 13px; font-weight: 700; color: var(--dim) }
+  .pv-p { display: flex; flex-direction: column; text-align: right; font-size: 15px; font-weight: 800 }
+  .pv-p small { font-size: 11px; font-weight: 400; color: var(--dim) }
+  .pv-p.none { color: var(--dim); font-weight: 400 }
+  .pv-grp { display: flex; justify-content: space-between; gap: 10px; margin: 18px 0 2px; padding: 0 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim) }
+  .pv-zoom { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start }
+  .pv-zoom .big { font-size: 15px; line-height: 1.7 }
   .ln .own.ok { color: #4ade80 }
   .held { color: #fbbf24 }
   .ln.short > :is(.th, .lq, .lnm) { opacity: .5 }
@@ -357,7 +387,7 @@
   .eb-pane { display: none }
   .pk-tools { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px }
   .pk-cat { max-width: 420px }
-  :is(#pk-q, .dk-name, .dk-notes, #imp-name, #imp-text, #exp-text) {
+  :is(#pk-q, #pv-q, .dk-name, .dk-notes, #imp-name, #imp-text, #exp-text) {
     width: 100%; padding: 10px 13px; font: 400 14px Outfit, sans-serif; color: var(--fg);
     background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 12px;
   }
@@ -636,7 +666,11 @@
     .chip { flex: 0 0 auto }
     .deck .dimg { flex-basis: 70px }
     .deck .dimg img, .deck.tobuy .cart { width: 70px }
-    #binderview { padding: 12px }
+    #binderview, #priceview { padding: 12px }
+    .pv-sum { grid-template-columns: 1fr 1fr; gap: 8px }
+    .pv-c:first-child { grid-column: 1 / -1 }
+    .pv-row { grid-template-columns: 34px minmax(0, 1fr) auto 72px; gap: 8px; padding: 6px 4px }
+    .pv-row img, .pv-noimg { width: 34px }
     .bgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
     .vitems { grid-template-columns: repeat(3, minmax(0, 1fr)) }
   }
@@ -684,6 +718,7 @@
     <button class="pill" data-c="all">All</button>
     <button class="pill" data-c="decks">Decks</button>
     <button class="pill" data-c="mycards">My Cards</button>
+    <button class="pill" data-c="prices">Prices</button>
     <button class="pill" data-c="data">Data</button>
   </nav>
   <div class="toolbar">
@@ -711,6 +746,7 @@
 <section id="deckview"></section>
 <section id="dataview"></section>
 <section id="binderview"></section>
+<section id="priceview"></section>
 
 <div id="dlg" hidden><div class="box" id="dlg-box"></div></div>
 <div id="toast"></div>
@@ -751,9 +787,9 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202611010205"></script>
-<script src="cards.js?v=202611010205"></script>
-<script src="meta.js?v=202611010205"></script>
+<script src="data.js?v=202611012144"></script>
+<script src="cards.js?v=202611012144"></script>
+<script src="meta.js?v=202611012144"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
 const LABELS = { gen1: "Gen 1", anniv: "30th Celebration" };
@@ -797,7 +833,7 @@ function applyPrefs() {
 }
 
 const HASH = location.hash.slice(1);
-let cur = ["all", "decks", "data", "mycards"].includes(HASH) || HASH in COLLECTIONS ? HASH : "gen1";
+let cur = ["all", "decks", "data", "mycards", "prices"].includes(HASH) || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const count = k => kindOf(k) === "cards"
   ? COLLECTIONS[k].items.filter(p => have.has(p.id)).length
@@ -865,7 +901,9 @@ function render() {
   document.body.classList.toggle("decking", cur === "decks");
   document.body.classList.toggle("datapage", cur === "data");
   document.body.classList.toggle("binderpage", cur === "mycards");
+  document.body.classList.toggle("pricepage", cur === "prices");
   if (cur === "mycards") return renderBinder();
+  if (cur === "prices") return renderPrices();
   if (cur === "decks") return renderDecks();
   if (cur === "data") { renderData(); if (!runs) loadRuns(); return }
   stats();
@@ -2068,7 +2106,7 @@ function deckPrice(d) {
   }
   return { eur, usd, cheap, none };
 }
-const money = (v, sym = "€") => `${sym}${v.toFixed(2)}`;
+const money = (v, sym = "€") => sym + v.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const linePrice = l => { const p = PRINT.get(l.id)?.[1]; return !p ? "" : p[4] != null ? money(p[4] * l.n) : p[5] != null ? money(p[5] * l.n, "$") : "" };
 
 // ---- versions: one snapshot per editing session, plus 📌 with a label; the last 20 are kept ----
@@ -2917,6 +2955,113 @@ binderview.addEventListener("input", e => {
   btyping = setTimeout(() => { bpick.q = e.target.value.trim().toLowerCase(); renderBinderGrid() }, 150);
 });
 
+// ---- Prices: what everything you own is worth — My Cards, plus one of each 30th Celebration card marked owned ----
+const FROM = { mycards: "My Cards", anniv: "30th Celebration" };
+const SORTBY = { price: "Price ↓", cheap: "Price ↑", name: "Name", from: "Collection" };
+const vpick = { q: "", sort: "price", from: "all" };
+let PV = [];
+function valued() {
+  const rows = [];
+  for (const [id, n] of Object.entries(stock)) {
+    if (!n) continue;
+    const [c, p] = PRINT.get(id) || [];
+    rows.push({ from: "mycards", name: c ? c.n : id, where: p ? `${CARDS.sets[p[1]] || p[1]} ${p[2]}` : "rotated out",
+                img: p && imgOf(p), n, eur: p?.[4] ?? null, usd: p?.[5] ?? null });
+  }
+  for (const it of COLLECTIONS.anniv.items) {
+    if (!have.has(it.id)) continue;
+    // a Standard-legal print carries both currencies; the rest (Classic Collection) only their own price
+    const p = PRINT.get(it.id)?.[1], [v, label = ""] = it.price || [];
+    rows.push({ from: "anniv", name: it.name, where: [`#${it.number}`, it.section !== "All" && it.section, it.rarity].filter(Boolean).join(" · "),
+                img: it.img, n: 1, eur: p?.[4] ?? (label[0] === "€" ? v : null), usd: p?.[5] ?? (label[0] === "$" ? v : null) });
+  }
+  rows.forEach(r => { r.each = r.eur ?? r.usd; r.sym = r.eur != null ? "€" : "$" });
+  return rows;
+}
+const copies = rows => rows.reduce((s, r) => s + r.n, 0);
+const worth = rows => {
+  const t = sym => rows.reduce((s, r) => s + (r.each != null && r.sym === sym ? r.each * r.n : 0), 0), eur = t("€"), usd = t("$");
+  return [(eur || !usd) && money(eur), usd && money(usd, "$")].filter(Boolean).join(" + ");
+};
+const smallImg = u => u.replace(/\/large$/, "/small");
+function renderPrices() {
+  PV = valued();
+  const tile = (k, t, rs) => {
+    const none = rs.filter(r => r.each == null).length;
+    return `<button class="dcard pv-c ${vpick.from === k ? "on" : ""}" data-from="${k}"><h3>${t}</h3>
+      <div class="big"><b>${worth(rs)}</b></div>
+      <div class="sub">${copies(rs)} card${copies(rs) === 1 ? "" : "s"}${none ? ` · ${none} without a price` : ""}</div></button>`;
+  };
+  priceview.innerHTML = `
+    <div class="dk-head"><div><h1>Prices</h1>
+      <div class="sub">What your cards are worth: My Cards, plus one of each 30th Celebration card you've marked owned ·
+        Cardmarket trend (TCGplayer $ where Cardmarket has none) · prices from ${esc(CARDS.fetched || DEX.fetched || "—")}</div></div></div>
+    <div class="pv-sum">${tile("all", "Total", PV)}${Object.entries(FROM).map(([k, t]) => tile(k, t, PV.filter(r => r.from === k))).join("")}</div>
+    <div class="pk-tools">
+      <input id="pv-q" type="search" placeholder="Search by name or set…" autocomplete="off" value="${esc(vpick.q)}">
+      <div class="seg pv-sort">${Object.entries(SORTBY).map(([k, t]) =>
+        `<button data-sort="${k}" class="${vpick.sort === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    </div>
+    <div class="pv-list"></div>`;
+  renderPriceList();
+}
+function renderPriceList() {
+  const q = vpick.q, val = r => r.each ?? -1, order = Object.keys(FROM);
+  const rows = PV.filter(r => (vpick.from === "all" || r.from === vpick.from)
+    && (!q || `${r.name} ${r.where} ${FROM[r.from]}`.toLowerCase().includes(q)));
+  rows.sort({ price: (a, b) => val(b) - val(a),
+              cheap: (a, b) => (a.each ?? Infinity) - (b.each ?? Infinity),
+              name: (a, b) => a.name.localeCompare(b.name) || val(b) - val(a),
+              from: (a, b) => order.indexOf(a.from) - order.indexOf(b.from) || val(b) - val(a) }[vpick.sort]);
+  const row = r => `<div class="pv-row" data-i="${PV.indexOf(r)}">
+      ${r.img ? `<img loading="lazy" alt="" src="${smallImg(r.img)}">` : `<span class="pv-noimg"></span>`}
+      <div class="pv-n"><b>${esc(r.name)}</b><span>${esc(r.where)} · ${FROM[r.from]}</span></div>
+      <span class="pv-q">${r.n > 1 ? `×${r.n}` : ""}</span>
+      <span class="pv-p ${r.each == null ? "none" : ""}">${r.each != null ? money(r.each, r.sym) : "no price"}${r.n > 1 && r.each != null ? `<small>${money(r.each * r.n, r.sym)}</small>` : ""}</span>
+    </div>`;
+  let html = "", last;
+  for (const r of rows) {
+    if (vpick.sort === "from" && r.from !== last) {
+      const g = rows.filter(x => x.from === r.from);
+      html += `<div class="pv-grp"><span>${FROM[r.from]}</span><span>${copies(g)} cards · ${worth(g)}</span></div>`;
+      last = r.from;
+    }
+    html += row(r);
+  }
+  priceview.querySelector(".pv-list").innerHTML = !PV.length
+    ? `<p class="empty">Nothing to price yet — add cards in My Cards, or mark 30th Celebration cards owned.</p>`
+    : rows.length ? `<div class="sub pv-shown">${q || vpick.from !== "all" ? "Showing " : ""}${copies(rows)} card${copies(rows) === 1 ? "" : "s"} · ${worth(rows)}</div>${html}`
+    : `<p class="empty">No cards match “${esc(q)}”.</p>`;
+}
+priceview.addEventListener("click", e => {
+  const f = e.target.closest("[data-from]");
+  if (f) {
+    vpick.from = f.dataset.from;
+    priceview.querySelectorAll(".pv-c").forEach(b => b.classList.toggle("on", b === f));
+    return renderPriceList();
+  }
+  const s = e.target.closest("[data-sort]");
+  if (s) {
+    vpick.sort = s.dataset.sort;
+    s.parentElement.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === s));
+    return renderPriceList();
+  }
+  const r = PV[e.target.closest(".pv-row")?.dataset.i];
+  if (!r) return;
+  zoomCard = null; dlg.hidden = false;
+  dlgBox.innerHTML = `<div class="m-head"><div><h2>${esc(r.name)}</h2><div class="sub">${esc(r.where)} · ${FROM[r.from]}</div></div>
+      <button class="x" data-z="close">✕</button></div>
+    <div class="pv-zoom">${r.img ? `<img class="zm-img" alt="" src="${bigImg(r.img)}" onerror="this.onerror=null;this.src='${r.img}'">` : ""}
+      <div class="big">Cardmarket trend <b>${r.eur != null ? money(r.eur) : "—"}</b><br>TCGplayer market <b>${r.usd != null ? money(r.usd, "$") : "—"}</b>
+        ${r.n > 1 && r.each != null ? `<br>You own ${r.n} · <b>${money(r.each * r.n, r.sym)}</b>` : ""}</div></div>`;
+});
+let vtyping;
+priceview.addEventListener("input", e => {
+  if (e.target.id !== "pv-q") return;
+  clearTimeout(vtyping);
+  vtyping = setTimeout(() => { vpick.q = e.target.value.trim().toLowerCase(); renderPriceList() }, 150);
+});
+
 // ---- backup / restore what only you know: cards owned, favourites, decks ----
 backup.onclick = () => {
   const blob = new Blob([JSON.stringify({ have: [...have], favs, decks, stock }, null, 1)],
@@ -3181,7 +3326,7 @@ function renderData() {
       <div class="dcard"><h3>Cards &amp; sets</h3>
         <div class="big"><b>${CARDS.cards.length.toLocaleString()}</b> Standard-legal cards · ${prints.toLocaleString()} prints ·
           ${Object.keys(CARDS.sets).length} sets · regulation marks ${(CARDS.legal || []).join(", ")}</div>
-        <div class="sub">From pokemontcg.io, with Cardmarket and TCGplayer prices · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}
+        <div class="sub">From pokemontcg.io, with Cardmarket and TCGplayer prices (Cardmarket's via TCGdex for sets pokemontcg.io has no price for yet) · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}
         <div class="sets">${Object.values(CARDS.sets).sort().map(n => `<span>${esc(n)}</span>`).join("")}</div></div>
       <div class="dcard"><h3>Meta</h3>
         <div class="big"><b>${META.decks.length}</b> archetypes · ${(META.events || 0).toLocaleString()} events ·
