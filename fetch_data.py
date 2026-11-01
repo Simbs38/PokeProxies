@@ -417,9 +417,10 @@ def previous_js(name):
 
 
 def previous():
-    """Reuse the last data.js so a re-run only fetches what is missing."""
+    """The last data.js's cards: what a species keeps when pokemontcg.io fails on it this run, and
+    with --quick, what every species already fetched keeps (old prices included)."""
     path = os.path.join(HERE, "data.js")
-    if "--refresh" in sys.argv or not os.path.exists(path):
+    if not os.path.exists(path):
         return {}
     raw = open(path, encoding="utf-8").read().strip()
     try:
@@ -458,10 +459,11 @@ def main():
     collections[ANNIV_KEY] = anniv_master_set()
     print(f"  {ANNIV_LABEL:22} {len(collections[ANNIV_KEY]['items']):4} cards")
 
-    tcg = previous()
+    old = previous()
+    tcg = dict(old) if "--quick" in sys.argv else {}     # by default every species is re-fetched: fresh prices
     todo = [s for s in wanted if s not in tcg]
     print(f"· TCG cards: {len(wanted)} species, {len(todo)} to fetch"
-          f"{' (--refresh to redo all + prices)' if len(todo) < len(wanted) else ''} …")
+          f"{' (--quick: the rest keep their old prices)' if len(todo) < len(wanted) else ''} …")
     failed = []
     for n, sp in enumerate(todo, 1):
         token = sorted(re.split(r"[^A-Za-z0-9]+", sp), key=len, reverse=True)[0]
@@ -475,8 +477,10 @@ def main():
             total = res.get("totalCount", 0)
             cards += res.get("data", [])
             page += 1
-        if res is None and not cards:
+        if res is None and (sp in old or not cards):    # gave up: keep the last run's cards and prices
             failed.append(sp)
+            if sp in old:
+                tcg[sp] = old[sp]
             continue
         cards = [c for c in cards if belongs(c["name"], sp_tokens)]  # drop Mewtwo from Mew, etc.
         tcg[sp] = [{
@@ -493,6 +497,11 @@ def main():
 
     # previous() carries over every species ever fetched -> keep only the ones still listed
     tcg = {sp: tcg[sp] for sp in wanted if sp in tcg}
+    eur = tcgdex_eur({c["id"]: (c["set"], c["number"], c["name"]) for cs in tcg.values() for c in cs if c["price"][0] is None})
+    for cs in tcg.values():
+        for c in cs:
+            if c["id"] in eur:
+                c["price"] = [eur[c["id"]], f"€{eur[c['id']]:,.2f}", "cardmarket trend"]
     out = {"fetched": time.strftime("%Y-%m-%d %H:%M"), "collections": collections, "tcg": tcg}
     path = os.path.join(HERE, "data.js")
     with open(path, "w", encoding="utf-8") as f:
@@ -534,7 +543,7 @@ def main():
     total = sum(len(v) for v in tcg.values())
     print(f"\n✓ {total} cards for {len(tcg)} species -> data.js ({os.path.getsize(path)/1e6:.1f} MB)")
     if failed:
-        print(f"  ! {len(failed)} species failed ({', '.join(failed)}) — just run the script again")
+        print(f"  ! {len(failed)} species failed ({', '.join(failed)}) — they kept the last run's cards; run again to retry")
     print("  open index.html — it now runs fully offline. Re-run to add species or refresh prices.")
 
 

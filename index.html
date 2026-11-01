@@ -272,6 +272,7 @@
   .dcard .big b { font-size: 22px }
   .fresh { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 700; color: #16181f }
   .fresh.ok { background: #4ade80 } .fresh.mid { background: #fbbf24 } .fresh.old { background: #f87171 }
+  .fresh:is(.ok, .mid, .old) { color: #16181f }     /* over the page-wide .ok / .bad text colours */
   .sets { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px }
   .sets span { padding: 1px 8px; border-radius: 99px; font-size: 11px; background: rgba(255,255,255,.08); color: var(--dim) }
   .arch-t { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px }
@@ -337,6 +338,10 @@
   .pv-grp { display: flex; justify-content: space-between; gap: 10px; margin: 18px 0 2px; padding: 0 8px;
     font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim) }
   .pv-zoom { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start }
+  .pv-run { max-width: 860px; margin-bottom: 14px }
+  .pv-run:empty { display: none }
+  .pv-run .sub { margin: 0 0 6px }
+  .pv-new { display: flex; gap: 10px; align-items: center; margin: 0 0 8px; color: #4ade80; font-weight: 700 }
   .pv-zoom .big { font-size: 15px; line-height: 1.7 }
   .ln .own.ok { color: #4ade80 }
   .held { color: #fbbf24 }
@@ -787,9 +792,9 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202611012144"></script>
-<script src="cards.js?v=202611012144"></script>
-<script src="meta.js?v=202611012144"></script>
+<script src="data.js?v=202611012225"></script>
+<script src="cards.js?v=202611012225"></script>
+<script src="meta.js?v=202611012225"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
 const LABELS = { gen1: "Gen 1", anniv: "30th Celebration" };
@@ -903,7 +908,7 @@ function render() {
   document.body.classList.toggle("binderpage", cur === "mycards");
   document.body.classList.toggle("pricepage", cur === "prices");
   if (cur === "mycards") return renderBinder();
-  if (cur === "prices") return renderPrices();
+  if (cur === "prices") { renderPrices(); if (!runs) loadRuns(); return }
   if (cur === "decks") return renderDecks();
   if (cur === "data") { renderData(); if (!runs) loadRuns(); return }
   stats();
@@ -2995,7 +3000,9 @@ function renderPrices() {
   priceview.innerHTML = `
     <div class="dk-head"><div><h1>Prices</h1>
       <div class="sub">What your cards are worth: My Cards, plus one of each 30th Celebration card you've marked owned ·
-        Cardmarket trend (TCGplayer $ where Cardmarket has none) · prices from ${esc(CARDS.fetched || DEX.fetched || "—")}</div></div></div>
+        Cardmarket trend (TCGplayer $ where Cardmarket has none) · prices from ${esc(CARDS.fetched || "—")} ${freshness(CARDS.fetched)}</div></div>
+      <button class="pill on" data-pv="refresh" ${cfg.ready ? "" : "disabled title=\"Sign in first\""}>🔄 Refresh prices</button></div>
+    <div class="pv-run"></div>
     <div class="pv-sum">${tile("all", "Total", PV)}${Object.entries(FROM).map(([k, t]) => tile(k, t, PV.filter(r => r.from === k))).join("")}</div>
     <div class="pk-tools">
       <input id="pv-q" type="search" placeholder="Search by name or set…" autocomplete="off" value="${esc(vpick.q)}">
@@ -3003,7 +3010,13 @@ function renderPrices() {
         `<button data-sort="${k}" class="${vpick.sort === k ? "on" : ""}">${t}</button>`).join("")}</div>
     </div>
     <div class="pv-list"></div>`;
-  renderPriceList();
+  renderPriceList(); renderPriceRun();
+}
+// the latest refresh, and once its data is live, a Reload that brings it in
+function renderPriceRun() {
+  const box = priceview.querySelector(".pv-run");
+  if (box) box.innerHTML = (published ? `<p class="pv-new">✨ New prices are live. <button class="pill on sm" data-pv="reload">Reload</button></p>` : "")
+    + (refreshMsg ? `<p class="sub">${esc(refreshMsg)}</p>` : "") + (runs?.length ? runLine(runs[0]) : "");
 }
 function renderPriceList() {
   const q = vpick.q, val = r => r.each ?? -1, order = Object.keys(FROM);
@@ -3034,6 +3047,9 @@ function renderPriceList() {
     : `<p class="empty">No cards match “${esc(q)}”.</p>`;
 }
 priceview.addEventListener("click", e => {
+  const act = e.target.closest("[data-pv]")?.dataset.pv;
+  if (act === "refresh") return refreshData();
+  if (act === "reload") return location.reload();
   const f = e.target.closest("[data-from]");
   if (f) {
     vpick.from = f.dataset.from;
@@ -3281,53 +3297,74 @@ function push(wait = 900) {
 // A GitHub Action re-runs fetch_data.py and republishes the site; the Apps Script starts it, since it
 // holds the only token allowed to. The run list is public, read straight from GitHub.
 const RUNS = "https://api.github.com/repos/Simbs38/PokeProxies/actions/workflows/refresh-data.yml/runs?per_page=6";
-let runs = null, runsT, refreshMsg = "";
+let runs = null, runsT, refreshMsg = "", published = false;
+const showRuns = () => cur === "data" ? renderData() : cur === "prices" ? renderPriceRun() : null;
 async function loadRuns() {
   try { runs = (await (await fetch(RUNS)).json()).workflow_runs || [] } catch { runs = [] }
-  if (cur !== "data") return;
-  renderData();
+  const last = runs[0], ended = last?.status === "completed" ? Date.parse(last.updated_at) : 0;
+  if (ended && last.conclusion === "success" && !published) published = await isPublished();
+  if (cur !== "data" && cur !== "prices") return;
+  showRuns();
   clearTimeout(runsT);
-  if (runs.some(r => r.status !== "completed")) runsT = setTimeout(loadRuns, 20000);   // follow a run in progress
+  // follow a run in progress, then the Pages build after it (a few minutes) until the new data is live
+  if (runs.some(r => r.status !== "completed") || (!published && ended > Date.now() - 15 * 6e4)) runsT = setTimeout(loadRuns, 20000);
 }
+// the site republishes with new ?v= stamps on its data files: a different stamp live = newer data than this page
+async function isPublished() {
+  try {
+    const live = (await (await fetch(location.pathname + "?nc=" + Date.now(), { cache: "no-store" })).text()).match(/cards\.js\?v=\d+/);
+    return !!live && live[0] !== document.querySelector('script[src^="cards.js"]')?.getAttribute("src");
+  } catch { return false }
+}
+const freshness = s => {
+  if (!s) return `<span class="fresh old">never</span>`;
+  const days = (Date.now() - Date.parse(s.replace(" ", "T"))) / 864e5;
+  return `<span class="fresh ${days < 8 ? "ok" : days < 31 ? "mid" : "old"}" title="${esc(s)}">${days < 1 ? "today" : `${Math.round(days)} day${Math.round(days) === 1 ? "" : "s"} ago`}</span>`;
+};
+const runLine = r => {
+  const mins = r.updated_at && r.run_started_at ? Math.round((Date.parse(r.updated_at) - Date.parse(r.run_started_at)) / 60000) : 0;
+  const icon = r.status !== "completed" ? "⏳ running" : r.conclusion === "success" ? "✓ done" : `✕ ${r.conclusion}`;
+  return `<div class="run"><b class="${r.conclusion === "success" ? "ok" : r.status !== "completed" ? "" : "bad"}">${icon}</b>
+    <span>${new Date(r.created_at).toLocaleString()} · ${r.event === "schedule" ? "weekly" : "manual"}${mins ? ` · ${mins} min` : ""}</span>
+    <a href="${r.html_url}" target="_blank" rel="noopener">log ↗</a></div>`;
+};
 async function refreshData() {
-  refreshMsg = "Starting a refresh…"; renderData();
+  refreshMsg = "Starting a refresh…"; published = false; showRuns();
   try {
     // no sync version on purpose: an older script answers "reload" instead of reading it as a save
     const d = await (await fetch(cfg.url, { method: "POST", headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ idToken: cfg.tok, action: "refresh" }) })).json();
-    refreshMsg = d.ok ? "Started. Fetching takes about 5–10 minutes, then the site republishes itself — reload this page once the run below shows ✓."
+    refreshMsg = d.ok ? "Started: all prices, new cards and the meta. It takes about 10–15 minutes, then the site republishes itself and a Reload button shows up here."
       : /reload/.test(d.error || "") ? "Your Apps Script is the previous version — paste the new one and deploy it first."
       : "Couldn't start: " + d.error;
   } catch (e) { refreshMsg = "Couldn't start: " + e.message }
-  renderData(); setTimeout(loadRuns, 5000);
+  showRuns(); setTimeout(loadRuns, 5000);
 }
 function renderData() {
-  const age = s => {
-    if (!s) return `<span class="fresh old">never</span>`;
-    const days = (Date.now() - Date.parse(s.replace(" ", "T"))) / 864e5;
-    return `<span class="fresh ${days < 8 ? "ok" : days < 31 ? "mid" : "old"}" title="${esc(s)}">${days < 1 ? "today" : `${Math.round(days)} day${Math.round(days) === 1 ? "" : "s"} ago`}</span>`;
-  };
-  const prints = CARDS.cards.reduce((s, c) => s + c.p.length, 0);
-  const run = r => {
-    const mins = r.updated_at && r.run_started_at ? Math.round((Date.parse(r.updated_at) - Date.parse(r.run_started_at)) / 60000) : 0;
-    const icon = r.status !== "completed" ? "⏳ running" : r.conclusion === "success" ? "✓ done" : `✕ ${r.conclusion}`;
-    return `<div class="run"><b class="${r.conclusion === "success" ? "ok" : r.status !== "completed" ? "" : "bad"}">${icon}</b>
-      <span>${new Date(r.created_at).toLocaleString()} · ${r.event === "schedule" ? "weekly" : "manual"}${mins ? ` · ${mins} min` : ""}</span>
-      <a href="${r.html_url}" target="_blank" rel="noopener">log ↗</a></div>`;
-  };
+  const age = freshness, run = runLine, prints = CARDS.cards.reduce((s, c) => s + c.p.length, 0);
+  // how much of each list has a price: [priced, all]
+  const priced = (ls, has) => [ls.filter(has).length, ls.length];
+  const pp = [["Standard cards", priced(CARDS.cards.flatMap(c => c.p), p => p[4] != null || p[5] != null)],
+              ["30th Celebration", priced(COLLECTIONS.anniv.items, i => i.price?.[0] != null)],
+              ["Gen 1 cards", priced(Object.values(DEX.tcg).flat(), c => c.price?.[0] != null)]];
   dataview.innerHTML = `
     <div class="dk-head"><div><h1>Data</h1>
       <div class="sub">Where the cards, prices and meta come from, and how fresh they are. Refreshes run on GitHub
         and republish the site; they also run by themselves every Monday.</div></div>
       <button class="pill on" data-data="refresh" ${cfg.ready ? "" : "disabled title=\"Sign in first\""}>🔄 Refresh data now</button>
     </div>
+    ${published ? `<p class="pv-new refresh-msg">✨ New data is live. <button class="pill on sm" data-data="reload">Reload</button></p>` : ""}
     ${refreshMsg ? `<p class="sub refresh-msg">${esc(refreshMsg)}</p>` : ""}
     <div class="data-grid">
       <div class="dcard"><h3>Cards &amp; sets</h3>
         <div class="big"><b>${CARDS.cards.length.toLocaleString()}</b> Standard-legal cards · ${prints.toLocaleString()} prints ·
           ${Object.keys(CARDS.sets).length} sets · regulation marks ${(CARDS.legal || []).join(", ")}</div>
-        <div class="sub">From pokemontcg.io, with Cardmarket and TCGplayer prices (Cardmarket's via TCGdex for sets pokemontcg.io has no price for yet) · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}
+        <div class="sub">From pokemontcg.io · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}
         <div class="sets">${Object.values(CARDS.sets).sort().map(n => `<span>${esc(n)}</span>`).join("")}</div></div>
+      <div class="dcard"><h3>Prices</h3>
+        <div class="big">${pp.map(([t, [a, b]]) => `<b>${Math.round(100 * a / (b || 1))}%</b> of ${t} priced <span class="sub">(${a.toLocaleString()} of ${b.toLocaleString()})</span>`).join("<br>")}</div>
+        <div class="sub">Cardmarket trend € and TCGplayer market $ from pokemontcg.io; for sets it has no price for yet
+          (the newest ones, the 30th Celebration), Cardmarket's from TCGdex. Every refresh re-fetches them all · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}</div>
       <div class="dcard"><h3>Meta</h3>
         <div class="big"><b>${META.decks.length}</b> archetypes · ${(META.events || 0).toLocaleString()} events ·
           ${(META.players || 0).toLocaleString()} players · ${(META.mu || []).length.toLocaleString()} real matchups</div>
@@ -3342,7 +3379,11 @@ function renderData() {
         <p class="sub">Every Monday 06:00 UTC, or when you press Refresh. When a run finishes, reload to load the new data.</p></div>
     </div>`;
 }
-dataview.addEventListener("click", e => { if (e.target.closest('[data-data="refresh"]')) refreshData() });
+dataview.addEventListener("click", e => {
+  const act = e.target.closest("[data-data]")?.dataset.data;
+  if (act === "refresh") refreshData();
+  if (act === "reload") location.reload();
+});
 
 // Google Identity Services hands us an ID token; the Apps Script verifies it and checks the
 // email against its allow list. The token expires after ~1h, so auto_select re-issues one on load.

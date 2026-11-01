@@ -98,7 +98,7 @@ Pages needs a **public** repo on a free account. Nothing secret is in it — but
 Push updates later:
 
 ```bash
-python3 fetch_data.py --refresh      # optional, refreshes prices
+python3 fetch_data.py                # every run refreshes all prices (--quick: only new species)
 git commit -am "update" && git push
 ```
 
