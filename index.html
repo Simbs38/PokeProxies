@@ -394,7 +394,16 @@
     font-weight: 800; font-size: 15px; color: #16181f; background: var(--dim);
   }
   .tot b { font-size: 11px }
-  .deck .tot { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); white-space: nowrap }
+  /* the action row spans the whole tile; the total sits at its end, bigger than the buttons */
+  .deck { flex-wrap: wrap }
+  .deck .da { flex-basis: 100%; align-items: center; padding-top: 2px }
+  .deck .da .pill { padding: 6px 10px }
+  .deck .da .tot { margin-left: auto; padding: 4px 14px; font-size: 22px; align-items: center; gap: 5px; white-space: nowrap }
+  .deck .da .tot b { font-size: 14px }
+  .deck .da .n {
+    display: inline-block; min-width: 17px; margin-left: 3px; padding: 0 5px; border-radius: 99px;
+    font-size: 11px; color: #16181f; background: #c084fc;
+  }
   .t-S { background: linear-gradient(180deg, #ffe066, var(--acc)) } .t-A { background: #4ade80 }
   .t-B { background: #60a5fa } .t-C { background: #fbbf24 } .t-D { background: #f87171 }
   .tier.t-S, .tier.t-A, .tier.t-B, .tier.t-C, .tier.t-D, .tier.t-x { background: none }
@@ -1652,13 +1661,14 @@ function tipsOf(d, cards, p) {
   const fs = ENG.roles(cards, d.roles), candy = n(c => fx(c).candy), arch = archetype(cards);
   // a rule of thumb gives way when winning lists of this archetype do without
   const metaSkips = pred => arch && !arch.m.usage.some(([name, share]) => share >= 40 && NAMED.get(name) && pred(expandCard(NAMED.get(name))));
-  if (drawSup + engines < 7) tip(`${drawSup} draw Supporter${drawSup === 1 ? "" : "s"} — most decks run 6–9 (Lillie's Determination, Professor's Research…) or a draw engine.`, "C");
+  if (drawSup + engines < 7 && !metaSkips(c => c.sub.includes("Supporter") && (fx(c).draw || fx(c).drawTo))) tip(`${drawSup} draw Supporter${drawSup === 1 ? "" : "s"} — most decks run 6–9 (Lillie's Determination, Professor's Research…) or a draw engine.`, "C");
   if (pokeSearch < 5) tip(`${pokeSearch} Pokémon search card${pokeSearch === 1 ? "" : "s"} — 6–10 is typical (Buddy-Buddy Poffin, Nest Ball, Ultra Ball…).`, "G");
   if (p && p.mull > 0.25) tip(`${perc(p.mull)} mulligan chance with ${basics} Basic Pokémon — 12 or more keep it under 20%.`, "C");
   if (fs.some(f => f.top === 2 && f.role !== "S") && candy < 3 && !metaSkips(c => fx(c).candy)) tip(`${candy} Rare Candy for a Stage 2 line — 3–4 usually set it up a turn sooner.`, "G");
   for (const f of fs.filter(f => f.role !== "S")) {
     const b = cards.filter(c => c.root === f.root && ENG.stage(c) === 0).reduce((s, c) => s + c.count, 0);
-    if (b < 3) tip(`Only ${b} ${f.root} — 3–4 copies of a key Basic survive Prizes and early KOs.`, "C");
+    const usual = arch?.m.usage.find(u => u[0] === f.root)?.[2];        // what winning lists run of it
+    if (b < 3 && !(usual && usual <= b + 0.5)) tip(`Only ${b} ${f.root} — 3–4 copies of a key Basic survive Prizes and early KOs.`, "C");
   }
   const atkF = fs.filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0];
   if (atkF) {
@@ -1774,10 +1784,10 @@ function renderDeckList() {
         `<button class="chip ${deckTag === t ? "on" : ""}" data-tag="${esc(t)}">${t ? esc(t) : "All"}</button>`).join("") : ""}
     </div>` : ""}
     <div class="dk-grid">${shown.length ? shown.map(({ d, i, s, t }) => {
-      const probs = issues(t), cov = coverOf(d), arch = archetype(expand(d.cards));
+      const probs = issues(t), cov = coverOf(d), cards = expand(d.cards), arch = archetype(cards);
+      const tips = d.cards.length ? tipsOf(d, cards, deckProfile(d)).length : 0;
       return `<article class="deck" data-i="${i}">
-        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}
-          <div class="tot t-${s ? s.tier : "x"}">${s ? `${s.total}<b>${s.tier}</b>` : "…"}</div></div>
+        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}</div>
         <div class="dbody">
           <div class="dn">${esc(d.name)}</div>
           <div class="ds"><b>${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
@@ -1787,11 +1797,13 @@ function renderDeckList() {
           <div class="fbs">${bars(s)}</div>
           ${d.tags.length ? `<div class="dtags">${d.tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
           ${d.notes ? `<div class="dnote">${esc(d.notes)}</div>` : ""}
-          <div class="da">
-            <button class="pill sm" data-dk="edit">Edit</button>
-            <button class="pill sm" data-dk="dup">Duplicate</button>
-            <button class="pill sm" data-dk="del">Delete</button>
-          </div>
+        </div>
+        <div class="da">
+          <button class="pill sm" data-dk="edit">Edit</button>
+          <button class="pill sm" data-dk="ins" title="Tips to improve, tested swaps, matchups">💡 Insights${tips ? ` <b class="n">${tips}</b>` : ""}</button>
+          <button class="pill sm" data-dk="dup">Duplicate</button>
+          <button class="pill sm" data-dk="del">Delete</button>
+          <span class="tot t-${s ? s.tier : "x"}" title="Total score · tier">${s ? `${s.total}<b>${s.tier}</b>` : "…"}</span>
         </div>
       </article>`;
     }).join("") : `<p class="empty">${decks.length ? "No deck has this tag." : "No decks yet — start one, or paste a list from Limitless or TCG Live."}</p>`}</div>`;
@@ -2235,7 +2247,9 @@ deckview.addEventListener("click", e => {
       if (confirm(`Delete the deck “${d.name}”? This can't be undone.`)) { decks.splice(i, 1); save(); renderDecks() }
       return;
     }
-    openDeck(d); renderDecks(); return scrollTo(0, 0);          // Edit, or anywhere on the tile
+    openDeck(d);
+    if (act === "ins") pane = "insights";                       // straight to the tips and matchups
+    renderDecks(); return scrollTo(0, 0);                       // Edit, or anywhere on the tile
   }
   if (!open) return;
 
