@@ -45,17 +45,20 @@ SUFFIX = [("Mega ", "-mega"), ("Gigantamax ", "-gmax"), ("Alolan ", "-alola"),
 
 
 def get(url, tries=8, fatal=True):
-    """pokemontcg.io randomly 500s/502s behind Cloudflare -> retry with backoff."""
-    last = None
+    """pokemontcg.io randomly 500s/502s behind Cloudflare -> retry with backoff. A 429 (too many
+    requests, Limitless) waits as long as the server asks, or a growing pause."""
+    last, wait = None, 0
     for i in range(tries):
         if i:
-            time.sleep(1.2 * i)
+            time.sleep(wait or 1.2 * i)
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "pokedex-proxies/1.0"})
             with urllib.request.urlopen(req, timeout=60) as r:
                 return json.load(r)
         except Exception as e:  # HTTPError, URLError, timeouts, bad JSON
             last = e
+            retry = getattr(e, "headers", None) and e.headers.get("Retry-After")
+            wait = (int(retry) if retry and retry.isdigit() else 15 * (i + 1)) if getattr(e, "code", 0) == 429 else 0
     if fatal:
         raise SystemExit(f"giving up on {url}\n  {last}")
     print(f"    ! {last} — kept previous data")

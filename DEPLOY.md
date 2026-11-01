@@ -34,7 +34,8 @@ editing alone changes nothing that is served.
 |---|---|
 | `Gen 1` | Pokémon · Owned · Card IDs (one per line) · Favourite — plus a last `Unsorted` row for owned cards that match no Pokémon |
 | `30th Celebration` | Pokémon · Owned · Card ID · Number · Rarity · Section |
-| `Deck · <name>` (one per deck) | Qty · Card · Card ID · Category · Role · Cover — and on the right the deck's scores, archetype, price, tags, notes, role overrides, then its saved versions |
+| `My Cards` | Card · Set · Number · Card ID · Qty · Category · Price — one row per legal print you own |
+| `Deck · <name>` (one per deck) | Qty · Card · Card ID · Category · Role · Cover — and on the right the deck's scores, archetype, price, tags, notes, role overrides, Built, copies moved into it, then its saved versions |
 
 They are for reading: the next save from any device rewrites them, so hand edits do not stick.
 Renaming or deleting a deck renames or removes its tab. The earlier single `Decks` tab is read once

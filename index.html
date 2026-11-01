@@ -250,7 +250,7 @@
     border: 1px solid var(--line); border-radius: 12px;
   }
   /* ---- signed-out gate: the sync dialog becomes the whole page ---- */
-  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview, body.locked > #dataview,
+  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview, body.locked > #dataview, body.locked > #binderview,
   body.locked > footer { display: none }
   body.locked #login { background: none; backdrop-filter: none }
   #login .brand { display: none; font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-bottom: 10px }
@@ -280,6 +280,48 @@
   .run { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px }
   .run a { margin-left: auto; color: var(--acc) }
   .refresh-msg { margin: 0 0 14px }
+
+  /* ---- My Cards and ownership ---- */
+  body.binderpage :is(#banner, #list, footer), body:not(.binderpage) #binderview { display: none }
+  #binderview { --hh: 64px; padding: 22px }
+  #binderview .sub { font-size: 13px; color: var(--dim) }
+  #bk-q { width: 100%; padding: 10px 13px; font: 400 14px Outfit, sans-serif; color: var(--fg);
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 12px }
+  .pk.unowned img, .vi.unowned img { filter: grayscale(.75) brightness(.7) }
+  .pk .ownb {
+    position: absolute; left: 5px; bottom: 26px; padding: 0 7px; border-radius: 99px; font-size: 10px; font-weight: 700;
+    color: #0c1a10; background: #4ade80;
+  }
+  .pk .vl { width: 100%; margin-top: 4px; padding: 3px 0; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card); color: var(--dim); font: 600 11px Outfit, sans-serif; cursor: pointer }
+  .pk .vl:hover { color: var(--fg) }
+  .vlist { grid-column: 1 / -1; padding: 12px; border: 1px solid #ffffff22; border-radius: 14px; background: #11141d }
+  .vhead { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; font-size: 13px; color: var(--dim) }
+  .vhead b { color: var(--fg); font-size: 15px }
+  .vhead .pill { margin-left: auto }
+  .vitems { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) }
+  .vi { position: relative; display: flex; flex-direction: column; gap: 4px; font-size: 10px; text-align: center; color: var(--dim); cursor: pointer }
+  .vi img { width: 100%; aspect-ratio: 245/342; object-fit: cover; border-radius: 6px }
+  .vi .qty { position: absolute; top: 4px; left: 4px; padding: 0 6px; border-radius: 99px; font-weight: 800; font-size: 12px; color: #16181f; background: var(--acc) }
+  .vq { display: flex; gap: 6px; align-items: center; justify-content: center }
+  .vq button:not(.pill) { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; font-size: 14px }
+  .vq b { min-width: 18px; font-size: 14px; color: var(--fg) }
+  .vq.tile { margin-top: 4px }
+  .ln .own { color: var(--dim) }
+  .ln .own.ok { color: #4ade80 }
+  .held { color: #fbbf24 }
+  .ln.short > :is(.th, .lq, .lnm) { opacity: .5 }
+  .ln.short .th { filter: grayscale(1) }
+  .ln .mv { flex: none; width: auto; height: 20px; margin: 2px 4px 0 0; padding: 0 8px; border-radius: 99px;
+    font-size: 10px; border-color: #fbbf2466; color: #fbbf24 }
+  .ownsum { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12px }
+  .built { padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; color: #16181f; background: #60a5fa; vertical-align: 3px }
+  .deck .dw.own { color: var(--dim) }
+  .chip.own.on { background: #4ade80; border-color: #4ade80 }
+  .deck.tobuy { border-style: dashed; border-color: #fbbf2466 }
+  .deck.tobuy .cart { display: grid; place-items: center; width: 92px; aspect-ratio: 245/342; font-size: 40px;
+    border-radius: 7px; background: rgba(251,191,36,.1) }
+  .cmp.buy td:first-child { width: 40px; font-weight: 700 }
   #deckview { --hh: 64px; padding: 22px }
   #deckview .sub, #dlg .sub { font-size: 13px; color: var(--dim) }
   .dk-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px }
@@ -593,7 +635,10 @@
     .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none }
     .chip { flex: 0 0 auto }
     .deck .dimg { flex-basis: 70px }
-    .deck .dimg img { width: 70px }
+    .deck .dimg img, .deck.tobuy .cart { width: 70px }
+    #binderview { padding: 12px }
+    .bgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
+    .vitems { grid-template-columns: repeat(3, minmax(0, 1fr)) }
   }
 
   /* ---- printable proxy sheets: same card format as the site, 63x88mm, 3x3 per A4 ---- */
@@ -638,6 +683,7 @@
     <button class="pill" data-c="anniv"><span class="wide">30th Celebration</span><span class="narrow">30th</span></button>
     <button class="pill" data-c="all">All</button>
     <button class="pill" data-c="decks">Decks</button>
+    <button class="pill" data-c="mycards">My Cards</button>
     <button class="pill" data-c="data">Data</button>
   </nav>
   <div class="toolbar">
@@ -664,6 +710,7 @@
 <main id="list"></main>
 <section id="deckview"></section>
 <section id="dataview"></section>
+<section id="binderview"></section>
 
 <div id="dlg" hidden><div class="box" id="dlg-box"></div></div>
 <div id="toast"></div>
@@ -727,10 +774,13 @@ const store = {
 const have  = new Set(store.get("have", []));    // real TCG cards owned, keyed card id
 const favs  = store.get("favs", {});             // "collection:index" -> {id, img}
 const seen  = store.get("seen", {});             // this device only: species -> {total, have}, badge fallback
-const decks = store.get("decks", []);            // [{name, notes, cover, cards: [{id, n, name, cat}]}]
+const decks = store.get("decks", []);            // [{name, notes, cover, cards: [{id, n, name, cat}], built, holds}]
+const stock = store.get("stock", {});            // My Cards: print id -> copies you own
+let ALLOC = null;                                // who holds which owned copies; rebuilt after any change
 Object.keys(favs).forEach(k => k.split(":")[0] in COLLECTIONS || delete favs[k]);   // Gen 2/3 leftovers
 const save = (sync = true) => {
   store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen); store.set("decks", decks);
+  store.set("stock", stock); ALLOC = null;
   if (sync && typeof push === "function") push();
 };
 
@@ -747,7 +797,7 @@ function applyPrefs() {
 }
 
 const HASH = location.hash.slice(1);
-let cur = ["all", "decks", "data"].includes(HASH) || HASH in COLLECTIONS ? HASH : "gen1";
+let cur = ["all", "decks", "data", "mycards"].includes(HASH) || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const count = k => kindOf(k) === "cards"
   ? COLLECTIONS[k].items.filter(p => have.has(p.id)).length
@@ -814,6 +864,8 @@ function render() {
   document.body.classList.toggle("overview", cur === "all");
   document.body.classList.toggle("decking", cur === "decks");
   document.body.classList.toggle("datapage", cur === "data");
+  document.body.classList.toggle("binderpage", cur === "mycards");
+  if (cur === "mycards") return renderBinder();
   if (cur === "decks") return renderDecks();
   if (cur === "data") { renderData(); if (!runs) loadRuns(); return }
   stats();
@@ -1610,7 +1662,7 @@ const coverOf = d => d.cards.find(l => l.id === d.cover)
   || d.cards.filter(l => l.cat === "Pokémon").sort((a, b) => b.n - a.n)[0];   // default: the most-run Pokémon
 const thumb = l => { const p = PRINT.get(l.id)?.[1]; return p ? imgOf(p) : CARD_IMG(l.id) };
 const textOf = c => c.tx ??= [c.n, ...(c.ab || []).flat(), ...(c.atk || []).flatMap(a => [a[0], a[3]]), c.rt || ""].join(" ").toLowerCase();
-decks.forEach(d => { d.tags ||= []; d.roles ||= {}; d.versions ||= [] });
+decks.forEach(d => { d.tags ||= []; d.roles ||= {}; d.versions ||= []; d.holds ||= {}; d.built = !!d.built });
 
 // names stay unique, ignoring capitals (Sheet tab names do): a clash becomes "Name #2", "Name #3"…
 const uniqueName = (want, self) => {
@@ -1623,10 +1675,104 @@ const uniqueName = (want, self) => {
 
 let open = null, pane = "cards", zoomCard = null, zoomPrint = null, openedAs = "", hand = null;
 let deckSort = store.get("deckSort", "created"), deckTag = "";
-const pick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "" };
+const pick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false };
+const bpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false };   // My Cards
 const dlgBox = document.getElementById("dlg-box");
 const lineOf = c => open.cards.find(l => cardOf(l) === c);
 const inDeck = c => sum(open.cards, l => cardOf(l) === c);
+
+// ---- ownership: My Cards counts copies per print; a deck needs a card, and any art of it will do ----
+const isBasicE = c => c.c === "E" && c.sub.includes("Basic");          // always counted as owned
+const ownedOf = c => c.p.reduce((s, p) => s + (stock[p[0]] || 0), 0);
+// Who holds which copies: copies moved into a deck go to it first, then Built decks, then the rest,
+// each in list order. A deck's holds are net per card: more than 0 = copies moved in, which it gets
+// first; less than 0 = copies it gave away, which it no longer claims from anyone.
+// Recomputed after any change (save() drops it).
+function allocation() {
+  if (ALLOC) return ALLOC;
+  const tally = f => decks.map(d => { const m = new Map(); f(d, (c, n) => { if (c && !isBasicE(c)) m.set(c.k, (m.get(c.k) || 0) + n) }); return m });
+  const need = tally((d, add) => d.cards.forEach(l => add(cardOf(l), l.n)));
+  const held = tally((d, add) => Object.entries(d.holds).forEach(([id, n]) => add(PRINT.get(id)?.[0], n)));
+  const got = decks.map(() => new Map());
+  const order = decks.map((_, i) => i).sort((a, b) => +decks[b].built - +decks[a].built || a - b);
+  for (const k of new Set(need.flatMap(m => [...m.keys()]))) {
+    let left = ownedOf(CARDS.cards[k]);
+    for (const i of order) {
+      const n = Math.min(Math.max(0, held[i].get(k) || 0), need[i].get(k) || 0, left);
+      if (n > 0) { got[i].set(k, n); left -= n }
+    }
+    for (const i of order) {
+      const cap = (need[i].get(k) || 0) - Math.max(0, -(held[i].get(k) || 0));
+      const n = Math.min(cap - (got[i].get(k) || 0), left);
+      if (n > 0) { got[i].set(k, (got[i].get(k) || 0) + n); left -= n }
+    }
+  }
+  return (ALLOC = { need, got });
+}
+// a deck's standing on one card: copies it has, copies it lacks that other decks hold, copies not owned
+function standing(d, k) {
+  const A = allocation(), i = decks.indexOf(d);
+  const need = A.need[i]?.get(k) || 0, got = A.got[i]?.get(k) || 0, short = need - got;
+  const holders = decks.map((x, j) => [x, j === i ? 0 : A.got[j].get(k) || 0]).filter(([, n]) => n > 0);
+  const elsewhere = Math.min(short, holders.reduce((s, [, n]) => s + n, 0));
+  return { need, got, short, elsewhere, missing: short - elsewhere, holders };
+}
+function deckOwnership(d) {
+  let missing = 0, elsewhere = 0, need = 0;
+  new Set(d.cards.map(cardOf).filter(c => c && !isBasicE(c)).map(c => c.k)).forEach(k => {
+    const s = standing(d, k); missing += s.missing; elsewhere += s.elsewhere; need += s.need;
+  });
+  return { missing, elsewhere, need };
+}
+// copies the open deck could still use: owned, minus what other decks hold
+const freeFor = (d, c) => isBasicE(c) ? Infinity
+  : ownedOf(c) - allocation().got.reduce((s, m, j) => s + (decks[j] === d ? 0 : m.get(c.k) || 0), 0);
+// everything needed to have every deck built at once, minus what you own
+function toBuy() {
+  const A = allocation(), out = [];
+  for (const k of new Set(A.need.flatMap(m => [...m.keys()]))) {
+    const c = CARDS.cards[k], n = A.need.reduce((s, m) => s + (m.get(k) || 0), 0) - ownedOf(c);
+    if (n <= 0) continue;
+    const eur = c.p.filter(p => p[4] != null).sort((a, b) => a[4] - b[4])[0], usd = c.p.find(p => p[5] != null);
+    out.push({ c, n, p: eur || usd || c.p[0], each: eur ? eur[4] : usd ? usd[5] : null, sym: eur ? "€" : "$" });
+  }
+  return out.sort((a, b) => a.c.k - b.c.k);
+}
+const buyTotal = buy => {
+  const t = sym => buy.reduce((s, x) => s + (x.sym === sym && x.each != null ? x.n * x.each : 0), 0), eur = t("€"), usd = t("$");
+  return [eur && money(eur), usd && money(usd, "$")].filter(Boolean).join(" + ") || "no prices yet";
+};
+// "Move from <deck>": these copies now belong to this deck; the other deck will show them as held here
+function moveFrom(d, from, c, line) {
+  const s = standing(d, c.k), n = Math.min(s.short, allocation().got[decks.indexOf(from)].get(c.k) || 0);
+  if (!n) return;
+  d.holds[line.id] = (d.holds[line.id] || 0) + n;
+  if (!d.holds[line.id]) delete d.holds[line.id];
+  // the other deck first drops copies it had moved in, then notes the rest as given away
+  let give = n;
+  for (const id of Object.keys(from.holds)) {
+    if (PRINT.get(id)?.[0] !== c || give <= 0 || from.holds[id] <= 0) continue;
+    const t = Math.min(give, from.holds[id]); from.holds[id] -= t; give -= t;
+    if (!from.holds[id]) delete from.holds[id];
+  }
+  if (give > 0) {
+    const fid = from.cards.find(l => cardOf(l) === c)?.id || line.id;
+    from.holds[fid] = (from.holds[fid] || 0) - give;
+    if (!from.holds[fid]) delete from.holds[fid];
+  }
+  save(); say(`Moved ${n} ${c.n} from “${from.name}”`);
+}
+
+// one picker tile per card name; List opens every version and art under it
+const NAMES = [];                               // [name, [cards]] in cards.js order
+const NAME_OF = new Map();                      // card k -> index into NAMES
+const nameAt = new Map();
+CARDS.cards.forEach(c => {
+  if (!nameAt.has(c.n)) { nameAt.set(c.n, NAMES.length); NAMES.push([c.n, []]) }
+  NAMES[nameAt.get(c.n)][1].push(c); NAME_OF.set(c.k, nameAt.get(c.n));
+});
+const versionOf = c => c.c === "P" ? [c.hp && c.hp + " HP", ...(c.atk || []).map(a => a[0])].filter(Boolean).join(" · ") : CAT[c.c];
+let listOpen = null;                            // the name whose variations are spread out: {view, g}
 
 function say(msg) {
   toast.textContent = msg; toast.classList.add("on");
@@ -1988,23 +2134,49 @@ function renderDeckList() {
       return `<article class="deck" data-i="${i}">
         <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}</div>
         <div class="dbody">
-          <div class="dhead"><div class="dn">${esc(d.name)}</div>${scoreRing(s)}</div>
+          <div class="dhead"><div class="dn">${esc(d.name)}${d.built ? ` <span class="built" title="Holds its cards first">📦 Built</span>` : ""}</div>${scoreRing(s)}</div>
           <div class="ds"><b>${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
           ${arch ? `<div class="ds">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match</div>` : ""}
           ${probs.length ? `<div class="dw">⚠ ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more)` : ""}</div>`
                          : `<div class="dok">✓ Ready to play</div>`}
+          ${(() => { const o = deckOwnership(d); return o.missing || o.elsewhere ? `<div class="dw own">${[o.missing && `<span class="bad">✗ ${o.missing} missing</span>`,
+              o.elsewhere && `<span class="held">⇄ ${o.elsewhere} in other decks</span>`].filter(Boolean).join(" · ")}</div>` : o.need ? `<div class="dok">✓ You own every card</div>` : "" })()}
           <div class="fbs">${bars(s)}</div>
           ${d.tags.length ? `<div class="dtags">${d.tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
           ${d.notes ? `<div class="dnote">${esc(d.notes)}</div>` : ""}
         </div>
         <div class="da">
-          <button class="pill sm" data-dk="edit">Edit</button>
           <button class="pill sm" data-dk="ins" title="Tips to improve, tested swaps, matchups">💡 Insights${tips ? ` <b class="n">${tips}</b>` : ""}</button>
           <button class="pill sm" data-dk="dup">Duplicate</button>
           <button class="pill sm" data-dk="del">Delete</button>
         </div>
       </article>`;
-    }).join("") : `<p class="empty">${decks.length ? "No deck has this tag." : "No decks yet — start one, or paste a list from Limitless or TCG Live."}</p>`}</div>`;
+    }).join("") : `<p class="empty">${decks.length ? "No deck has this tag." : "No decks yet — start one, or paste a list from Limitless or TCG Live."}</p>`}
+    ${(() => {                       // the shopping list: every deck built at once, minus what you own
+      const buy = toBuy(); if (!buy.length) return "";
+      const n = buy.reduce((s, x) => s + x.n, 0);
+      return `<article class="deck tobuy" data-dk="buy">
+        <div class="dimg"><span class="cart">🛒</span></div>
+        <div class="dbody"><div class="dn">To buy</div>
+          <div class="ds"><b>${n}</b> card${n > 1 ? "s" : ""} to have every deck built at once · ≈ ${buyTotal(buy)}</div>
+          <div class="dnote">${buy.slice(0, 6).map(x => `${x.n} ${esc(x.c.n)}`).join(" · ")}${buy.length > 6 ? ` · +${buy.length - 6} more` : ""}</div>
+        </div></article>`;
+    })()}</div>`;
+}
+
+function openToBuy() {
+  const buy = toBuy(), text = buy.map(x => `${x.n} ${x.c.n} ${x.p[1]} ${x.p[2]}`).join("\n");
+  zoomCard = null; dlg.hidden = false;
+  dlgBox.innerHTML = `<div class="m-head"><div><h2>🛒 To buy</h2>
+      <div class="sub">Everything needed to have all ${decks.length} decks built at once, minus what you own · cheapest Cardmarket print
+        (TCGplayer $ where Cardmarket has none) · ≈ ${buyTotal(buy)}</div></div>
+      <button class="x" data-z="close">✕</button></div>
+    <div class="imp"><table class="cmp buy">${buy.map(x => `<tr><td>${x.n}×</td><td>${esc(x.c.n)}</td><td class="sub">${x.p[1]} ${x.p[2]}</td>
+        <td>${x.each != null ? money(x.each * x.n, x.sym) : "—"}</td></tr>`).join("")}</table>
+      <button class="pill on" data-z="copybuy">⧉ Copy as list</button></div>`;
+  dlgBox.querySelector('[data-z="copybuy"]').onclick = async () => {
+    try { await navigator.clipboard.writeText(text); say("List copied") } catch { say("Couldn't copy — select the table instead") }
+  };
 }
 
 function renderEditor() {
@@ -2037,44 +2209,75 @@ function renderEditor() {
   if (pane === "test") renderTest();
 }
 
-function renderChips() {
+// the filters, shared by the deck picker (pick) and My Cards (bpick)
+function chipsHTML(st) {
   const chip = (g, v, label = v) =>
-    `<button class="chip ${pick[g].has(v) ? "on" : ""}" data-chip="${g}" data-v="${v}">${label}</button>`;
-  let h = "";
-  if (pick.cat === "all" || pick.cat === "P") h +=
+    `<button class="chip ${st[g].has(v) ? "on" : ""}" data-chip="${g}" data-v="${v}">${label}</button>`;
+  let h = `<button class="chip own ${st.own ? "on" : ""}" data-chip="own" title="${st === pick
+    ? "Only cards you own and no other deck holds" : "Only cards you own"}">✓ Owned only</button>`;
+  if (st.cat === "all" || st.cat === "P") h +=
     Object.entries(TYPES).map(([t, col]) => chip("types", t, `<i style="background:${col}"></i>${t}`)).join("") +
     ["Basic", "Stage 1", "Stage 2"].map(s => chip("stages", s)).join("") +
-    `<button class="chip ${pick.ex ? "on" : ""}" data-chip="ex">ex</button>`;
-  if (pick.cat === "T") h += Object.keys(KINDS).map(k => chip("kinds", k)).join("");
-  deckview.querySelector(".chips").innerHTML = h;
+    `<button class="chip ${st.ex ? "on" : ""}" data-chip="ex">ex</button>`;
+  if (st.cat === "T") h += Object.keys(KINDS).map(k => chip("kinds", k)).join("");
+  return h;
+}
+const renderChips = () => { deckview.querySelector(".chips").innerHTML = chipsHTML(pick) };
+
+function matches(c, st = pick) {
+  if (st.cat !== "all" && c.c !== st.cat) return false;
+  if (st.q && !c.n.toLowerCase().includes(st.q) && !(st.q.length >= 3 && textOf(c).includes(st.q))) return false;
+  if ((st.types.size || st.stages.size || st.ex) && c.c !== "P") return false;   // Pokémon-only filters
+  if (st.types.size && !c.t.some(t => st.types.has(t))) return false;
+  if (st.stages.size && ![...st.stages].some(s => c.sub.includes(s))) return false;
+  if (st.ex && !c.sub.includes("ex")) return false;
+  if (st.kinds.size && ![...st.kinds].some(k => c.sub.includes(KINDS[k]))) return false;
+  if (st.own && (st === pick ? freeFor(open, c) <= 0 : !ownedOf(c))) return false;
+  return true;
+}
+// the names to show, name hits first, then names that only match in their text
+function shownNames(st) {
+  const out = NAMES.map((x, g) => [x, g]).filter(([[, cs]]) => cs.some(c => matches(c, st)));
+  if (st.q) { const hit = ([[n]]) => n.toLowerCase().includes(st.q) ? 0 : 1; out.sort((a, b) => hit(a) - hit(b)) }
+  return out;
 }
 
-function matches(c) {
-  if (pick.cat !== "all" && c.c !== pick.cat) return false;
-  if (pick.q && !c.n.toLowerCase().includes(pick.q) && !(pick.q.length >= 3 && textOf(c).includes(pick.q))) return false;
-  if ((pick.types.size || pick.stages.size || pick.ex) && c.c !== "P") return false;   // Pokémon-only filters
-  if (pick.types.size && !c.t.some(t => pick.types.has(t))) return false;
-  if (pick.stages.size && ![...pick.stages].some(s => c.sub.includes(s))) return false;
-  if (pick.ex && !c.sub.includes("ex")) return false;
-  if (pick.kinds.size && ![...pick.kinds].some(k => c.sub.includes(KINDS[k]))) return false;
-  return true;
+// a deck-picker tile: one per name; one version adds on tap, several open the list
+function nameTile(g) {
+  const [name, cs] = NAMES[g], q = cs.reduce((s, c) => s + inDeck(c), 0), own = cs.reduce((s, c) => s + ownedOf(c), 0);
+  const prints = cs.reduce((s, c) => s + c.p.length, 0), c0 = cs.find(inDeck) || cs[0], l = inDeck(c0) && lineOf(c0);
+  return `<div class="pk ${q ? "in" : ""} ${own || cs.every(isBasicE) ? "" : "unowned"}" data-g="${g}">
+    <img loading="lazy" alt="" src="${imgOf(l ? PRINT.get(l.id)[1] : c0.p[0])}">
+    <span class="qty">${q ? "×" + q : ""}</span>
+    ${own ? `<span class="ownb" title="Copies you own, any version">${own} owned</span>` : ""}
+    <button class="zm" data-act="zoom" title="Show card">🔍</button>
+    <div class="pn">${name}</div>
+    ${prints > 1 ? `<button class="vl" data-act="list">${listOpen?.g === g ? "▴ Close" : `▾ List · ${cs.length > 1 ? `${cs.length} versions` : `${prints} arts`}`}</button>` : ""}
+  </div>`;
+}
+// every version and art of a name, spread out under its tile
+function variations(g, view) {
+  const [name, cs] = NAMES[g];
+  return `<div class="vlist" data-g="${g}">
+    <div class="vhead"><b>${name}</b> · ${cs.length > 1 ? `${cs.length} versions, ` : ""}${cs.reduce((s, c) => s + c.p.length, 0)} prints
+      <button class="pill sm" data-act="close">Close</button></div>
+    <div class="vitems">${cs.map(c => c.p.map(pr => {
+      const n = stock[pr[0]] || 0, inD = view === "deck" ? sum(open.cards, l => l.id === pr[0]) : 0;
+      return `<div class="vi ${view === "deck" && !n && !ownedOf(c) && !isBasicE(c) ? "unowned" : ""}" data-id="${pr[0]}">
+        <img loading="lazy" alt="" src="${imgOf(pr)}">
+        ${inD ? `<span class="qty">×${inD}</span>` : ""}
+        <small>${pr[1]} ${pr[2]}${cs.length > 1 ? `<br>${esc(versionOf(c))}` : ""}${pr[4] != null ? ` · ${money(pr[4])}` : ""}</small>
+        ${view === "mine" ? `<span class="vq"><button data-own="-1">−</button><b>${n}</b><button data-own="1">+</button></span>`
+          : `<span class="vq">${n ? `<b class="ok">${n} owned</b>` : ""}<button class="pill sm" data-act="add">＋ Add</button></span>`}
+      </div>`;
+    }).join("")).join("")}</div></div>`;
 }
 
 function renderGrid() {
-  const shown = CARDS.cards.filter(matches);
-  if (pick.q) {                           // name hits first, then cards that only match in their text
-    const byName = c => c.n.toLowerCase().includes(pick.q) ? 0 : 1;
-    shown.sort((a, b) => byName(a) - byName(b));
-  }
-  deckview.querySelector(".pk-grid").innerHTML = shown.length ? shown.map(c => {
-    const q = inDeck(c), l = q && lineOf(c);
-    return `<div class="pk ${q ? "in" : ""}" data-k="${c.k}">
-      <img loading="lazy" alt="" src="${imgOf(l ? PRINT.get(l.id)[1] : c.p[0])}">
-      <span class="qty">${q ? "×" + q : ""}</span>
-      <button class="zm" data-act="zoom" title="Show card">🔍</button>
-      <div class="pn">${c.n}</div>
-    </div>`;
-  }).join("") : `<p class="empty">No legal cards match these filters.</p>`;
+  const shown = shownNames(pick);
+  deckview.querySelector(".pk-grid").innerHTML = shown.length
+    ? shown.map(([, g]) => nameTile(g) + (listOpen?.view === "deck" && listOpen.g === g ? variations(g, "deck") : "")).join("")
+    : `<p class="empty">No legal cards match these filters${pick.own ? " among the cards you own and have free" : ""}.</p>`;
 }
 
 function renderPanel() {
@@ -2085,12 +2288,17 @@ function renderPanel() {
   const line = l => {
     const c = cardOf(l), pr = PRINT.get(l.id)?.[1], f = c?.c === "P" && fs.find(f => f.root === c.root);
     const odds = c && p?.seen[c.k], cost = linePrice(l), [iv, il] = c && imp?.has(c.k) ? impLevel(imp.get(c.k), c, floors) : [];
-    return `<div class="ln ${c ? "" : "rot"} ${il ? "imp-" + il : ""}" data-id="${esc(l.id)}" ${il ? `style="--imp:${Math.max(iv, 4)}%" title="${il}: without it the deck scores ${imp.get(c.k)} lower"` : ""}>
+    const st = c && !isBasicE(c) ? standing(d, c.k) : null;
+    const own = !st ? "" : !st.short ? `<small class="own ok">✓ own ${st.got}/${st.need}</small>`
+      : `<small class="own">own ${st.got}/${st.need}${st.missing ? ` · <span class="bad">✗ ${st.missing} missing</span>` : ""}${st.elsewhere
+        ? ` · <span class="held">⇄ ${st.elsewhere} in ${st.holders.map(([x, n]) => `${esc(x.name)}${st.holders.length > 1 ? ` (${n})` : ""}`).join(", ")}</span>
+          ${st.holders.map(([x]) => `<button class="mv" data-move="${decks.indexOf(x)}" title="Take the copies ${esc(x.name)} holds">Move from ${esc(x.name)}</button>`).join("")}` : ""}</small>`;
+    return `<div class="ln ${c ? "" : "rot"} ${il ? "imp-" + il : ""} ${st?.missing ? "short" : st?.elsewhere ? "held" : ""}" data-id="${esc(l.id)}" ${il ? `style="--imp:${Math.max(iv, 4)}%" title="${il}: without it the deck scores ${imp.get(c.k)} lower"` : ""}>
       <img class="th" loading="lazy" alt="" src="${thumb(l)}">
       <b class="lq">${l.n}</b>
       <span class="lnm" ${c ? 'data-ln="zoom"' : ""}>${esc(l.name)}
         <small>${il ? `<b class="il">${il}</b> · ` : ""}${pr ? `${pr[1]} ${pr[2]}` : "rotated — not legal"}${cost ? ` · ${cost}` : ""}</small>
-        ${odds ? `<small class="odds">opener ${perc(odds[0])} · T2 ${perc(odds[2])} · T3 ${perc(odds[3])}</small>` : ""}</span>
+        ${odds ? `<small class="odds">opener ${perc(odds[0])} · T2 ${perc(odds[2])} · T3 ${perc(odds[3])}</small>` : ""}${own}</span>
       ${f ? `<button class="role r-${f.role} ${d.roles[f.root] ? "set" : ""}" data-ln="role" title="${ROLE[f.role]} line${d.roles[f.root] ? "" : " (auto)"} — tap to change">${f.role}</button>` : ""}
       <button class="cov ${l.id === cov ? "on" : ""}" data-ln="cover" title="Deck cover">★</button>
       <button data-ln="dec" title="Remove one">−</button>
@@ -2100,6 +2308,10 @@ function renderPanel() {
   deckview.querySelector(".dk").innerHTML = `
     <input class="dk-name" value="${esc(d.name)}" aria-label="Deck name" maxlength="60">
     <div class="dk-tot"><span><b>${t.total}</b> / ${DECK_MAX} cards</span>${scoreRing(p?.score, "sm")}</div>
+    ${(() => { const o = deckOwnership(d); return `<div class="ownsum">
+      <button class="pill sm ${d.built ? "on" : ""}" data-dk="built" title="Built decks hold their copies before other decks">📦 ${d.built ? "Built" : "Mark as built"}</button>
+      <span>${!o.need ? "" : !o.missing && !o.elsewhere ? `<span class="ok">✓ you own every card</span>`
+        : [o.missing && `<span class="bad">✗ ${o.missing} missing</span>`, o.elsewhere && `<span class="held">⇄ ${o.elsewhere} in other decks</span>`].filter(Boolean).join(" · ")}</span></div>` })()}
     <div class="cnts">${Object.keys(RANGE).map(k => `
       <div class="cn ${ok(k) ? "ok" : "warn"}"><b>${t[k]}</b><span>${k}</span><small>aim ${RANGE[k].join("–")}</small></div>`).join("")}
     </div>
@@ -2285,12 +2497,11 @@ function renderTest() {
 
 function deckChanged(c) {               // after any change: autosave, then refresh only what shows it
   save();
-  const tile = c && deckview.querySelector(`.pk[data-k="${c.k}"]`);
+  const g = c && NAME_OF.get(c.k), tile = c && deckview.querySelector(`.pk[data-g="${g}"]`);
   if (tile) {
-    const q = inDeck(c), l = lineOf(c);
-    tile.classList.toggle("in", q > 0);
-    tile.querySelector(".qty").textContent = q ? "×" + q : "";
-    tile.querySelector("img").src = imgOf(l ? PRINT.get(l.id)[1] : c.p[0]);
+    tile.outerHTML = nameTile(g);
+    const vl = deckview.querySelector(`.vlist[data-g="${g}"]`);
+    if (vl) vl.outerHTML = variations(g, "deck");
   }
   hand = null;
   renderPanel();
@@ -2426,7 +2637,7 @@ function openImport() {
 }
 
 const newDeck = (name, cards = [], notes = "") => {
-  const d = { name: uniqueName(name), notes, cover: null, cards, tags: [], roles: {}, versions: [] };
+  const d = { name: uniqueName(name), notes, cover: null, cards, tags: [], roles: {}, versions: [], built: false, holds: {} };
   decks.push(d); save();
   return d;
 };
@@ -2462,13 +2673,21 @@ deckview.addEventListener("click", e => {
   if (act === "import") return openImport();
   if (act === "back") { openDeck(null); return renderDecks() }
   if (act === "export") return exportDeck(open);
+  if (act === "buy") return openToBuy();
+  if (act === "built") { open.built = !open.built; save(); renderPanel(); return say(open.built ? "Built — this deck holds its cards first" : "No longer marked as built") }
+  const mv = e.target.closest("[data-move]");
+  if (mv) {
+    const id = mv.closest(".ln").dataset.id, c = cardOf({ id }), line = open.cards.find(l => l.id === id);
+    moveFrom(open, decks[+mv.dataset.move], c, line);
+    renderPanel(); return renderGrid();
+  }
   const tag = e.target.closest("[data-tag]");
   if (tag) { deckTag = tag.dataset.tag; return renderDeckList() }
   if (tile) {
     const i = +tile.dataset.i, d = decks[i];
     if (act === "dup") {
       const copy = structuredClone(d);
-      copy.name = uniqueName(d.name); copy.versions = [];
+      copy.name = uniqueName(d.name); copy.versions = []; copy.built = false; copy.holds = {};   // a variant holds nothing yet
       decks.splice(i + 1, 0, copy); save(); return renderDecks();
     }
     if (act === "del") {
@@ -2500,14 +2719,24 @@ deckview.addEventListener("click", e => {
   const chip = e.target.closest("[data-chip]");
   if (chip) {
     const g = chip.dataset.chip, v = chip.dataset.v;
-    if (g === "ex") pick.ex = !pick.ex;
+    if (g === "ex" || g === "own") pick[g] = !pick[g];
     else pick[g].has(v) ? pick[g].delete(v) : pick[g].add(v);
     chip.classList.toggle("on"); return renderGrid();
   }
-  const pk = e.target.closest(".pk");
+  const pk = e.target.closest(".pk"), vi = e.target.closest(".vi");
+  if (vi) {                                           // a variation in an open list
+    const [c] = PRINT.get(vi.dataset.id);
+    return e.target.closest('[data-act="add"]') ? addCard(c, vi.dataset.id) : openZoom(c, vi.dataset.id);
+  }
+  if (e.target.closest('.vlist [data-act="close"]')) { listOpen = null; return renderGrid() }
   if (pk) {
-    const c = CARDS.cards[+pk.dataset.k];
-    return e.target.closest('[data-act="zoom"]') ? openZoom(c) : addCard(c);
+    const g = +pk.dataset.g, cs = NAMES[g][1];
+    if (e.target.closest('[data-act="zoom"]')) return openZoom(cs.find(inDeck) || cs[0]);
+    if (e.target.closest('[data-act="list"]') || cs.length > 1) {
+      listOpen = listOpen?.view === "deck" && listOpen.g === g ? null : { view: "deck", g };
+      return renderGrid();
+    }
+    return addCard(cs[0]);
   }
   const ln = e.target.closest("[data-ln]");
   if (ln) {
@@ -2592,9 +2821,102 @@ dlg.addEventListener("click", e => {
   if (z.dataset.z === "dec") removeCard(lineOf(zoomCard)?.id);
 });
 
+// ---- My Cards: every legal card you own, by print, with what it's worth ----
+function binderTile(g) {
+  const [name, cs] = NAMES[g], own = cs.reduce((s, c) => s + ownedOf(c), 0), prints = cs.reduce((s, c) => s + c.p.length, 0);
+  const c0 = cs.find(ownedOf) || cs[0], pr = c0.p.find(x => stock[x[0]]) || c0.p[0];
+  return `<div class="pk ${own ? "in" : "unowned"}" data-g="${g}">
+    <img loading="lazy" alt="" src="${imgOf(pr)}">
+    ${own ? `<span class="qty">×${own}</span>` : ""}
+    <div class="pn">${name}</div>
+    ${prints === 1 ? `<span class="vq tile"><button data-own="-1" data-id="${pr[0]}">−</button><b>${own}</b><button data-own="1" data-id="${pr[0]}">+</button></span>`
+      : `<button class="vl" data-act="list">${listOpen?.view === "mine" && listOpen.g === g ? "▴ Close" : `▾ ${cs.length > 1 ? `${cs.length} versions` : `${prints} arts`}`}</button>`}
+  </div>`;
+}
+function collectionValue() {
+  let eur = 0, usd = 0, copies = 0, cards = 0;
+  for (const [id, n] of Object.entries(stock)) {
+    const p = PRINT.get(id)?.[1];
+    if (!n) continue;
+    copies += n; cards++;
+    if (p?.[4] != null) eur += p[4] * n; else if (p?.[5] != null) usd += p[5] * n;
+  }
+  return { eur, usd, copies, cards };
+}
+const binderValue = () => {
+  const v = collectionValue();
+  return v.copies ? `${v.copies} cards (${v.cards} different prints) · worth ≈ ${money(v.eur)}${v.usd ? ` + ${money(v.usd, "$")} without a Cardmarket price` : ""}`
+    : "Nothing here yet — find a card and tap + for each copy you own";
+};
+function renderBinder() {
+  binderview.style.setProperty("--hh", head.offsetHeight + "px");
+  binderview.innerHTML = `
+    <div class="dk-head"><div><h1>My Cards</h1>
+      <div class="sub"><span class="bval">${binderValue()}</span> · Standard-legal cards only · Basic Energy always counts as owned</div></div></div>
+    <div class="pk-tools">
+      <input id="bk-q" type="search" placeholder="Search names and card text…" autocomplete="off" value="${esc(bpick.q)}">
+      <div class="seg pk-cat">${Object.entries({ all: "All", ...CAT }).map(([val, t]) =>
+        `<button data-cat="${val}" class="${bpick.cat === val ? "on" : ""}">${t}</button>`).join("")}</div>
+      <div class="chips">${chipsHTML(bpick)}</div>
+    </div>
+    <div class="pk-grid bgrid"></div>`;
+  renderBinderGrid();
+}
+function renderBinderGrid() {
+  const shown = shownNames(bpick);
+  binderview.querySelector(".bgrid").innerHTML = shown.length
+    ? shown.map(([, g]) => binderTile(g) + (listOpen?.view === "mine" && listOpen.g === g ? variations(g, "mine") : "")).join("")
+    : `<p class="empty">${bpick.own ? "You haven't added any cards that match." : "No legal cards match these filters."}</p>`;
+}
+function setOwned(id, delta) {
+  const n = Math.max(0, (stock[id] || 0) + delta);
+  if (n) stock[id] = n; else delete stock[id];
+  save();
+  const g = NAME_OF.get(PRINT.get(id)[0].k), tile = binderview.querySelector(`.pk[data-g="${g}"]`);
+  if (tile) tile.outerHTML = binderTile(g);
+  const vl = binderview.querySelector(`.vlist[data-g="${g}"]`);
+  if (vl) vl.outerHTML = variations(g, "mine");
+  const val = binderview.querySelector(".bval");
+  if (val) val.textContent = binderValue();
+}
+binderview.addEventListener("click", e => {
+  const own = e.target.closest("[data-own]");
+  if (own) return setOwned(own.dataset.id || own.closest(".vi").dataset.id, +own.dataset.own);
+  if (e.target.closest('.vlist [data-act="close"]')) { listOpen = null; return renderBinderGrid() }
+  const vi = e.target.closest(".vi");
+  if (vi) return;                                      // the image of a variation: nothing to do
+  const cat = e.target.closest("[data-cat]")?.dataset.cat;
+  if (cat) {
+    bpick.cat = cat;
+    if (cat !== "all" && cat !== "P") { bpick.types.clear(); bpick.stages.clear(); bpick.ex = false }
+    if (cat !== "T") bpick.kinds.clear();
+    return renderBinder();
+  }
+  const chip = e.target.closest("[data-chip]");
+  if (chip) {
+    const g = chip.dataset.chip, v = chip.dataset.v;
+    if (g === "ex" || g === "own") bpick[g] = !bpick[g];
+    else bpick[g].has(v) ? bpick[g].delete(v) : bpick[g].add(v);
+    chip.classList.toggle("on"); return renderBinderGrid();
+  }
+  const pk = e.target.closest(".pk");
+  if (pk) {                                            // open or close the list of versions and arts
+    const g = +pk.dataset.g;
+    if (NAMES[g][1].reduce((s, c) => s + c.p.length, 0) < 2) return;
+    listOpen = listOpen?.view === "mine" && listOpen.g === g ? null : { view: "mine", g };
+    renderBinderGrid();
+  }
+});
+let btyping;
+binderview.addEventListener("input", e => {
+  if (e.target.id !== "bk-q") return;
+  clearTimeout(btyping);
+  btyping = setTimeout(() => { bpick.q = e.target.value.trim().toLowerCase(); renderBinderGrid() }, 150);
+});
+
 // ---- backup / restore what only you know: cards owned, favourites, decks ----
 backup.onclick = () => {
-  const blob = new Blob([JSON.stringify({ have: [...have], favs, decks }, null, 1)],
+  const blob = new Blob([JSON.stringify({ have: [...have], favs, decks, stock }, null, 1)],
                         { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -2671,7 +2993,13 @@ function tabsOut() {
   const byId = new Map(Object.values(DEX.tcg).flat().map(c => [c.id, c]));
   const rest = [...have].filter(id => !placed.has(id));
   gen1.push([UNSORTED, "", rest.map(id => label(byId.get(id)) || id).join("\n"), ""]);
-  return { tabs: { gen1, anniv }, decks: decks.map(deckSheet) };
+  // My Cards: one row per print you own (a rotated print keeps its row, so nothing is lost)
+  const cards = Object.entries(stock).filter(([, n]) => n > 0).map(([id, n]) => {
+    const hit = PRINT.get(id), c = hit?.[0], pr = hit?.[1];
+    return [c ? c.n : id, pr ? CARDS.sets[pr[1]] || pr[1] : "", pr ? pr[2] : "", id, String(n), c ? CAT[c.c] : "",
+            pr?.[4] != null ? money(pr[4]) : pr?.[5] != null ? money(pr[5], "$") : ""];
+  }).sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]));
+  return { tabs: { gen1, anniv, cards }, decks: decks.map(deckSheet) };
 }
 
 // One tab per deck: its cards in A–F; on the right (H–I) the deck's facts, then its versions.
@@ -2684,7 +3012,8 @@ function deckSheet(d, order) {
   const facts = [["Deck", d.name], ["Total", s ? `${s.total} · ${s.tier}` : ""],
     ...Object.entries(FACTOR).map(([k, t]) => [t, s ? String(s[k]) : ""]),
     ["Archetype", arch ? `${arch.m.name} · ${perc(arch.sim)}` : ""], ["Price", d.cards.length ? money(price.eur) : ""],
-    ["Tags", d.tags.join(", ")], ["Notes", d.notes || ""], ["Order", String(order)],
+    ["Tags", d.tags.join(", ")], ["Notes", d.notes || ""], ["Order", String(order)], ["Built", d.built ? "yes" : ""],
+    ["Holds", Object.entries(d.holds).map(([id, n]) => `${id}=${n}`).join("; ")],
     ["Roles", Object.entries(d.roles).map(([k, v]) => `${k}=${v}`).join("; ")], ["Versions", String(d.versions.length)],
     ...d.versions.map(v => [new Date(v.t).toISOString().slice(0, 16) + (v.label ? " — " + v.label : ""), v.list])];
   const rows = [];
@@ -2693,7 +3022,7 @@ function deckSheet(d, order) {
 }
 
 function deckFromSheet(name, rows) {
-  const d = { name, notes: "", cover: null, cards: [], tags: [], roles: {}, versions: [], order: 0 };
+  const d = { name, notes: "", cover: null, cards: [], tags: [], roles: {}, versions: [], order: 0, built: false, holds: {} };
   let versions = false;
   rows.forEach((r, i) => {
     if (i && r[2]) { d.cards.push({ id: r[2], n: +r[0] || 1, name: r[1], cat: r[3] || "Trainer" }); if (r[5]) d.cover = r[2] }
@@ -2705,6 +3034,8 @@ function deckFromSheet(name, rows) {
     } else if (k === "Notes") d.notes = v;
     else if (k === "Tags") d.tags = v.split(/,\s*/).filter(Boolean);
     else if (k === "Order") d.order = +v || 0;
+    else if (k === "Built") d.built = !!v;
+    else if (k === "Holds") v.split(/;\s*/).forEach(x => { const [id, n] = x.split("="); if (id && +n) d.holds[id] = +n });   // negative = given away
     else if (k === "Roles") v.split(/;\s*/).forEach(x => { const [root, role] = x.split("="); if (root && role) d.roles[root] = role });
     else if (k === "Versions") versions = true;
   });
@@ -2720,12 +3051,14 @@ function fromTabs(r) {
     if (p && id) d.favs["gen1:" + p.i] = { id, img: CARD_IMG(id) };
   }
   for (const [, own, id] of t.anniv || []) if (own) d.have.push(id);
+  d.stock = {};
+  for (const [, , , id, n] of t.cards || []) if (id && +n) d.stock[id] = +n;
   if (r.decks.length) d.decks = r.decks.map(x => deckFromSheet(x.name, x.rows)).sort((a, b) => a.order - b.order);
   else {                                 // the earlier single Decks tab, read once before the switch
     const byDeck = new Map();
     for (const [deck, qty, name, id, cat, cover, notes] of r.oldDecks || []) {
       if (!deck) continue;
-      if (!byDeck.has(deck)) byDeck.set(deck, { name: deck, notes: "", cover: null, cards: [], tags: [], roles: {}, versions: [] });
+      if (!byDeck.has(deck)) byDeck.set(deck, { name: deck, notes: "", cover: null, cards: [], tags: [], roles: {}, versions: [], built: false, holds: {} });
       const dk = byDeck.get(deck);
       if (notes) dk.notes = notes;
       if (id) dk.cards.push({ id, n: +qty || 1, name, cat });
@@ -2741,9 +3074,10 @@ function applyState(d) {
   have.clear(); (d.have || []).forEach(x => have.add(x));
   Object.keys(favs).forEach(k => delete favs[k]);
   Object.entries(d.favs || {}).forEach(([k, v]) => { if (k.split(":")[0] in COLLECTIONS) favs[k] = v });
+  if (d.stock) { Object.keys(stock).forEach(k => delete stock[k]); Object.assign(stock, d.stock) }
   if (d.decks) {                 // the old state JSON and older backups carry none: keep this device's
     decks.splice(0, decks.length, ...d.decks);
-    decks.forEach(x => { x.tags ||= []; x.roles ||= {}; x.versions ||= [] });
+    decks.forEach(x => { x.tags ||= []; x.roles ||= {}; x.versions ||= []; x.holds ||= {}; x.built = !!x.built });
     open &&= decks.find(x => x.name === open.name) || null;
   }
   save(false); render();
@@ -2755,14 +3089,14 @@ async function pull() {
   if (!cfg.url || !cfg.tok) return status("☁ Sign in");
   status("☁ Syncing…");
   try {
-    const d = await (await fetch(`${cfg.url}?v=3&idToken=${encodeURIComponent(cfg.tok)}`)).json();
+    const d = await (await fetch(`${cfg.url}?v=4&idToken=${encodeURIComponent(cfg.tok)}`)).json();
     if (!d.ok) {
       if (/sign in/i.test(d.error || "")) { cfg.tok = ""; store.set("syncTok", ""); applyLock() }
-      throw new Error(d.error || "rejected");
+      throw new Error(/reload/.test(d.error || "") ? "update the Apps Script first" : d.error || "rejected");
     }
-    // an older script would misread this site's saves (a blob, one Decks tab) and hand back no
-    // decks, wiping this device's on apply -> never sync with one
-    if (d.v !== 3) throw new Error("update the Apps Script first");
+    // an older script would hand back no My Cards (or no decks), wiping this device's on apply ->
+    // never sync with one
+    if (d.v !== 4) throw new Error("update the Apps Script first");
     cfg.ready = true;
     // whichever side was written last wins — plain and predictable for one person, two devices.
     // No tabs yet = first run on the new script: the old state JSON comes along once to fill them.
@@ -2786,7 +3120,7 @@ function push(wait = 900) {
       // text/plain keeps it a simple request: no CORS preflight, which Apps Script cannot answer
       const d = await (await fetch(cfg.url, {
         method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ idToken: cfg.tok, v: 3, updated, ...tabsOut() }),
+        body: JSON.stringify({ idToken: cfg.tok, v: 4, updated, ...tabsOut() }),
       })).json();
       if (!d.ok) throw new Error(d.error || "rejected");
       store.set("updated", updated);
