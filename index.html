@@ -398,8 +398,6 @@
   .deck { flex-wrap: wrap }
   .deck .da { flex-basis: 100%; align-items: center; padding-top: 2px }
   .deck .da .pill { padding: 6px 10px }
-  .deck .da .tot { margin-left: auto; padding: 4px 14px; font-size: 22px; align-items: center; gap: 5px; white-space: nowrap }
-  .deck .da .tot b { font-size: 14px }
   .deck .da .n {
     display: inline-block; min-width: 17px; margin-left: 3px; padding: 0 5px; border-radius: 99px;
     font-size: 11px; color: #16181f; background: #c084fc;
@@ -467,8 +465,44 @@
   span.role { font-weight: 800 }
   .ln .odds { color: #8fb4e8 }
   .price { font-size: 12px; color: var(--dim) }
-  .dk-tot { display: flex; gap: 10px; align-items: center }
-  .dk-tot .tot { margin-left: auto }
+  .dk-tot { display: flex; gap: 10px; align-items: center; justify-content: space-between }
+
+  /* the total as a ring: the arc fills with the score, coloured by tier */
+  .dhead { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between }
+  .sring {
+    --p: 0; --c: var(--dim); position: relative; flex: 0 0 64px; width: 64px; aspect-ratio: 1; border-radius: 50%;
+    display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), rgba(255,255,255,.08) 0);
+    box-shadow: 0 0 22px -8px var(--c);
+  }
+  .sring::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: #141823 }
+  .sring span { position: relative; display: grid; justify-items: center; line-height: 1; font-weight: 800; font-size: 21px }
+  .sring small { margin-top: 3px; font-size: 8.5px; letter-spacing: .1em; color: var(--c) }
+  .sring.sm { flex-basis: 50px; width: 50px }
+  .sring.sm span { font-size: 16px }
+  .sring.sm small { font-size: 7px }
+  .sr-S { --c: var(--acc) } .sr-A { --c: #4ade80 } .sr-B { --c: #60a5fa } .sr-C { --c: #fbbf24 } .sr-D { --c: #f87171 }
+
+  /* how much the deck relies on a card: a shaded bar behind its line */
+  .ln, .ir { border-radius: 8px }
+  .ln { padding: 2px 4px; margin: 0 -4px }
+  [class*="imp-"][style*="--imp"] { background: linear-gradient(90deg, var(--ic) calc(var(--imp) - 12%), transparent var(--imp)) }
+  .imp-Cornerstone { --ic: rgba(255,203,5,.26); --it: var(--acc) }
+  .imp-Core { --ic: rgba(74,222,128,.18); --it: #4ade80 }
+  .imp-Flexible { --ic: rgba(96,165,250,.16); --it: #60a5fa }
+  .imp-Replaceable { --ic: rgba(255,255,255,.07); --it: var(--dim) }
+  .il { color: var(--it); font-weight: 700 }
+  .imp-key { font-size: 11px; color: var(--dim) }
+  .imp-key span { color: var(--it); font-weight: 700; margin-left: 4px }
+  .imps { display: grid; gap: 14px; grid-template-columns: 1fr 1fr }
+  .ir { display: flex; justify-content: space-between; gap: 8px; padding: 4px 8px; margin-top: 4px; font-size: 13px }
+  .useful { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) }
+  .uf { display: flex; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 13px }
+  .uf img { width: 40px; aspect-ratio: 245/342; object-fit: cover; border-radius: 4px }
+  .uf > div { flex: 1; min-width: 0 }
+  .uf .pill { flex: 0 0 auto }
+  .uft { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px }
+  .uft span { padding: 0 7px; border-radius: 99px; font-size: 10px; background: rgba(255,255,255,.08); color: var(--dim) }
+  .uft span.gap { background: #c084fc; color: #16181f; font-weight: 700 }
   .th-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px }
   .th-row { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); margin: 6px 0 16px }
   .th-row img { width: 100%; aspect-ratio: 245/342; object-fit: cover; border-radius: 7px; background: #0006 }
@@ -533,6 +567,7 @@
     .mb { grid-column: 1/-1; grid-row: 2 }
     .fx-row small { margin-left: 0 }
     .th-row { grid-template-columns: repeat(4, minmax(0, 1fr)) }
+    .imps { grid-template-columns: 1fr }
     .dk { position: static; max-height: none }
     .pk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
     .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none }
@@ -1078,7 +1113,12 @@ function Engine(E) {
   E.fx = c => {
     if (c.fx) return c.fx;
     const f = { draw: 0, drawTo: 0, peek: 0, search: [], candy: 0, accel: 0, accelType: "", accelFrom: "",
-                gust: 0, sw: 0, recover: 0, discard: 0, shuffle: 0, engine: false, onPlay: null };
+                gust: 0, sw: 0, recover: 0, discard: 0, shuffle: 0, engine: false, onPlay: null, needs: "" };
+    // a partner it can't work without (Lunatone needs Solrock in play, Solrock needs Lunatone on the Bench)
+    for (const t of [...(c.ab || []).map(a => a[1]), ...(c.atk || []).map(a => a[3])]) {
+      const m = (t || "").match(/if you (?:don't |do not )?have ([A-Z][\w'’.-]*(?: [A-Z][\w'’.-]*)*) (?:in play|on your Bench)/);
+      if (m && m[1] !== c.n && !/^(any|no)\b/i.test(m[1])) { f.needs = m[1]; break }
+    }
     for (const raw of c.c === "P" ? (c.ab || []).map(a => a[1]) : [c.rt || ""]) {
       const t = raw.replace(/\s+/g, " ");
       // an engine works every turn: passive abilities, one-shots on entering play and abilities that
@@ -1107,6 +1147,7 @@ function Engine(E) {
         }
       }
       if (/skipping the Stage 1/i.test(t)) f.candy = 1;
+      if (c.c === "T" && (m = t.match(/attacks used by your (?:(\w+) )?Pokémon do (\d+) more damage/i))) { f.boost = +m[2]; f.boostType = TL[m[1]] || "" }
       if ((m = t.match(/attach (?:up to (\d+) |an? |(\d+) )?(?:Basic )?(\w+ )?Energy cards? from your (hand|discard pile|deck)/i))) {
         f.accel = /as often as you like/i.test(t) ? 2 : +(m[1] || m[2] || 1);
         f.accelType = TL[(m[3] || "").trim()] || "";
@@ -1162,10 +1203,21 @@ function Engine(E) {
     const fs = Object.values(fams);
     const payable = f => !f.hit || [...f.hit.cost].every(L => L === "C" || types.has(L) || types.has("*")) ? 1 : 0.4;
     const weight = f => f.dmg * Math.min((f.atk?.count || 0) + 1, 4) * payable(f);   // copies of the attacker itself
+    // the best damage boost the deck runs adds to every attacker of its type
+    for (const f of fs) if (f.hit) {
+      const b = Math.max(0, ...cards.filter(c => c.c === "T" && E.fx(c).boost && (!E.fx(c).boostType || f.atk.t.some(t => TL[t] === E.fx(c).boostType))).map(c => E.fx(c).boost));
+      if (b) { f.hit = { ...f.hit, v: f.hit.v + b }; f.dmg += b }
+    }
     fs.forEach(f => { f.weight = weight(f) });
     const main = fs.reduce((m, f) => !m || f.weight > m.weight ? f : m, null);
+    // an engine's partner is part of the engine: the pair only works together
+    const partnerOf = {};
+    for (const f of fs) if (f.eng && E.fx(f.eng).needs) {
+      const g = fs.find(g => g !== f && pok.some(c => c.root === g.root && c.n === E.fx(f.eng).needs));
+      if (g) { partnerOf[g.root] = f.eng.n; f.pair = g.root; g.pair = f.root }
+    }
     for (const f of fs) {               // a single copy is a tech, not something the deck builds around
-      f.auto = f === main ? "A" : f.eng && f.n >= 2 ? "E" : f.dmg >= 0.7 * main.dmg && f.n >= 2 ? "A" : "S";
+      f.auto = f === main ? "A" : (f.eng || partnerOf[f.root]) && f.n >= 2 ? "E" : f.dmg >= 0.7 * main.dmg && f.n >= 2 ? "A" : "S";
       f.role = overrides[f.root] || f.auto;
       if (f.role === "E" && !f.eng) f.eng = f.topCard;
       if (f.role === "A" && !f.atk) { f.atk = f.topCard; f.hit = E.best(f.topCard, copy) }
@@ -1292,7 +1344,7 @@ function Engine(E) {
         let any = false;
         for (const p of play) {
           const f = live[p.i].fx;
-          if (p.used === t || !f.engine) continue;
+          if (p.used === t || !f.engine || (f.needs && !onBoard(f.needs))) continue;   // its partner isn't out yet
           let did = false;
           for (const s of f.search) { got += tutor(s); did = true }
           if (f.peek && deck.length) {                    // look at the top few, keep the best one
@@ -1448,6 +1500,15 @@ function Engine(E) {
     return { win: win / 1000, hA, hB, reasons: r.sort((x, y) => y[0] - x[0]).slice(0, 3).map(x => x[1]) };
   };
 
+  // how much the deck leans on each card: all its copies swapped for blanks, then re-simulated
+  E.importance = (cards, overrides, hps, seed) => {
+    const N = 600, base = E.score(E.simulate(cards, overrides, N, seed), hps).total;
+    return cards.filter(c => !c.dead).map(c => {
+      const next = cards.map(x => x === c ? { n: "(blank)", c: "T", sub: [], t: [], count: c.count, dead: 1, root: "(blank)" } : x);
+      return [c.k ?? c.n, Math.max(0, base - E.score(E.simulate(next, overrides, N, seed), hps).total)];
+    });
+  };
+
   // one-card swaps tried in simulation; the best few are re-run longer before they are believed
   E.swaps = (cards, overrides, adds, removes, hps, seed) => {
     const sc = (cs, n) => E.score(E.simulate(cs, overrides, n, seed), hps);
@@ -1592,6 +1653,40 @@ function known(slot, cards, roles = {}) {
   return DONE.get(key);
 }
 const deckProfile = d => known("d:" + d.name, expand(d.cards), d.roles);
+const IMP = new Map();                    // profile key -> Map(card k -> total score lost without it)
+function importanceOf(d) {
+  const p = deckProfile(d);
+  if (!p) return null;
+  if (!IMP.has(p.key)) {
+    IMP.set(p.key, null);
+    const cards = expand(d.cards), key = p.key;
+    setTimeout(() => {                    // only for a deck that stays put a moment
+      if (deckProfile(d)?.key !== key) return IMP.delete(key);
+      run("importance", cards, d.roles, HP, key).then(r => { IMP.set(key, new Map(Array.isArray(r) ? r : [])); refresh() });
+    }, 600);
+  }
+  return IMP.get(p.key);
+}
+const IMP_LEVELS = [[70, "Cornerstone"], [40, "Core"], [15, "Flexible"], [0, "Replaceable"]];
+// Importance is judged against the deck's own plan: without its main attacker the simulation would
+// just fall back on another, so the plan's pieces keep a floor — as do gust, switching, recovery
+// and damage boosts, which win real games the goldfish simulation never plays.
+function planFloors(cards, roles) {
+  const m = new Map(), fs = ENG.roles(cards, roles);
+  const main = fs.filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0];
+  fs.forEach(f => {
+    if (f.role === "A" && f.atk) m.set(f.atk.n, f === main ? 75 : 45);
+    if (f.role === "E" && f.eng) m.set(f.eng.n, Math.max(m.get(f.eng.n) || 0, 45));
+  });
+  return m;
+}
+const impLevel = (drop, c, floors) => {
+  const f = c ? ENG.fx(c) : {}, floor = Math.max(f.gust ? 45 : f.sw || f.recover || f.boost ? 20 : 0, floors?.get(c?.n) || 0);
+  const v = Math.max(floor, Math.round(100 * (1 - Math.exp(-drop / 8))));
+  return [v, IMP_LEVELS.find(([min]) => v >= min)[1]];
+};
+const scoreRing = (s, cls = "") => `<div class="sring ${cls} sr-${s ? s.tier : "x"}" style="--p:${s ? s.total : 0}"
+  title="Total score — Consistency 35%, Speed grow 25%, Power 25%, Speed deck 15%"><span>${s ? s.total : "…"}<small>${s ? "TIER " + s.tier : ""}</small></span></div>`;
 const metaProfile = i => known("m:" + i, metaCards[i]);
 function refresh() {                      // results arrived: redraw what shows them, never under the cursor
   clearTimeout(redrawT);
@@ -1668,7 +1763,7 @@ function tipsOf(d, cards, p) {
   for (const f of fs.filter(f => f.role !== "S")) {
     const b = cards.filter(c => c.root === f.root && ENG.stage(c) === 0).reduce((s, c) => s + c.count, 0);
     const usual = arch?.m.usage.find(u => u[0] === f.root)?.[2];        // what winning lists run of it
-    if (b < 3 && !(usual && usual <= b + 0.5)) tip(`Only ${b} ${f.root} — 3–4 copies of a key Basic survive Prizes and early KOs.`, "C");
+    if (b < 3 && !(usual && usual <= b + 0.5) && !f.pair) tip(`Only ${b} ${f.root} — 3–4 copies of a key Basic survive Prizes and early KOs.`, "C");
   }
   const atkF = fs.filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0];
   if (atkF) {
@@ -1681,6 +1776,13 @@ function tipsOf(d, cards, p) {
   if (!n(c => fx(c).sw) && !metaSkips(c => fx(c).sw)) tip("No switching — a Switch or two frees a stuck Active.", "G");
   if (!n(c => fx(c).recover) && !metaSkips(c => fx(c).recover)) tip("No recovery (Night Stretcher, Super Rod) — late game you can run out of attackers.", "C");
   if (!cards.some(c => c.sub.includes("ACE SPEC"))) tip("No ACE SPEC — every deck may run one, a free upgrade.", "P");
+  const shown = new Set();
+  for (const [a, b] of pairsOf(cards)) {
+    const key = [a, b].sort().join("|"), na = n(c => c.n === a), nb = n(c => c.n === b);
+    if (shown.has(key) || na === nb) continue;
+    shown.add(key);
+    tip(`${a} only works with ${b} (and the other way round) — run them evenly; you have ${na} ${a} and ${nb} ${b}.`, "C");
+  }
   if (arch) {
     const mine = {}; cards.forEach(c => { mine[c.n] = (mine[c.n] || 0) + c.count });
     arch.m.usage.filter(([name, share, avg]) => share >= 60 && (mine[name] || 0) + 1 <= avg).slice(0, 5)
@@ -1691,22 +1793,75 @@ function tipsOf(d, cards, p) {
   return T;
 }
 
+// partner pairs a deck runs, read from the cards' own text: [card, the partner it needs]
+function pairsOf(cards) {
+  return cards.filter(c => ENG.fx(c).needs && cards.some(x => x.n === ENG.fx(c).needs)).map(c => [c.n, ENG.fx(c).needs]);
+}
+
+// Trainers by how much of the meta plays them (each archetype weighted by its share)
+const META_SHARE = META.decks.reduce((s, m) => s + m.share, 0) || 1;
+const POPULAR = (() => {
+  const w = new Map();
+  META.decks.forEach(m => m.usage.forEach(([name, share]) => {
+    if (NAMED.get(name)?.c === "T") w.set(name, (w.get(name) || 0) + m.share * share / 100);
+  }));
+  return new Map([...w].sort((a, b) => b[1] - a[1]).map(([name, v]) => [name, Math.round(100 * v / META_SHARE)]));
+})();
+const tagsOf = (c, type) => {
+  const f = ENG.fx(c), t = [];
+  if (f.draw || f.drawTo) t.push("Draw");
+  if (f.search.length) t.push("Search");
+  if (f.gust) t.push("Gust");
+  if (f.sw) t.push("Switch");
+  if (f.recover) t.push("Recovery");
+  if (f.candy) t.push("Rare Candy");
+  if (f.accel) t.push("Energy");
+  if (type && new RegExp(`\\b${type}\\b`).test(c.rt || "")) t.push(`${type} support`);
+  t.push(c.sub.includes("ACE SPEC") ? "ACE SPEC" : c.sub.includes("Stadium") ? "Stadium" : c.sub.includes("Pokémon Tool") ? "Tool" : c.sub.includes("Supporter") ? "Supporter" : "Item");
+  return t;
+};
+// Trainers that would add flow: popular across the meta, made for the attacker's type, or filling a gap
+function usefulTrainers(d, cards) {
+  const fs = ENG.roles(cards, d.roles), main = fs.filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0];
+  const type = main?.atk?.t?.[0], fx = c => ENG.fx(c);
+  const has = name => cards.filter(c => c.n === name).reduce((s, c) => s + c.count, 0);
+  const n = pred => cards.reduce((s, c) => s + (pred(c) ? c.count : 0), 0), ace = n(c => c.sub.includes("ACE SPEC"));
+  const gaps = { Draw: n(c => c.sub.includes("Supporter") && (fx(c).draw || fx(c).drawTo)) < 6,
+                 Search: n(c => c.c === "T" && fx(c).search.length) < 6, Gust: !n(c => fx(c).gust),
+                 Switch: !n(c => fx(c).sw), Recovery: !n(c => fx(c).recover), "ACE SPEC": !ace };
+  const pool = new Map();
+  [...POPULAR.keys()].slice(0, 40).forEach(name => pool.set(name, NAMED.get(name)));
+  if (type) CARDS.cards.filter(c => c.c === "T" && new RegExp(`\\b${type}\\b`).test(c.rt || "")).forEach(c => pool.set(c.n, c));
+  return [...pool.values()].filter(c => c && has(c.n) < 2 && !(ace && c.sub.includes("ACE SPEC")))
+    .map(c => {
+      const tags = tagsOf(c, type), fills = tags.filter(t => gaps[t]);
+      return { c, tags, fills, pop: POPULAR.get(c.n) || 0,
+               score: (POPULAR.get(c.n) || 0) + fills.length * 25 + (tags.includes(`${type} support`) ? 20 : 0) };
+    }).sort((a, b) => b.score - a.score).slice(0, 8);
+}
+
 // what to try swapping: what winning lists run, common staples, a thicker main line; out goes
 // whatever does least (no draw, search, gust, recovery — Support Pokémon before Engines)
 function swapCandidates(d, cards) {
   const has = name => cards.filter(c => c.n === name).reduce((s, c) => s + c.count, 0);
+  const partner = Object.fromEntries(pairsOf(cards));
+  // a pair stays balanced: only its scarcer half is ever added, only an extra copy of the bigger half removed
+  const evenUp = c => !partner[c.n] || has(c.n) < has(partner[c.n]);
   const ace = cards.some(c => c.sub.includes("ACE SPEC")), adds = new Map();
-  const add = c => { if (c && !adds.has(c.k) && (ENG.basicEnergy(c) || has(c.n) < COPIES) && !(ace && c.sub.includes("ACE SPEC"))) adds.set(c.k, c) };
+  const add = c => { if (c && !adds.has(c.k) && (ENG.basicEnergy(c) || has(c.n) < COPIES) && !(ace && c.sub.includes("ACE SPEC")) && evenUp(c)) adds.set(c.k, c) };
   const arch = archetype(cards), fs = ENG.roles(cards, d.roles);
-  if (arch) arch.m.usage.filter(u => u[1] >= 50 && has(u[0]) < Math.round(u[2])).slice(0, 5).forEach(u => add(NAMED.get(u[0])));
+  Object.keys(partner).forEach(name => add(NAMED.get(name)));
+  if (arch) arch.m.usage.filter(u => u[1] >= 50 && has(u[0]) < Math.round(u[2])).slice(0, 4).forEach(u => add(NAMED.get(u[0])));
   for (const f of fs.filter(f => f.role !== "S")) add(cards.find(c => c.root === f.root && ENG.stage(c) === 0 && !c.dead));
-  for (const name of STAPLES) if (adds.size < 9) add(NAMED.get(name));
+  usefulTrainers(d, cards).slice(0, 6).forEach(x => add(x.c));
+  for (const name of STAPLES) if (adds.size < 12) add(NAMED.get(name));
   const roleOf = c => fs.find(f => f.root === c.root)?.role;
   const worth = c => { const f = ENG.fx(c);
     return c.dead ? -1 : c.c === "P" ? (roleOf(c) === "S" ? 1 : 9) : f.search.length || f.draw || f.drawTo || f.candy ? 6
       : f.gust || f.recover || f.sw ? 4 : c.c === "E" ? 3 : 2 };
-  return { adds: [...adds.values()].slice(0, 9).map(expandCard),
-           removes: cards.filter(c => !c.dead).sort((a, b) => worth(a) - worth(b)).slice(0, 5) };
+  return { adds: [...adds.values()].slice(0, 12).map(expandCard),
+           removes: cards.filter(c => !c.dead && (!partner[c.n] || has(c.n) > has(partner[c.n])))
+                         .sort((a, b) => worth(a) - worth(b)).slice(0, 5) };
 }
 
 // € of the chosen print (or of the card's other prints when that one has none); $ only for cards
@@ -1789,7 +1944,7 @@ function renderDeckList() {
       return `<article class="deck" data-i="${i}">
         <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}</div>
         <div class="dbody">
-          <div class="dn">${esc(d.name)}</div>
+          <div class="dhead"><div class="dn">${esc(d.name)}</div>${scoreRing(s)}</div>
           <div class="ds"><b>${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
           ${arch ? `<div class="ds">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match</div>` : ""}
           ${probs.length ? `<div class="dw">⚠ ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more)` : ""}</div>`
@@ -1803,7 +1958,6 @@ function renderDeckList() {
           <button class="pill sm" data-dk="ins" title="Tips to improve, tested swaps, matchups">💡 Insights${tips ? ` <b class="n">${tips}</b>` : ""}</button>
           <button class="pill sm" data-dk="dup">Duplicate</button>
           <button class="pill sm" data-dk="del">Delete</button>
-          <span class="tot t-${s ? s.tier : "x"}" title="Total score · tier">${s ? `${s.total}<b>${s.tier}</b>` : "…"}</span>
         </div>
       </article>`;
     }).join("") : `<p class="empty">${decks.length ? "No deck has this tag." : "No decks yet — start one, or paste a list from Limitless or TCG Live."}</p>`}</div>`;
@@ -1881,17 +2035,17 @@ function renderGrid() {
 
 function renderPanel() {
   const d = open, t = tally(d), probs = issues(t), cov = coverOf(d)?.id, cards = expand(d.cards);
-  const p = deckProfile(d), fs = ENG.roles(cards, d.roles), price = deckPrice(d);
+  const p = deckProfile(d), fs = ENG.roles(cards, d.roles), price = deckPrice(d), imp = importanceOf(d), floors = planFloors(cards, d.roles);
   const ok = k => t[k] >= RANGE[k][0] && t[k] <= RANGE[k][1];
   const order = l => cardOf(l)?.k ?? 1e9;
   const line = l => {
     const c = cardOf(l), pr = PRINT.get(l.id)?.[1], f = c?.c === "P" && fs.find(f => f.root === c.root);
-    const odds = c && p?.seen[c.k], cost = linePrice(l);
-    return `<div class="ln ${c ? "" : "rot"}" data-id="${esc(l.id)}">
+    const odds = c && p?.seen[c.k], cost = linePrice(l), [iv, il] = c && imp?.has(c.k) ? impLevel(imp.get(c.k), c, floors) : [];
+    return `<div class="ln ${c ? "" : "rot"} ${il ? "imp-" + il : ""}" data-id="${esc(l.id)}" ${il ? `style="--imp:${Math.max(iv, 4)}%" title="${il}: without it the deck scores ${imp.get(c.k)} lower"` : ""}>
       <img class="th" loading="lazy" alt="" src="${thumb(l)}">
       <b class="lq">${l.n}</b>
       <span class="lnm" ${c ? 'data-ln="zoom"' : ""}>${esc(l.name)}
-        <small>${pr ? `${pr[1]} ${pr[2]}` : "rotated — not legal"}${cost ? ` · ${cost}` : ""}</small>
+        <small>${il ? `<b class="il">${il}</b> · ` : ""}${pr ? `${pr[1]} ${pr[2]}` : "rotated — not legal"}${cost ? ` · ${cost}` : ""}</small>
         ${odds ? `<small class="odds">opener ${perc(odds[0])} · T2 ${perc(odds[2])} · T3 ${perc(odds[3])}</small>` : ""}</span>
       ${f ? `<button class="role r-${f.role} ${d.roles[f.root] ? "set" : ""}" data-ln="role" title="${ROLE[f.role]} line${d.roles[f.root] ? "" : " (auto)"} — tap to change">${f.role}</button>` : ""}
       <button class="cov ${l.id === cov ? "on" : ""}" data-ln="cover" title="Deck cover">★</button>
@@ -1901,12 +2055,13 @@ function renderPanel() {
   };
   deckview.querySelector(".dk").innerHTML = `
     <input class="dk-name" value="${esc(d.name)}" aria-label="Deck name" maxlength="60">
-    <div class="dk-tot"><b>${t.total}</b> / ${DECK_MAX} cards
-      ${p ? `<span class="tot t-${p.score.tier}">${p.score.total}<b>${p.score.tier}</b></span>` : ""}</div>
+    <div class="dk-tot"><span><b>${t.total}</b> / ${DECK_MAX} cards</span>${scoreRing(p?.score, "sm")}</div>
     <div class="cnts">${Object.keys(RANGE).map(k => `
       <div class="cn ${ok(k) ? "ok" : "warn"}"><b>${t[k]}</b><span>${k}</span><small>aim ${RANGE[k].join("–")}</small></div>`).join("")}
     </div>
     ${probs.length ? `<ul class="iss">${probs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    ${d.cards.length ? `<div class="imp-key">${imp ? `Shading = how much the deck relies on a card:
+      ${IMP_LEVELS.map(([, l]) => `<span class="imp-${l}">${l}</span>`).join(" ")}` : "Measuring which cards the deck relies on…"}</div>` : ""}
     ${Object.values(CAT).map(k => {
       const ls = d.cards.filter(l => l.cat === k).sort((a, b) => order(a) - order(b));
       return ls.length ? `<h3>${k} · ${t[k]}</h3>${ls.map(line).join("")}` : "";
@@ -1971,13 +2126,31 @@ function renderInsights() {
 
     <h3>How to improve</h3>
     <ul class="tips">${tips.map(t => `<li><span class="ft f-${t.f}">${t.f === "M" ? "Meta" : FACTOR[t.f]}</span>${esc(t.text)}</li>`).join("") || "<li>No obvious gaps — nice.</li>"}</ul>
-    <div class="swaps"><div class="lbl">Tested swaps ${d.cards.length >= DECK_MAX ? "(one in, one out)" : "(cards to add)"}</div>
+    <div class="swaps"><div class="lbl">Tested swaps ${sum(d.cards) >= DECK_MAX ? "(one in, one out)" : "(cards to add)"}</div>
       ${!p || sw === null || sw === undefined ? `<p class="sub">Testing swaps in simulation…</p>`
         : sw.length ? sw.map((x, i) => `<div class="sw">
             <span>${x.rem ? `−1 ${esc(x.rem)} ` : ""}<b>+1 ${esc(x.add)}</b></span>
             <span class="sub">Total +${x.d}${["C", "G", "P", "D"].filter(k => x[k]).map(k => ` · ${FACTOR[k]} ${x[k] > 0 ? "+" : ""}${x[k]}`).join("")}</span>
             <button class="pill sm" data-swap="${i}">Apply</button></div>`).join("")
         : `<p class="sub">No single swap scored better — the list is well balanced.</p>`}</div>
+
+    <h3>Trainers worth a look</h3>
+    <div class="useful">${usefulTrainers(d, cards).map(x => `<div class="uf">
+        <img loading="lazy" alt="" src="${imgOf(x.c.p[0])}">
+        <div><b>${esc(x.c.n)}</b> <small class="sub">${x.pop ? `in ${x.pop}% of meta lists` : "made for your type"}</small>
+          <div class="uft">${x.tags.map(t => `<span class="${x.fills.includes(t) ? "gap" : ""}" ${x.fills.includes(t) ? 'title="Your deck has little or none of this"' : ""}>${esc(t)}</span>`).join("")}</div></div>
+        <button class="pill sm" data-useful="${x.c.k}">＋ Add</button></div>`).join("") || `<p class="sub">Nothing obvious missing.</p>`}</div>
+    ${(() => {
+      const imp = importanceOf(d);
+      if (!imp) return `<h3>Cornerstones & replaceable</h3><p class="sub">Measuring which cards the deck relies on…</p>`;
+      const floors = planFloors(cards, d.roles);
+      const ranked = cards.filter(c => imp.has(c.k)).map(c => [c, ...impLevel(imp.get(c.k), c, floors)]).sort((a, b) => b[1] - a[1]);
+      const row = ([c, v, l]) => `<div class="ir imp-${l}" style="--imp:${Math.max(v, 4)}%"><span>${c.count}× ${esc(c.n)}</span><b class="il">${l}</b></div>`;
+      return `<h3>Cornerstones & replaceable</h3>
+        <p class="sub">Each card's copies swapped for blanks and re-simulated: the more the score falls, the more the deck relies on it.</p>
+        <div class="imps"><div><div class="lbl">Relies on most</div>${ranked.slice(0, 6).map(row).join("")}</div>
+          <div><div class="lbl">Easiest to replace</div>${ranked.slice(-6).reverse().map(row).join("")}</div></div>`;
+    })()}
 
     <h3>Matchups vs the meta</h3>
     ${META.decks.length ? META.decks.map((m, i) => mu(esc(m.name), m.share, metaProfile(i), i + 1)).join("")
@@ -2298,6 +2471,8 @@ deckview.addEventListener("click", e => {
     }
     return;
   }
+  const useful = e.target.closest("[data-useful]");
+  if (useful) return addCard(CARDS.cards[+useful.dataset.useful]);
   const swap = e.target.closest("[data-swap]");
   if (swap) return applySwap(SWAPS.get(deckProfile(open)?.key)?.[+swap.dataset.swap] || {});
   const untag = e.target.closest("[data-untag]");
