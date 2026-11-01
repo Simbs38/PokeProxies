@@ -28,19 +28,21 @@ in your Sheet and in each browser's localStorage.
 Re-deploy (**Deploy → Manage deployments → edit → Version: New version**) after any script edit —
 editing alone changes nothing that is served.
 
-**What lands in the Sheet.** The site writes three tabs on every save, one row per entry:
+**What lands in the Sheet.** The site rewrites these tabs on every save, one row per entry:
 
 | Tab | Columns |
 |---|---|
 | `Gen 1` | Pokémon · Owned · Card IDs (one per line) · Favourite — plus a last `Unsorted` row for owned cards that match no Pokémon |
 | `30th Celebration` | Pokémon · Owned · Card ID · Number · Rarity · Section |
-| `Decks` | Deck · Qty · Card · Card ID · Category · Cover · Notes — one row per card in each deck; a deck's notes sit on its first row |
+| `Deck · <name>` (one per deck) | Qty · Card · Card ID · Category · Role · Cover — and on the right the deck's scores, archetype, price, tags, notes, role overrides, then its saved versions |
 
 They are for reading: the next save from any device rewrites them, so hand edits do not stick.
+Renaming or deleting a deck renames or removes its tab. The earlier single `Decks` tab is read once
+and then removed.
 
-**After a script change that adds a tab** (as `Decks` did): paste the new code, then re-deploy
-*before* pushing the site. Until then the new site shows "update the Apps Script first" and saves
-only on the device, so the old script can never hand it back an empty tab that wipes your decks.
+**After a script change** (a new tab layout, as the per-deck tabs were): paste the new code, then
+re-deploy *before* pushing the site. Until then the new site shows "update the Apps Script first"
+and saves only on the device, so an old script can never hand it back data that wipes your decks.
 
 **Switching over from the old `state` tab** (one JSON blob): re-deploy the script *first*. Until
 the `Gen 1` tab exists it still serves a cached old site as before. The first load of the new site
@@ -99,8 +101,10 @@ python3 fetch_data.py --refresh      # optional, refreshes prices
 git commit -am "update" && git push
 ```
 
-Every run also rebuilds `cards.js`, the deckbuilder's list of Standard-legal cards, so a plain
-`python3 fetch_data.py` is enough to pick up a new set. At rotation, edit `LEGAL` in
+Every run also rebuilds `cards.js`, the deckbuilder's list of Standard-legal cards (with their
+text and Cardmarket prices), and `meta.js`, the top 10 archetypes of the last 4 weeks of Limitless
+online Standard events that the deck scores and matchups are measured against — so a plain
+`python3 fetch_data.py` is enough to pick up a new set or a new meta. At rotation, edit `LEGAL` in
 `fetch_data.py` (the regulation marks still legal) and re-run; saved decks keep their rotated cards,
 flagged "not legal" until you swap them.
 

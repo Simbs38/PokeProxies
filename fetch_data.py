@@ -29,7 +29,14 @@ ANNIV_SETS = ["me55", "me55c"]
 # Deckbuilder -> cards.js: every card legal in Standard (these regulation marks) plus the basic
 # Energies, which carry no mark and are always legal. Rotation = edit LEGAL and re-run.
 LEGAL = ["H", "I", "J"]
-CARD_FIELDS = "id,name,supertype,subtypes,types,hp,number,set,images,nationalPokedexNumbers,attacks,abilities"
+CARD_FIELDS = ("id,name,supertype,subtypes,types,hp,number,set,images,nationalPokedexNumbers,attacks,abilities,"
+               "rules,weaknesses,resistances,retreatCost,evolvesFrom,cardmarket,tcgplayer")
+ECODE = {"Grass": "G", "Fire": "R", "Water": "W", "Lightning": "L", "Psychic": "P", "Fighting": "F",
+         "Darkness": "D", "Metal": "M", "Dragon": "N", "Fairy": "Y", "Colorless": "C"}
+
+# Deckbuilder -> meta.js: the archetypes winning right now, from Limitless online Standard events.
+LIMITLESS = "https://play.limitlesstcg.com/api"
+META_DAYS, META_EVENTS, META_TOP = 28, 40, 10   # window, biggest events read, archetypes kept
 
 FORM = re.compile(r"^(Mega|Gigantamax|Alolan|Galarian|Hisuian|Paldean)\s+")
 SUFFIX = [("Mega ", "-mega"), ("Gigantamax ", "-gmax"), ("Alolan ", "-alola"),
@@ -163,6 +170,78 @@ def anniv_master_set():
     return {"name": ANNIV_LABEL, "kind": "cards", "items": items}
 
 
+def eur_usd(card):
+    """[Cardmarket trend €, TCGplayer market $] — either may be None."""
+    cm = (card.get("cardmarket") or {}).get("prices", {})
+    eur = cm.get("trendPrice") or cm.get("averageSellPrice") or cm.get("avg30")
+    usd = next((p.get("market") or p.get("mid") for p in (card.get("tcgplayer") or {}).get("prices", {}).values()
+                if p.get("market") or p.get("mid")), None)
+    return [round(eur, 2) if eur else None, round(usd, 2) if usd else None]
+
+
+def meta_decks(legal):
+    """The META_TOP archetypes by play share over the META_DAYS window of Limitless online Standard
+    events (the META_EVENTS biggest), each with its best-placed list mapped onto cards.js prints and
+    how often every card shows up across that archetype's lists."""
+    by_code, by_name = {}, {}
+    norm = lambda s: re.sub(r"^basic ", "", s.lower().replace("’", "'")).strip()
+    for g in legal["cards"]:
+        for p in g["p"]:
+            by_code[f"{p[1]} {p[2]}".upper()] = (p[0], g)
+        by_name.setdefault(norm(g["n"]), (g["p"][0][0], g))
+    cat = {"P": "Pokémon", "T": "Trainer", "E": "Energy"}
+
+    cut = time.strftime("%Y-%m-%dT%H:%M", time.gmtime(time.time() - META_DAYS * 86400))
+    events, page = [], 1
+    while page < 30:
+        got = get(f"{LIMITLESS}/tournaments?game=PTCG&format=STANDARD&limit=100&page={page}", fatal=False)
+        if not got:
+            break
+        events += [t for t in got if t["date"] >= cut]
+        if got[-1]["date"] < cut:
+            break
+        page += 1
+    events = sorted(events, key=lambda t: -t["players"])[:META_EVENTS]
+    if not events:
+        return None
+
+    lists = {}                                            # archetype id -> [(score, name, cards)]
+    names, players = {}, 0
+    for n, t in enumerate(events, 1):
+        rows = get(f"{LIMITLESS}/tournaments/{t['id']}/standings", fatal=False) or []
+        print(f"  [{n:2}/{len(events)}] {t['name'][:40]:40} {t['players']:4} players")
+        for r in rows:
+            deck, dl = r.get("deck") or {}, r.get("decklist")
+            if not deck.get("id") or not isinstance(dl, dict):
+                continue
+            players += 1
+            names[deck["id"]] = deck["name"]
+            cards = []
+            for part in ("pokemon", "trainer", "energy"):
+                for e in dl.get(part) or []:
+                    hit = by_code.get(f"{e.get('set')} {e.get('number')}".upper()) or by_name.get(norm(e["name"]))
+                    cards.append({"id": hit[0] if hit else None, "n": e["count"], "name": hit[1]["n"] if hit else e["name"],
+                                  "cat": cat[hit[1]["c"]] if hit else {"pokemon": "Pokémon", "trainer": "Trainer"}.get(part, "Energy")})
+            rec = r.get("record") or {}
+            score = (rec.get("wins", 0) * 3 + rec.get("ties", 0)) * 1000 + t["players"] - (r.get("placing") or 999)
+            lists.setdefault(deck["id"], []).append((score, cards))
+
+    top = sorted(lists, key=lambda k: -len(lists[k]))[:META_TOP]
+    out = []
+    for k in top:
+        ls = sorted(lists[k], key=lambda x: -x[0])
+        usage = {}
+        for _, cards in ls:
+            for name in {c["name"] for c in cards}:
+                usage.setdefault(name, []).append(sum(c["n"] for c in cards if c["name"] == name))
+        out.append({"id": k, "name": names[k], "share": round(100 * len(ls) / players, 1), "lists": len(ls),
+                    "cards": ls[0][1],                    # the best-placed list stands in for the archetype
+                    "usage": sorted(([n, round(100 * len(v) / len(ls)), round(sum(v) / len(v), 1)]
+                                     for n, v in usage.items()), key=lambda u: -u[1])})
+    return {"fetched": time.strftime("%Y-%m-%d %H:%M"), "days": META_DAYS, "events": len(events),
+            "players": players, "decks": out}
+
+
 def query_all(q, fields):
     """Every card matching q, paging past the 250 cap; None once the API gives up."""
     cards, page, total = [], 1, None
@@ -200,16 +279,28 @@ def legal_cards():
         code = s.get("ptcgoCode") or s["id"].upper()      # the code deck lists use: "4 Pikachu 30C 29"
         sets[code] = s["name"]
         img = (c.get("images") or {}).get("small", "")
-        prt = [c["id"], code, c["number"]]
-        if img != f"https://images.pokemontcg.io/{s['id']}/{c['number']}.png":
-            prt.append(img)                               # newer sets live on another image host
-        if key not in groups:
+        if img == f"https://images.pokemontcg.io/{s['id']}/{c['number']}.png":
+            img = ""                                      # derivable; newer sets live on another host
+        groups.setdefault(key, None)
+        if groups[key] is None:
             hp = c.get("hp") or ""
             groups[key] = {k: v for k, v in {
                 "n": c["name"], "c": kind, "sub": c.get("subtypes") or [], "t": c.get("types") or [],
                 "hp": int(hp) if hp.isdigit() else None,
-                "dex": (c.get("nationalPokedexNumbers") or [None])[0], "p": []}.items() if v is not None}
-        groups[key]["p"].append(prt)
+                "dex": (c.get("nationalPokedexNumbers") or [None])[0],
+                # what the deck analysis reads: evolution, attacks [name, cost, damage, text],
+                # abilities [name, text], Trainer/Energy rules, weakness, resistance, retreat
+                "ef": c.get("evolvesFrom"),
+                "atk": [[a["name"], "".join(ECODE.get(e, "C") for e in a.get("cost") or []),
+                         a.get("damage") or "", a.get("text") or ""] for a in c.get("attacks") or []] or None,
+                "ab": [[a["name"], a.get("text") or ""] for a in c.get("abilities") or []] or None,
+                "rt": " ".join(c.get("rules") or []) or None,
+                "wk": "".join(ECODE.get(w["type"], "") for w in c.get("weaknesses") or []) or None,
+                "rs": "".join(ECODE.get(w["type"], "") for w in c.get("resistances") or []) or None,
+                "rc": len(c.get("retreatCost") or []) if kind == "P" else None,
+                "p": []}.items() if v is not None}
+        # a print: [id, set code, number, image or "", Cardmarket €, TCGplayer $]
+        groups[key]["p"].append([c["id"], code, c["number"], img] + eur_usd(c))
 
     order = {"P": 0, "T": 1, "E": 2}
     cards = sorted(groups.values(), key=lambda g: (
@@ -309,12 +400,21 @@ def main():
         prints = sum(len(g["p"]) for g in legal["cards"])
         print(f"  {len(legal['cards'])} cards ({prints} prints) -> cards.js")
 
-    # Browsers cache data.js / cards.js hard, so a refresh would keep showing the old data until a
-    # manual hard-reload. Stamp the tags with this run's timestamp instead.
+        print(f"· Deckbuilder: meta from Limitless (last {META_DAYS} days, {META_EVENTS} biggest events) …")
+        meta = meta_decks(legal)
+        if meta is None:
+            print("  ! Limitless gave nothing back — kept the previous meta.js")
+        else:
+            with open(os.path.join(HERE, "meta.js"), "w", encoding="utf-8") as f:
+                f.write("window.META = " + json.dumps(meta, ensure_ascii=False, separators=(",", ":")) + ";\n")
+            print("  " + " · ".join(f"{d['name']} {d['share']}%" for d in meta["decks"]) + " -> meta.js")
+
+    # Browsers cache data.js / cards.js / meta.js hard, so a refresh would keep showing the old data
+    # until a manual hard-reload. Stamp the tags with this run's timestamp instead.
     page = os.path.join(HERE, "index.html")
     if os.path.exists(page):
         html = open(page, encoding="utf-8").read()
-        stamped = re.sub(r'<script src="(data|cards)\.js(?:\?v=[^"]*)?">',
+        stamped = re.sub(r'<script src="(data|cards|meta)\.js(?:\?v=[^"]*)?">',
                          lambda m: f'<script src="{m.group(1)}.js?v={time.strftime("%Y%m%d%H%M")}">', html)
         if stamped != html:
             open(page, "w", encoding="utf-8").write(stamped)

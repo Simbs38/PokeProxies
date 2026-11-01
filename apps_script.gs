@@ -2,8 +2,8 @@
  * Pokédex Proxies — collection store on a Google Sheet.
  *
  * Readable tabs hold the collection, one row per Pokémon form / per card: "Gen 1" and
- * "30th Celebration", plus "Decks", one row per card in each deck. Only the website writes
- * them; every save rewrites all of them. The old "state"
+ * "30th Celebration", plus one "Deck · <name>" tab per deck. Only the website writes them;
+ * every save rewrites all of them. The old "state"
  * tab (one JSON blob) is handed to the site once to fill them, then left alone as a rollback
  * point. See DEPLOY.md.
  */
@@ -20,8 +20,9 @@ const allowed_ = () => (PROPS.getProperty('ALLOWED') || '').split(/[\s,]+/).filt
 const TABS = {
   gen1:  { name: 'Gen 1',            head: ['Pokémon', 'Owned', 'Card IDs', 'Favourite'] },
   anniv: { name: '30th Celebration', head: ['Pokémon', 'Owned', 'Card ID', 'Number', 'Rarity', 'Section'] },
-  decks: { name: 'Decks',            head: ['Deck', 'Qty', 'Card', 'Card ID', 'Category', 'Cover', 'Notes'] },
 };
+const DECK = 'Deck · ';            // every tab named like this belongs to the site: one per deck
+const OLD_DECKS = 'Decks';         // the earlier all-decks-in-one tab: read once, then removed
 const LEGACY = 'state';
 const CHUNK = 40000;               // a Sheets cell tops out at 50k chars, so the JSON is split
 const STALE = 'site updated — reload the page';
@@ -72,6 +73,29 @@ function writeTab_(ss, t, rows) {
     .setValues(rows.map(r => t.head.map((_, i) => r[i] ?? '')));
 }
 
+/** A deck tab is laid out by the site (header row included); this only puts the grid down. */
+function writeDeck_(ss, name, rows) {
+  let s = deckTabs_(ss).filter(x => x.getName().toLowerCase() === name.toLowerCase())[0];
+  if (!s) {
+    s = ss.insertSheet(name);
+    s.setFrozenRows(1);
+    s.setColumnWidth(2, 220);
+    s.setColumnWidth(8, 150);
+    s.setColumnWidth(9, 360);
+  }
+  if (s.getName() !== name) s.setName(name);         // a rename that only changed capitals
+  s.clearContents();
+  if (!rows.length) return;
+  const w = Math.max.apply(null, rows.map(r => r.length));
+  s.getRange(1, 1, rows.length, w).setNumberFormat('@')
+    .setValues(rows.map(r => Array.from({ length: w }, (_, i) => r[i] ?? '')));
+  s.getRange(1, 1, 1, w).setFontWeight('bold');
+}
+
+function deckTabs_(ss) {
+  return ss.getSheets().filter(s => s.getName().indexOf(DECK) === 0);
+}
+
 // ---- the old one-blob store: read once by the new site, still served to a cached old site ----
 
 function legacyGet_(ss) {
@@ -103,14 +127,18 @@ function doGet(e) {
   const err = guard_(e.parameter.idToken);
   if (err) return json_({ ok: false, error: err });
   const ss = SpreadsheetApp.getActive(), filled = ss.getSheetByName(TABS.gen1.name);
-  if (e.parameter.v !== '2') return json_(filled ? { ok: false, error: STALE } : legacyGet_(ss));
+  // any older copy of the site would misread the deck tabs, so it is told to reload instead
+  if (e.parameter.v !== '3') return json_(filled ? { ok: false, error: STALE } : legacyGet_(ss));
   if (!filled) {                                     // first run: the old JSON fills the tabs once
     const old = legacyGet_(ss);
-    return json_({ ok: true, tabs: null, legacy: old.state, updated: old.updated });
+    return json_({ ok: true, v: 3, tabs: null, decks: [], legacy: old.state, updated: old.updated });
   }
   const tabs = {};
   for (const k in TABS) tabs[k] = rows_(ss.getSheetByName(TABS[k].name));
-  return json_({ ok: true, tabs, updated: Number(PROPS.getProperty('updated')) || 0 });
+  const decks = deckTabs_(ss).map(s => ({ name: s.getName().slice(DECK.length), rows: s.getDataRange().getDisplayValues() }));
+  const old = ss.getSheetByName(OLD_DECKS);
+  return json_({ ok: true, v: 3, tabs, decks, oldDecks: old ? rows_(old) : null,
+                 updated: Number(PROPS.getProperty('updated')) || 0 });
 }
 
 function doPost(e) {
@@ -123,11 +151,16 @@ function doPost(e) {
   const lock = LockService.getScriptLock();          // two devices saving at once
   lock.waitLock(10000);
   try {
-    if (body.v !== 2) {                              // old site: fine until the tabs exist
+    if (body.v !== 3) {                              // an older site: only before any tabs exist
       if (ss.getSheetByName(TABS.gen1.name)) return json_({ ok: false, error: STALE });
       legacyPost_(ss, body);
     } else {
       for (const k in TABS) writeTab_(ss, TABS[k], (body.tabs || {})[k] || []);
+      const keep = {};
+      (body.decks || []).forEach(d => { writeDeck_(ss, DECK + d.name, d.rows || []); keep[(DECK + d.name).toLowerCase()] = 1 });
+      deckTabs_(ss).forEach(s => { if (!keep[s.getName().toLowerCase()]) ss.deleteSheet(s) });   // renamed or deleted decks
+      const old = ss.getSheetByName(OLD_DECKS);
+      if (old) ss.deleteSheet(old);                  // its decks now live in their own tabs
       PROPS.setProperty('updated', String(body.updated || Date.now()));
     }
   } finally {

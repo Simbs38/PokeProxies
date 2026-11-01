@@ -378,6 +378,100 @@
   }
   #toast.on { opacity: 1; transform: translate(-50%, 0) }
 
+  /* ---- deck scores, insights, test hands ---- */
+  .ok { color: #4ade80 } .bad { color: #f87171 }
+  .lbl { font-size: 11px; color: var(--dim); letter-spacing: .06em; text-transform: uppercase }
+  .dk-tools { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 14px }
+  .dk-tools .lbl { margin: 0 2px 0 8px }
+  #dk-sort, #cmp-with {
+    padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+    color: var(--fg); font: 600 12px Outfit, sans-serif;
+  }
+  #dk-sort option, #cmp-with option { background: #11141d }
+  .deck .dimg { position: relative }
+  .tot {
+    display: inline-flex; align-items: baseline; gap: 3px; padding: 2px 8px; border-radius: 99px;
+    font-weight: 800; font-size: 15px; color: #16181f; background: var(--dim);
+  }
+  .tot b { font-size: 11px }
+  .deck .tot { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); white-space: nowrap }
+  .t-S { background: linear-gradient(180deg, #ffe066, var(--acc)) } .t-A { background: #4ade80 }
+  .t-B { background: #60a5fa } .t-C { background: #fbbf24 } .t-D { background: #f87171 }
+  .tier.t-S, .tier.t-A, .tier.t-B, .tier.t-C, .tier.t-D, .tier.t-x { background: none }
+  .tier { font-weight: 800; font-size: 20px }
+  .tier.t-S { color: var(--acc) } .tier.t-A { color: #4ade80 } .tier.t-B { color: #60a5fa }
+  .tier.t-C { color: #fbbf24 } .tier.t-D { color: #f87171 }
+  .fbs { display: grid; gap: 3px; margin-top: 4px }
+  .fb { display: grid; grid-template-columns: 82px 1fr 26px; gap: 6px; align-items: center; font-size: 11px }
+  .fb span { color: var(--dim) }
+  .fb i { height: 6px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden }
+  .fb i b { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--acc)) }
+  .fb em { font-style: normal; font-weight: 700; text-align: right }
+  .dtags { display: flex; gap: 4px; flex-wrap: wrap }
+  .dtags span { padding: 1px 8px; border-radius: 99px; font-size: 11px; background: rgba(255,255,255,.08); color: var(--dim) }
+  .ph-only { display: none }
+  .ed .ins, .ed .tst { display: none }
+  .ed[data-pane="insights"] .pick, .ed[data-pane="test"] .pick { display: none }
+  .ed[data-pane="insights"] .ins, .ed[data-pane="test"] .tst { display: block }
+  .ed > .pick, .ed > .ins, .ed > .tst { grid-column: 1; grid-row: 2 }
+  .ed > .dk { grid-column: 2; grid-row: 2 }
+  .ins h3 { margin: 22px 0 8px; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em }
+  .sc-hero { display: flex; gap: 16px; align-items: center; margin-bottom: 12px }
+  .fx-rows { display: grid; gap: 8px; max-width: 640px }
+  .fx-row .fb { grid-template-columns: 100px 1fr 30px; font-size: 13px }
+  .fx-row .fb i { height: 8px }
+  .fx-row small { display: block; margin-left: 106px; font-size: 11px; color: var(--dim) }
+  .ins-tags { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 14px }
+  #tag-in, #ver-label {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05);
+    color: var(--fg); font: 400 12px Outfit, sans-serif; width: 150px;
+  }
+  .tips { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px }
+  .tips li { font-size: 13px; line-height: 1.35 }
+  .ft {
+    display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 700;
+    color: #16181f; background: var(--dim); vertical-align: 1px;
+  }
+  .f-C { background: #4ade80 } .f-P { background: #f87171 } .f-D { background: #60a5fa } .f-G { background: #fbbf24 } .f-M { background: #c084fc }
+  .swaps { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card) }
+  .sw { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px }
+  .sw:first-of-type { border-top: 0 }
+  .sw .pill { margin-left: auto }
+  .mu { display: grid; grid-template-columns: minmax(120px, 200px) 1fr 140px; gap: 4px 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line) }
+  .mn { font-weight: 600; font-size: 13px }
+  .mn small { color: var(--dim); font-weight: 400 }
+  .mb { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden }
+  .mb b { display: block; height: 100%; background: #60a5fa }
+  .mb b.ok { background: #4ade80 } .mb b.bad { background: #f87171 }
+  .mw { font-size: 12px; font-weight: 700 }
+  .mr { grid-column: 1/-1; color: var(--dim); font-size: 11px }
+  .ech { display: grid; gap: 6px; font-size: 13px }
+  .ed-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin: 0 1px; vertical-align: -1px }
+  .vers-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px }
+  .ver { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px }
+  .ver .pill:first-of-type { margin-left: auto }
+  .ln .role {
+    flex: 0 0 auto; width: auto; padding: 0 7px; font-size: 11px; font-weight: 800; border-style: dashed;
+  }
+  .ln .role.set { border-style: solid }
+  .role.r-A { color: #f87171 } .role.r-E { color: #60a5fa } .role.r-S { color: var(--dim) }
+  span.role { font-weight: 800 }
+  .ln .odds { color: #8fb4e8 }
+  .price { font-size: 12px; color: var(--dim) }
+  .dk-tot { display: flex; gap: 10px; align-items: center }
+  .dk-tot .tot { margin-left: auto }
+  .th-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px }
+  .th-row { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); margin: 6px 0 16px }
+  .th-row img { width: 100%; aspect-ratio: 245/342; object-fit: cover; border-radius: 7px; background: #0006 }
+  .th-row .back {
+    aspect-ratio: 245/342; border-radius: 7px; border: 1px solid var(--line);
+    background: repeating-linear-gradient(45deg, #1b2130, #1b2130 8px, #222a3c 8px, #222a3c 16px);
+  }
+  .tst .dw { color: #fbbf24; font-size: 13px; margin-bottom: 8px }
+  .cmp { border-collapse: collapse; font-size: 13px; width: 100% }
+  .cmp td, .cmp th { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left }
+  .diff { display: grid; gap: 3px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); font-size: 13px }
+
   /* ---- phones: two columns, tighter chrome ---- */
   @media (max-width: 720px) {
     #banner { grid-template-columns: 1fr; padding: 14px 12px 4px }
@@ -423,7 +517,13 @@
     }
     .eb-name { font-size: 15px }
     .eb-pane { display: flex; width: 100% }
-    .ed[data-pane="cards"] .dk, .ed[data-pane="deck"] .pick { display: none }
+    .ph-only { display: block }
+    .ed:not([data-pane="deck"]) .dk, .ed[data-pane="deck"] .pick { display: none }
+    .ed > .pick, .ed > .ins, .ed > .tst, .ed > .dk { grid-column: 1; grid-row: auto }
+    .mu { grid-template-columns: 1fr 90px; }
+    .mb { grid-column: 1/-1; grid-row: 2 }
+    .fx-row small { margin-left: 0 }
+    .th-row { grid-template-columns: repeat(4, minmax(0, 1fr)) }
     .dk { position: static; max-height: none }
     .pk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px }
     .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none }
@@ -538,8 +638,9 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202610312332"></script>
-<script src="cards.js?v=202610312332"></script>
+<script src="data.js?v=202611010023"></script>
+<script src="cards.js?v=202611010023"></script>
+<script src="meta.js?v=202611010023"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
 const LABELS = { gen1: "Gen 1", anniv: "30th Celebration" };
@@ -939,31 +1040,495 @@ if (matchMedia("(pointer: coarse)").matches) {
   scrub.addEventListener("pointercancel", drop);
 }
 
-// ---- deckbuilder: decks of Standard-legal cards (cards.js), synced to the Sheet's Decks tab ----
+// ---- deck analysis engine: pure functions over a deck's cards ("expanded": one entry per card, with
+// its count). Defined once and run in two places: here for the cheap parts, and inside a Worker for
+// the thousands of simulated games, so the page never stalls. ----
+function Engine(E) {
+  const num = s => +((String(s ?? "").match(/\d+/) || [0])[0]);
+  const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+  const TL = E.TL = { Grass: "G", Fire: "R", Water: "W", Lightning: "L", Psychic: "P", Fighting: "F",
+                      Darkness: "D", Metal: "M", Dragon: "N", Fairy: "Y", Colorless: "C" };
+  E.stage = c => c.sub.includes("Stage 2") ? 2 : c.sub.includes("Stage 1") ? 1 : 0;
+  E.prize = c => c.sub.includes("MEGA") ? 3 : c.sub.includes("ex") ? 2 : 1;
+  E.basicEnergy = c => c.c === "E" && c.sub.includes("Basic");
+  // the type an Energy card gives: basic by its name, a special one only when its name says so
+  E.etype = c => E.basicEnergy(c) ? TL[(c.n.match(/(\w+) Energy/) || [])[1]] || "C"
+    : TL[(c.n.match(/\b(Grass|Fire|Water|Lightning|Psychic|Fighting|Darkness|Metal)\b/) || [])[1]] || "*";
+  E.hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0 };
+  E.rng = seed => () => {                                  // mulberry32: same deck, same numbers
+    seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+
+  // what a card does, read from its text: draw, search, Rare Candy, Energy acceleration, gust…
+  const KIND = [[/Basic Pokémon/i, "basic"], [/Stage 2/i, "stage2"], [/Stage 1/i, "stage1"], [/Evolution/i, "evo"],
+    [/Pokémon Tool/i, "tool"], [/Pokémon/i, "poke"], [/Energy/i, "energy"], [/Supporter/i, "supporter"],
+    [/Item/i, "item"], [/Stadium/i, "stadium"], [/Trainer/i, "trainer"]];
+  E.fx = c => {
+    if (c.fx) return c.fx;
+    const f = { draw: 0, drawTo: 0, peek: 0, search: [], candy: 0, accel: 0, accelType: "", accelFrom: "",
+                gust: 0, sw: 0, recover: 0, discard: 0, shuffle: 0, engine: false, onPlay: null };
+    for (const raw of c.c === "P" ? (c.ab || []).map(a => a[1]) : [c.rt || ""]) {
+      const t = raw.replace(/\s+/g, " ");
+      // an engine works every turn: passive abilities, one-shots on entering play and abilities that
+      // only switch on after a KO don't build a board
+      let m;
+      if (c.c === "P" && /when you play this Pokémon from your hand/i.test(t)) {   // fires once, on entering play
+        const d = t.match(/draw (\d+) cards/i), s = /search your deck for an? (Supporter|Item|Pokémon|card)/i.exec(t);
+        f.onPlay = { draw: d ? +d[1] : 0, search: s ? [{ kind: (KIND.find(([re]) => re.test(s[1])) || [, "any"])[1], n: 1, bench: false, hp: 999 }] : [] };
+        continue;
+      }
+      if (c.c === "P" && (!/once during your turn|as often as you like/i.test(t)
+          || /were Knocked Out during your opponent's last turn/i.test(t))) continue;
+      if ((m = t.match(/draw cards until you have (\d+) cards/i))) f.drawTo = +m[1];
+      else if ((m = t.match(/draw (\d+) cards instead/i))) f.draw = +m[1];          // the early-game bonus
+      else if ((m = t.match(/draws? (\d+) cards/i))) f.draw = +m[1];
+      else if (/draws? a card for each of (?:their|your) remaining Prize/i.test(t)) f.draw = 5;
+      else if (/draw (?:a|1) card/i.test(t)) f.draw = 1;
+      if ((m = t.match(/look at the top (\d+) cards of your deck and put (?:1|a card|one) of them into your hand/i))) f.peek = +m[1];
+      if (/discard your hand/i.test(t)) f.discard = 1;
+      if (/shuffles? (?:your|their) hand|puts? it on the bottom of (?:their|your) deck/i.test(t)) f.shuffle = 1;
+      if ((m = t.match(/search your deck for (.+?)(?:,? reveal| and put| and attach|\. |\.$)/i))) {
+        const bench = /onto your Bench/i.test(t), hp = num((t.match(/(\d+) HP or less/i) || [])[1]) || 999;
+        for (const part of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
+          const k = (part.match(/^(?:up to )?(\d+)/i) || [])[1];
+          f.search.push({ kind: (KIND.find(([re]) => re.test(part)) || [, "any"])[1], n: k ? +k : 1, bench, hp });
+        }
+      }
+      if (/skipping the Stage 1/i.test(t)) f.candy = 1;
+      if ((m = t.match(/attach (?:up to (\d+) |an? |(\d+) )?(?:Basic )?(\w+ )?Energy cards? from your (hand|discard pile|deck)/i))) {
+        f.accel = /as often as you like/i.test(t) ? 2 : +(m[1] || m[2] || 1);
+        f.accelType = TL[(m[3] || "").trim()] || "";
+        f.accelFrom = m[4];
+      }
+      if (/opponent's Benched Pokémon/i.test(t) && /Active Spot/i.test(t)) f.gust = 1;
+      else if (/Switch your Active Pokémon with 1 of your Benched/i.test(t)) f.sw = 1;
+      if (/discard pile.{0,40}into your (?:hand|deck)/i.test(t)) f.recover = 1;
+    }
+    f.engine = c.c === "P" && !!(f.draw || f.drawTo || f.peek || f.search.length || f.accel);
+    return (c.fx = f);
+  };
+
+  // the realistic peak of an attack on a normal mid-game board: "30×" and "120+" get estimated
+  const times = t => {
+    const m = t.match(/flip (\d+) coins/i);
+    return m ? +m[1] / 2 : /until you get tails/i.test(t) ? 1 : /for each (?:of your )?Benched/i.test(t) ? 4
+      : /for each damage counter/i.test(t) ? 8 : /for each card in your hand/i.test(t) ? 6
+      : /for each .{0,30}Energy/i.test(t) ? 3 : /for each .{0,30}Prize/i.test(t) ? 3 : 2;
+  };
+  // copy = an attack that borrows another Pokémon's ("…and use it as this attack"): worth what it copies
+  E.hit = (a, copy = 0) => {
+    const d = a[2] || "", t = a[3] || "", base = num(d);
+    let v = base, m, spread = 0;
+    if (/[×x]$/.test(d)) v = base * times(t);
+    else if (/\+$/.test(d)) v = base + ((m = t.match(/(\d+) more damage/i)) ? +m[1] * (/for each/i.test(t) ? times(t) : 1) : base);
+    else if (!base && (m = t.match(/(?:put|place) (\d+) damage counters? on (?:1 of )?(?:your )?opponent's (?:Active )?Pokémon/i)))
+      v = +m[1] * 10 * (/for each/i.test(t) ? times(t) : 1);
+    if (!base && /use it as this attack/i.test(t)) v = copy;
+    if ((m = t.match(/(\d+) damage counters? on (?:your )?opponent's Benched/i))) spread = +m[1] * 10;
+    else if ((m = t.match(/(\d+) damage to (each of )?(?:1 of )?(?:your )?opponent's Benched/i))) spread = +m[1] * (m[2] ? 3 : 1);
+    return { v, spread, cost: a[1] || "" };
+  };
+  E.best = (c, copy = 0) => (c.atk || []).map(a => E.hit(a, copy)).reduce((b, h) => h.v + h.spread / 2 > b.v + b.spread / 2 ? h : b,
+                                                                       { v: 0, spread: 0, cost: "" });
+
+  // Pokémon grouped into lines by their Basic; each line plays as Attacker (A), Engine (E) or Support (S)
+  E.roles = (cards, overrides = {}) => {
+    const fams = {}, pok = cards.filter(c => c.c === "P" && !c.dead);
+    const copy = Math.max(0, ...pok.map(c => E.best(c).v));          // what a copying attack can borrow
+    // the Energy types the deck can produce: an attack it can't pay is a poor main attacker
+    const types = new Set(cards.filter(c => c.c === "E" && !c.dead).map(E.etype));
+    cards.forEach(c => { const f = E.fx(c); if (f.accelType) types.add(f.accelType) });
+    for (const c of pok) {
+      const f = fams[c.root] ||= { root: c.root, n: 0, dmg: 0, atk: null, eng: null, topCard: null, top: 0, hit: null };
+      const b = E.best(c, copy), val = b.v + b.spread / 2;
+      f.n += c.count;
+      if (!f.topCard || E.stage(c) > E.stage(f.topCard)) f.topCard = c;
+      f.top = E.stage(f.topCard);
+      if (val > f.dmg) { f.dmg = val; f.atk = c; f.hit = b }
+      if (E.fx(c).engine && (!f.eng || E.stage(c) > E.stage(f.eng))) f.eng = c;
+    }
+    const fs = Object.values(fams);
+    const payable = f => !f.hit || [...f.hit.cost].every(L => L === "C" || types.has(L) || types.has("*")) ? 1 : 0.4;
+    const weight = f => f.dmg * Math.min((f.atk?.count || 0) + 1, 4) * payable(f);   // copies of the attacker itself
+    fs.forEach(f => { f.weight = weight(f) });
+    const main = fs.reduce((m, f) => !m || f.weight > m.weight ? f : m, null);
+    for (const f of fs) {               // a single copy is a tech, not something the deck builds around
+      f.auto = f === main ? "A" : f.eng && f.n >= 2 ? "E" : f.dmg >= 0.7 * main.dmg && f.n >= 2 ? "A" : "S";
+      f.role = overrides[f.root] || f.auto;
+      if (f.role === "E" && !f.eng) f.eng = f.topCard;
+      if (f.role === "A" && !f.atk) { f.atk = f.topCard; f.hit = E.best(f.topCard, copy) }
+      f.hit ||= { v: 0, spread: 0, cost: "" };
+    }
+    return fs;
+  };
+
+  // Goldfish games (no opponent): how soon is the ideal board ready — the main Attacker evolved and
+  // powered, every Engine in play — and how many extra cards the deck digs per turn
+  E.simulate = (cards, overrides, games, seed) => {
+    const fs = E.roles(cards, overrides), rnd = E.rng(seed);
+    const atkF = fs.filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0];   // the main attacker
+    const atk = atkF && atkF.atk, cost = atk ? atkF.hit.cost : "", need = {};
+    const live = cards.map(c => ({ c, fx: E.fx(c), st: c.c === "P" ? E.stage(c) : -1,
+      basic: c.c === "P" && !c.dead && E.stage(c) === 0, et: c.c === "E" && !c.dead ? E.etype(c) : "" }));
+    // a type the deck has no way to produce is paid some way the text didn't reveal: count it as any
+    const makes = new Set([...live.map(x => x.et), ...live.map(x => x.fx.accelType)].filter(Boolean));
+    for (const ch of cost) { const L = ch === "C" || makes.has(ch) ? ch : "C"; need[L] = (need[L] || 0) + 1 }
+    const idx = {}; cards.forEach((c, i) => { if (idx[c.n] == null) idx[c.n] = i });
+    const candy = cards.findIndex(c => E.fx(c).candy);
+    const goals = [atk, ...fs.filter(f => f.role === "E").map(f => f.eng)].filter(Boolean).map(T => {
+      const chain = [T.n];
+      for (let x = T; x.ef && idx[x.ef] != null && chain.length < 3;) { x = cards[idx[x.ef]]; chain.unshift(x.n) }
+      if (E.stage(cards[idx[chain[0]]]) > 0 && idx[T.root] != null) chain.unshift(T.root);
+      return { T, chain };
+    });
+    const pool = []; cards.forEach((c, i) => { for (let k = 0; k < c.count; k++) pool.push(i) });
+    const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]] } return a };
+    const R = { hist: Array(10).fill(0), mull: 0, access: 0, seen: cards.map(() => [0, 0, 0, 0]) };
+
+    for (let g = 0; g < games; g++) {
+      const first = g % 2 === 0;
+      let deck, hand, m = 0;
+      for (;;) { deck = shuffle(pool.slice()); hand = deck.splice(0, 7); if (m >= 5 || hand.some(i => live[i].basic)) break; m++ }
+      if (m) R.mull++;
+      deck.splice(0, 6);                                   // the Prize cards
+      const play = [], seen = Array(cards.length).fill(9);
+      let t = 0, got = 0, access = 0, ready = 9;
+      const see = i => { if (seen[i] > t) seen[i] = t };
+      const take = (a, i) => { a.splice(a.indexOf(i), 1); return i };
+      const draw = n => { let k = 0; for (; k < n && deck.length; k++) { const i = deck.shift(); hand.push(i); see(i) } return k };
+      const put = i => { play.push({ i, t, en: [], evo: -1, used: -1 }); see(i) };
+      const entered = i => { const o = live[i].fx.onPlay; if (!o || t < 1) return; got += draw(o.draw); for (const s of o.search) got += tutor(s) };
+      const onBoard = n => play.some(p => cards[p.i].n === n);
+      const charge = () => atk && play.filter(p => cards[p.i].root === atk.root).sort((a, b) => live[b.i].st - live[a.i].st)[0];
+      const short = p => {
+        const have = {}; p.en.forEach(e => { have[e] = (have[e] || 0) + 1 });
+        const miss = []; for (const L in need) if (L !== "C") for (let k = have[L] || 0; k < need[L]; k++) miss.push(L);
+        return { miss, left: cost.length - p.en.length };
+      };
+      const wants = () => {                                // the next missing piece of each goal
+        const w = [];
+        for (const G of goals) {
+          if (onBoard(G.T.n)) continue;
+          let k = -1; for (let j = G.chain.length - 1; j >= 0; j--) if (onBoard(G.chain[j])) { k = j; break }
+          const next = G.chain[k + 1];
+          if (next && !hand.some(i => cards[i].n === next)) w.push(next);
+          if (k === 0 && E.stage(G.T) === 2 && candy >= 0) w.push(G.T.n, cards[candy].n);
+        }
+        return w;
+      };
+      const rank = (i, w) => {
+        const c = cards[i], k = w.indexOf(c.n);
+        if (k >= 0) return 100 - k;
+        if (live[i].et) { const p = charge(); if (p) { const s = short(p); if (s.miss.includes(live[i].et) || (!s.miss.length && s.left > 0)) return 60 } }
+        if (live[i].basic && goals.some(G => G.chain[0] === c.n)) return 50;
+        const f = live[i].fx;
+        return c.sub.includes("Supporter") && (f.draw || f.drawTo) ? 40 : f.search.length ? 30 : live[i].basic ? 10 : 1;
+      };
+      const fits = (i, s) => {
+        const x = live[i], c = x.c;
+        if (c.dead) return false;
+        switch (s.kind) {
+          case "basic": return x.basic && (c.hp || 0) <= s.hp;
+          case "poke": return c.c === "P";
+          case "evo": return x.st > 0;
+          case "stage1": return x.st === 1;
+          case "stage2": return x.st === 2;
+          case "energy": return c.c === "E";
+          case "item": return c.sub.includes("Item");
+          case "tool": return c.sub.includes("Pokémon Tool");
+          case "supporter": return c.sub.includes("Supporter");
+          case "stadium": return c.sub.includes("Stadium");
+          case "trainer": return c.c === "T";
+          default: return true;
+        }
+      };
+      const tutor = s => {
+        const w = wants(); let n = 0;
+        for (let k = 0; k < s.n; k++) {
+          let best = 0, bj = -1;
+          for (let j = 0; j < deck.length; j++) { if (!fits(deck[j], s)) continue; const r = rank(deck[j], w); if (r > best) { best = r; bj = j } }
+          if (bj < 0) break;
+          const i = deck.splice(bj, 1)[0]; n++;
+          if (s.bench && live[i].basic && play.length < 6) put(i); else { hand.push(i); see(i) }
+        }
+        return n;
+      };
+      const worth = f => { const w = wants(); return f.search.some(s => deck.some(j => fits(j, s) && rank(j, w) >= 50)) };
+      const bench = () => {
+        let any = false;
+        const goal = i => goals.some(G => G.chain[0] === cards[i].n) ? 0 : 1;
+        for (const i of hand.filter(i => live[i].basic).sort((a, b) => goal(a) - goal(b))) {
+          if (play.length >= 6) break;
+          put(take(hand, i)); entered(i); any = true;
+        }
+        return any;
+      };
+      const accel = f => {
+        const p = charge(); let did = false;
+        for (let k = 0; p && k < f.accel; k++) {
+          const s = short(p); if (!s.miss.length && s.left <= 0) break;
+          const L = f.accelType || s.miss[0] || "", ok = i => live[i].et && (!L || live[i].et === L);
+          if (f.accelFrom === "hand") { const i = hand.find(ok); if (i == null) break; p.en.push(live[take(hand, i)].et) }
+          else if (f.accelFrom === "deck") { const j = deck.findIndex(ok); if (j < 0) break; p.en.push(live[deck.splice(j, 1)[0]].et) }
+          else if (t >= 2) p.en.push(L || "C");          // from the discard pile: earlier discards assumed
+          else break;
+          did = true;
+        }
+        return did;
+      };
+      const abilities = () => {
+        let any = false;
+        for (const p of play) {
+          const f = live[p.i].fx;
+          if (p.used === t || !f.engine) continue;
+          let did = false;
+          for (const s of f.search) { got += tutor(s); did = true }
+          if (f.peek && deck.length) {                    // look at the top few, keep the best one
+            const top = deck.splice(0, f.peek), w = wants();
+            const keep = top.reduce((b, i) => rank(i, w) > rank(b, w) ? i : b);
+            take(top, keep); hand.push(keep); see(keep); deck.push(...top); got++; did = true;
+          }
+          if (f.drawTo && hand.length < f.drawTo) { got += draw(f.drawTo - hand.length); did = true }
+          else if (f.draw) { got += draw(f.draw); did = true }
+          if (f.accel && accel(f)) did = true;
+          if (did) { p.used = t; any = true }
+        }
+        return any;
+      };
+      const items = () => {
+        let any = false;
+        for (const i of [...new Set(hand)]) {
+          const x = live[i], f = x.fx;
+          if (!hand.includes(i) || !x.c.sub.includes("Item") || f.candy) continue;
+          if (f.search.length && (worth(f) || f.search.some(s => s.bench) && play.length < 4)) {
+            take(hand, i); for (const s of f.search) got += tutor(s); any = true;
+          } else if ((f.draw || f.drawTo) && !f.discard && !f.shuffle) {
+            take(hand, i); got += draw(f.drawTo ? Math.max(0, f.drawTo - hand.length) : f.draw); any = true;
+          }
+        }
+        return any;
+      };
+      const evolve = () => {
+        if (t < 2) return false;                         // nobody evolves on their first turn
+        let any = false;
+        for (const i of hand.slice()) {
+          const c = cards[i];
+          if (live[i].st < 1 || !c.ef || !hand.includes(i)) continue;
+          const p = play.find(p => cards[p.i].n === c.ef && p.t < t && p.evo < t);
+          if (p) { take(hand, i); p.i = i; p.evo = t; entered(i); any = true }
+        }
+        if (candy >= 0 && hand.includes(candy))
+          for (const i of hand.slice()) {
+            if (live[i].st !== 2) continue;
+            const G = goals.find(G => G.T.n === cards[i].n), base = G ? G.chain[0] : cards[i].root;
+            const p = play.find(p => cards[p.i].n === base && p.t < t && p.evo < t);
+            if (p) { take(hand, i); take(hand, candy); p.i = i; p.evo = t; entered(i); any = true; break }
+          }
+        return any;
+      };
+      const supporter = () => {
+        if (first && t === 1) return false;              // the player going first can't on turn 1
+        const w = wants(); let best = 0, pick = -1;
+        for (const i of new Set(hand)) {
+          const f = live[i].fx;
+          if (!live[i].c.sub.includes("Supporter")) continue;
+          let u = f.search.length && worth(f) ? 12 : 0;
+          if (f.drawTo) u = Math.max(u, f.drawTo - hand.length);
+          else if (f.draw) u = Math.max(u, f.draw - (f.discard || f.shuffle ? hand.filter(j => w.includes(cards[j].n)).length * 3 : 0));
+          if (u > best) { best = u; pick = i }
+        }
+        if (pick < 0) return false;
+        const f = live[take(hand, pick)].fx;
+        if (f.discard) hand.length = 0;
+        if (f.shuffle) { deck.push(...hand.splice(0)); shuffle(deck) }
+        for (const s of f.search) got += tutor(s);
+        if (f.drawTo) got += draw(Math.max(0, f.drawTo - hand.length)); else if (f.draw) got += draw(f.draw);
+        return true;
+      };
+      const attach = () => {                             // the one Energy from hand per turn
+        const p = charge(); if (!p) return;
+        const s = short(p); if (!s.miss.length && s.left <= 0) return;
+        let i = hand.find(i => live[i].et && s.miss.includes(live[i].et));
+        if (i == null && s.left > s.miss.length) i = hand.find(i => live[i].et);
+        if (i != null) p.en.push(live[take(hand, i)].et);
+      };
+      const isReady = () => goals.every(G => onBoard(G.T.n)) && (!atk || (() => {
+        const p = play.find(p => cards[p.i].n === atk.n);
+        if (!p) return false;
+        const s = short(p);
+        return !s.miss.length && s.left <= 0;
+      })());
+      const act = () => { for (let k = 0; k < 4; k++) if (!(bench() | abilities() | items() | evolve())) break };
+
+      hand.forEach(see); bench();
+      for (t = 1; t <= 8; t++) {
+        got = 0; draw(1);
+        act(); if (supporter()) act(); attach();
+        if (t <= 3) access += got;
+        if (isReady()) { ready = t; break }
+      }
+      R.hist[ready]++; R.access += access;
+      seen.forEach((s, i) => { for (let k = 0; k < 4; k++) if (s <= k) R.seen[i][k]++ });
+    }
+
+    const by = k => R.hist.slice(0, k + 1).reduce((a, b) => a + b, 0) / games;
+    const a = atk && atkF.hit, pub = T => ({ name: T.n, hp: T.hp || 0, prize: E.prize(T), wk: T.wk || "", rs: T.rs || "" });
+    return {
+      games, hist: R.hist, pSetup4: by(4), avgSetup: R.hist.reduce((s, n, k) => s + n * Math.min(k, 8), 0) / games,
+      mull: R.mull / games, access: R.access / games / 3,
+      seen: Object.fromEntries(cards.map((c, i) => [c.k ?? c.n, R.seen[i].map(v => v / games)])),
+      attacker: atk ? { ...pub(atk), v: a.v, spread: a.spread, cost, type: TL[atk.t[0]] || "C" } : null,
+      engines: goals.filter(G => G.T !== atk).map(G => pub(G.T)),
+      gust: cards.reduce((s, c) => s + (E.fx(c).gust ? c.count : 0), 0),
+    };
+  };
+
+  // 0–100 per factor; the total weighs a deck the way competitive players do
+  E.score = (p, hps) => {
+    const a = p.attacker, val = a ? a.v + a.spread / 2 : 0;
+    const s = { C: clamp(100 * (0.85 * p.pSetup4 + 0.15 * (1 - p.mull))),
+                G: clamp(100 - (p.avgSetup - 2.5) * 25),
+                P: clamp(a ? 100 * hps.reduce((s, h) => s + Math.min(1, val / h), 0) / hps.length : 0),
+                D: clamp((p.access - 1) / 7 * 100) };
+    s.total = clamp(0.35 * s.C + 0.25 * s.G + 0.25 * s.P + 0.15 * s.D);
+    s.tier = s.total >= 85 ? "S" : s.total >= 75 ? "A" : s.total >= 60 ? "B" : s.total >= 45 ? "C" : "D";
+    return s;
+  };
+
+  // a prize race: when each side is ready, then how many attacks it takes to collect 6 Prizes
+  const dmgTo = (a, t) => Math.max(10, a.v * (t.wk && t.wk.includes(a.type) ? 2 : 1) - (t.rs && t.rs.includes(a.type) ? 30 : 0));
+  const kos = (A, B) => {
+    const a = A.attacker; if (!a) return 30;
+    const foe = B.attacker || { hp: 130, prize: 1, wk: "", rs: "" }, filler = { hp: 70, prize: 1, wk: "", rs: "" };
+    const reach = A.gust > 0 || a.spread > 0;              // Benched engines only fall to gust or spread
+    const left = [...Array(4).fill(foe), ...(reach ? B.engines.map(e => ({ ...e, hp: Math.max(10, e.hp - a.spread) })) : []),
+                  ...Array(6).fill(filler)];
+    let prizes = 0, hits = 0;
+    const rate = x => x.prize / Math.ceil(x.hp / dmgTo(a, x));
+    while (prizes < 6 && left.length) {
+      left.sort((x, y) => rate(y) - rate(x));
+      const x = left.shift(); hits += Math.ceil(x.hp / dmgTo(a, x)); prizes += x.prize;
+    }
+    return hits;
+  };
+  E.matchup = (A, B, seed) => {
+    const rnd = E.rng(seed), hA = kos(A, B), hB = kos(B, A);
+    const when = h => { let r = rnd() * h.reduce((x, y) => x + y, 0); for (let k = 1; k < h.length; k++) if ((r -= h[k]) < 0) return Math.min(k, 8); return 8 };
+    let win = 0;
+    for (let i = 0; i < 1000; i++) {
+      const fA = when(A.hist) + hA - 1 + (rnd() < .25), fB = when(B.hist) + hB - 1 + (rnd() < .25);
+      win += fA < fB || (fA === fB && i % 2 === 0) ? 1 : 0;   // a tie goes to whoever went first
+    }
+    const r = [], dt = B.avgSetup - A.avgSetup, a = A.attacker, b = B.attacker;
+    if (Math.abs(dt) >= 0.3) r.push([Math.abs(dt) * 2, dt > 0
+      ? `You set up ${dt.toFixed(1)} turns sooner (T${A.avgSetup.toFixed(1)} vs T${B.avgSetup.toFixed(1)})`
+      : `They set up ${(-dt).toFixed(1)} turns sooner (T${B.avgSetup.toFixed(1)} vs T${A.avgSetup.toFixed(1)})`]);
+    if (hA !== hB) r.push([Math.abs(hA - hB), hA < hB ? `You need ${hA} attacks for 6 Prizes, they need ${hB}`
+                                                       : `They need ${hB} attacks for 6 Prizes, you need ${hA}`]);
+    if (a && b) {
+      if (b.wk.includes(a.type)) r.push([3, `${a.name} hits ${b.name}'s Weakness ×2`]);
+      if (a.wk.includes(b.type)) r.push([3, `${b.name} hits your ${a.name}'s Weakness ×2`]);
+      const d = dmgTo(a, b);
+      r.push([1, d >= b.hp ? `${a.name} (~${d}) one-shots ${b.name} (${b.hp} HP)` : `${a.name} (~${d}) needs ${Math.ceil(b.hp / d)} hits on ${b.name} (${b.hp} HP)`]);
+    }
+    if (a && a.spread && B.engines.length) r.push([1.5, `Your Bench damage threatens their ${B.engines.map(e => e.name).join(", ")}`]);
+    if (b && b.spread && A.engines.length) r.push([1.5, `Their Bench damage threatens your ${A.engines.map(e => e.name).join(", ")}`]);
+    return { win: win / 1000, hA, hB, reasons: r.sort((x, y) => y[0] - x[0]).slice(0, 3).map(x => x[1]) };
+  };
+
+  // one-card swaps tried in simulation; the best few are re-run longer before they are believed
+  E.swaps = (cards, overrides, adds, removes, hps, seed) => {
+    const sc = (cs, n) => E.score(E.simulate(cs, overrides, n, seed), hps);
+    const full = cards.reduce((s, c) => s + c.count, 0) >= 60, tried = [];
+    for (const add of adds) for (const rem of full ? removes : [null]) {
+      if (rem && rem.k === add.k) continue;
+      const next = cards.map(c => ({ ...c }));
+      const a = next.find(c => c.k === add.k); if (a) a.count++; else next.push({ ...add, count: 1 });
+      if (rem) next.find(c => c.k === rem.k).count--;
+      tried.push({ add, rem, next: next.filter(c => c.count > 0), d: 0 });
+    }
+    const quick = sc(cards, 300).total;
+    tried.forEach(x => { x.d = sc(x.next, 300).total - quick });
+    const base = sc(cards, 1200);
+    return tried.sort((a, b) => b.d - a.d).slice(0, 5).map(x => {
+      const s = sc(x.next, 1200);
+      return { add: x.add.n, addK: x.add.k, rem: x.rem && x.rem.n, remK: x.rem && x.rem.k,
+               d: s.total - base.total, C: s.C - base.C, G: s.G - base.G, P: s.P - base.P, D: s.D - base.D };
+    }).filter(x => x.d >= 2).sort((a, b) => b.d - a.d).slice(0, 3);
+  };
+}
+const ENG = {}; Engine(ENG);
+
+// The simulations run in a Worker built from the same Engine source; without one, they run here.
+const worker = (() => {
+  try {
+    return new Worker(URL.createObjectURL(new Blob([`${Engine}\nconst E = {}; Engine(E);
+      onmessage = e => { let out; try { out = E[e.data.fn](...e.data.args) } catch (err) { out = { error: String(err) } }
+                         postMessage({ id: e.data.id, out }) };`], { type: "text/javascript" })));
+  } catch { return null }
+})();
+const jobs = new Map(); let jobN = 0;
+if (worker) worker.onmessage = e => { jobs.get(e.data.id)(e.data.out); jobs.delete(e.data.id) };
+const run = (fn, ...args) => worker
+  ? new Promise(r => { jobs.set(++jobN, r); worker.postMessage({ id: jobN, fn, args }) })
+  : new Promise(r => setTimeout(() => r(ENG[fn](...args))));
+
+// ---- deckbuilder: decks of Standard-legal cards (cards.js), each synced to its own Sheet tab ----
 const CARDS = window.CARDS || { cards: [], sets: {}, legal: [] };
-const PRINT = new Map();                  // print id -> [card, print]; a print is [id, set code, number, img?]
+const META = window.META || { decks: [] };
+const PRINT = new Map();                  // print id -> [card, print]; a print is [id, set code, number, img, €, $]
 const BY_CODE = new Map();                // "PAF 7" -> print id, for pasted deck lists
+const NAMED = new Map();                  // card name -> its first card
 CARDS.cards.forEach((c, k) => {
   c.k = k;
+  if (!NAMED.has(c.n)) NAMED.set(c.n, c);
   c.p.forEach(p => { PRINT.set(p[0], [c, p]); BY_CODE.set(`${p[1]} ${p[2]}`.toUpperCase(), p[0]) });
 });
+CARDS.cards.forEach(c => {                // a Pokémon's line is named after its Basic
+  if (c.c !== "P") return;
+  let x = c;
+  for (let k = 0; k < 3 && x.ef; k++) { const p = NAMED.get(x.ef); if (!p) { c.root = x.ef; return } x = p }
+  c.root = x.n;
+});
 const CAT = { P: "Pokémon", T: "Trainer", E: "Energy" };
+const LETTER = { "Pokémon": "P", Trainer: "T", Energy: "E" };
+const ROLE = { A: "Attacker", E: "Engine", S: "Support" };
+const FACTOR = { C: "Consistency", P: "Power", D: "Speed deck", G: "Speed grow" };
 const RANGE = { "Pokémon": [12, 18], "Trainer": [30, 38], "Energy": [8, 14] };   // a healthy spread; tune freely
 const DECK_MAX = 60, COPIES = 4;
 const TYPES = { Grass: "#5fbd58", Fire: "#f26a4b", Water: "#4b9ef2", Lightning: "#f5d33f", Psychic: "#a46bd8",
                 Fighting: "#c4733b", Darkness: "#4a5568", Metal: "#9aa7b4", Dragon: "#c7a23a", Colorless: "#d9d9d9" };
+const TNAME = Object.fromEntries(Object.entries(ENG.TL).map(([n, l]) => [l, n]));
+const dot = L => `<i class="ed-dot" style="background:${TYPES[TNAME[L]] || "#888"}" title="${TNAME[L] || "Special"}"></i>`;
 const KINDS = { Item: "Item", Supporter: "Supporter", Stadium: "Stadium", Tool: "Pokémon Tool" };
+const STAPLES = ["Buddy-Buddy Poffin", "Nest Ball", "Ultra Ball", "Rare Candy", "Lillie's Determination",
+  "Professor's Research", "Iono", "Arven", "Boss's Orders", "Night Stretcher", "Earthen Vessel", "Poké Pad", "Switch"];
 const imgOf = p => p[3] || CARD_IMG(p[0]);
 const bigImg = u => u.endsWith("/small") ? u.slice(0, -5) + "large" : u.replace(/\.png$/, "_hires.png");
 const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 const cardOf = l => PRINT.get(l.id)?.[0];          // undefined once a card has rotated out of cards.js
 const sum = (ls, f = () => true) => ls.reduce((s, l) => s + (f(l) ? l.n : 0), 0);
-const uniqueName = base => { let n = base, i = 2; while (decks.some(d => d.name === n)) n = `${base} ${i++}`; return n };
+const perc = v => Math.round(v * 100) + "%";
 const coverOf = d => d.cards.find(l => l.id === d.cover)
   || d.cards.filter(l => l.cat === "Pokémon").sort((a, b) => b.n - a.n)[0];   // default: the most-run Pokémon
 const thumb = l => { const p = PRINT.get(l.id)?.[1]; return p ? imgOf(p) : CARD_IMG(l.id) };
+const textOf = c => c.tx ??= [c.n, ...(c.ab || []).flat(), ...(c.atk || []).flatMap(a => [a[0], a[3]]), c.rt || ""].join(" ").toLowerCase();
+decks.forEach(d => { d.tags ||= []; d.roles ||= {}; d.versions ||= [] });
 
-let open = null, pane = "cards", zoomCard = null, zoomPrint = null;
+// names stay unique, ignoring capitals (Sheet tab names do): a clash becomes "Name #2", "Name #3"…
+const uniqueName = (want, self) => {
+  const taken = n => decks.some(d => d !== self && d.name.toLowerCase() === n.toLowerCase());
+  if (!taken(want)) return want;
+  const base = want.replace(/ #\d+$/, "");
+  let i = 2; while (taken(`${base} #${i}`)) i++;
+  return `${base} #${i}`;
+};
+
+let open = null, pane = "cards", zoomCard = null, zoomPrint = null, openedAs = "", hand = null;
+let deckSort = store.get("deckSort", "created"), deckTag = "";
 const pick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "" };
 const dlgBox = document.getElementById("dlg-box");
 const lineOf = c => open.cards.find(l => cardOf(l) === c);
@@ -971,10 +1536,78 @@ const inDeck = c => sum(open.cards, l => cardOf(l) === c);
 
 function say(msg) {
   toast.textContent = msg; toast.classList.add("on");
-  clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove("on"), 2200);
+  clearTimeout(say.t); say.t = setTimeout(() => toast.classList.remove("on"), 2600);
 }
 
-// The official limits: 60 cards, 4 of any one name (basic Energy excepted), 1 ACE SPEC.
+// ---- analysis: decks as the Engine sees them, profiles computed once per exact deck ----
+const expandCard = c => ({ k: c.k, n: c.n, c: c.c, sub: c.sub, t: c.t, hp: c.hp, ef: c.ef, root: c.root,
+                           atk: c.atk, ab: c.ab, rt: c.rt, wk: c.wk, rs: c.rs, count: 0 });
+function expand(lines) {
+  const m = new Map();
+  for (const l of lines) {
+    const c = cardOf(l), key = c ? c.k : "?" + l.name;
+    if (!m.has(key)) m.set(key, c ? expandCard(c)
+      : { n: l.name, c: LETTER[l.cat] || "T", sub: [], t: [], count: 0, dead: 1, root: l.name });
+    m.get(key).count += l.n;
+  }
+  return [...m.values()];
+}
+const metaCards = META.decks.map(m => expand(m.cards));
+// Power is judged against what has to be knocked out: the HP of the meta's main attackers
+const HP = (() => {
+  const h = metaCards.map(cs => ENG.roles(cs).filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0]?.atk?.hp).filter(Boolean);
+  return h.length ? h : [130, 220, 280, 320, 340];
+})();
+
+const DONE = new Map(), RUNNING = new Map(), SLOT = new Map(), SWAPS = new Map();
+let flushT, redrawT;
+const keyOf = (cards, roles) => ENG.hash(JSON.stringify([cards.map(c => [c.k ?? c.n, c.count]), roles || {}]));
+function profile(cards, roles = {}) {
+  const key = keyOf(cards, roles);
+  if (!RUNNING.has(key)) RUNNING.set(key, run("simulate", cards, roles, 1200, key).then(p => {
+    if (!p || p.error) return null;
+    Object.assign(p, { key, score: ENG.score(p, HP) });
+    DONE.set(key, p); refresh();
+    return p;
+  }));
+  return RUNNING.get(key);
+}
+// the profile for a slot (a deck, a meta archetype) when ready; a burst of edits only simulates the last state
+function known(slot, cards, roles = {}) {
+  const key = keyOf(cards, roles);
+  if (!DONE.has(key) && !RUNNING.has(key)) {
+    SLOT.set(slot, [cards, roles]);
+    clearTimeout(flushT);
+    flushT = setTimeout(() => { SLOT.forEach(([c, r]) => profile(c, r)); SLOT.clear() }, 250);
+  }
+  return DONE.get(key);
+}
+const deckProfile = d => known("d:" + d.name, expand(d.cards), d.roles);
+const metaProfile = i => known("m:" + i, metaCards[i]);
+function refresh() {                      // results arrived: redraw what shows them, never under the cursor
+  clearTimeout(redrawT);
+  redrawT = setTimeout(() => {
+    if (cur !== "decks") return;
+    if (!open) return renderDeckList();
+    if (!deckview.querySelector(".dk")?.contains(document.activeElement)) renderPanel();
+    if (pane === "insights" && !deckview.querySelector(".ins")?.contains(document.activeElement)) renderInsights();
+  }, 80);
+}
+
+// the closest meta archetype, by how much of the Pokémon lineup two lists share
+function archetype(cards) {
+  const mine = {}; cards.forEach(c => { if (c.c === "P") mine[c.n] = (mine[c.n] || 0) + c.count });
+  let best = null;
+  META.decks.forEach((m, i) => {
+    const theirs = {}; m.cards.forEach(l => { if (l.cat === "Pokémon") theirs[l.name] = (theirs[l.name] || 0) + l.n });
+    let a = 0, b = 0;
+    for (const n of new Set([...Object.keys(mine), ...Object.keys(theirs)])) { a += Math.min(mine[n] || 0, theirs[n] || 0); b += Math.max(mine[n] || 0, theirs[n] || 0) }
+    if (b && (!best || a / b > best.sim)) best = { i, m, sim: a / b };
+  });
+  return best && best.sim >= 0.35 ? best : null;
+}
+
+// the official limits: 60 cards, 4 of any one name (basic Energy excepted), 1 ACE SPEC
 function blocked(d, c) {
   if (sum(d.cards) >= DECK_MAX) return `A deck holds ${DECK_MAX} cards`;
   if (!(c.c === "E" && c.sub.includes("Basic")) && sum(d.cards, l => l.name === c.n) >= COPIES)
@@ -1008,7 +1641,103 @@ const issues = t => [
   t.rotated && `Not legal: ${t.rotated} rotated card${t.rotated > 1 ? "s" : ""}`,
 ].filter(Boolean);
 
-function openDeck(d) { open = d; pane = "cards"; dlg.hidden = true }
+// rules of thumb, then how winning lists of the same archetype differ
+function tipsOf(d, cards, p) {
+  const T = [], tip = (text, f) => T.push({ text, f });
+  const n = pred => cards.reduce((s, c) => s + (pred(c) ? c.count : 0), 0), fx = c => ENG.fx(c);
+  const drawSup = n(c => c.sub.includes("Supporter") && (fx(c).draw || fx(c).drawTo));
+  const engines = n(c => c.c === "P" && fx(c).engine);
+  const pokeSearch = n(c => c.c === "T" && fx(c).search.some(s => ["basic", "poke", "evo", "stage1", "stage2"].includes(s.kind)));
+  const basics = n(c => c.c === "P" && !c.dead && ENG.stage(c) === 0), energy = n(c => c.c === "E");
+  const fs = ENG.roles(cards, d.roles), candy = n(c => fx(c).candy), arch = archetype(cards);
+  // a rule of thumb gives way when winning lists of this archetype do without
+  const metaSkips = pred => arch && !arch.m.usage.some(([name, share]) => share >= 40 && NAMED.get(name) && pred(expandCard(NAMED.get(name))));
+  if (drawSup + engines < 7) tip(`${drawSup} draw Supporter${drawSup === 1 ? "" : "s"} — most decks run 6–9 (Lillie's Determination, Professor's Research…) or a draw engine.`, "C");
+  if (pokeSearch < 5) tip(`${pokeSearch} Pokémon search card${pokeSearch === 1 ? "" : "s"} — 6–10 is typical (Buddy-Buddy Poffin, Nest Ball, Ultra Ball…).`, "G");
+  if (p && p.mull > 0.25) tip(`${perc(p.mull)} mulligan chance with ${basics} Basic Pokémon — 12 or more keep it under 20%.`, "C");
+  if (fs.some(f => f.top === 2 && f.role !== "S") && candy < 3 && !metaSkips(c => fx(c).candy)) tip(`${candy} Rare Candy for a Stage 2 line — 3–4 usually set it up a turn sooner.`, "G");
+  for (const f of fs.filter(f => f.role !== "S")) {
+    const b = cards.filter(c => c.root === f.root && ENG.stage(c) === 0).reduce((s, c) => s + c.count, 0);
+    if (b < 3) tip(`Only ${b} ${f.root} — 3–4 copies of a key Basic survive Prizes and early KOs.`, "C");
+  }
+  const atkF = fs.filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0];
+  if (atkF) {
+    const cost = atkF.hit.cost, types = new Set(cards.filter(c => c.c === "E").map(ENG.etype));
+    for (const L of new Set(cost)) if (L !== "C" && !types.has(L)) tip(`${atkF.atk.n} needs ${TNAME[L]} Energy, but the deck runs none.`, "G");
+    if (energy < Math.max(5, cost.length * 2)) tip(`${energy} Energy for an attack costing ${cost.length} — likely too few.`, "G");
+    if (energy > 14 && !cards.some(c => fx(c).accel)) tip(`${energy} Energy is a lot with no acceleration — trade a few for draw or search.`, "D");
+  }
+  if (!n(c => fx(c).gust) && !metaSkips(c => fx(c).gust)) tip("No way to pull their Benched Pokémon — 1–2 Boss's Orders or Counter Catcher win games.", "P");
+  if (!n(c => fx(c).sw) && !metaSkips(c => fx(c).sw)) tip("No switching — a Switch or two frees a stuck Active.", "G");
+  if (!n(c => fx(c).recover) && !metaSkips(c => fx(c).recover)) tip("No recovery (Night Stretcher, Super Rod) — late game you can run out of attackers.", "C");
+  if (!cards.some(c => c.sub.includes("ACE SPEC"))) tip("No ACE SPEC — every deck may run one, a free upgrade.", "P");
+  if (arch) {
+    const mine = {}; cards.forEach(c => { mine[c.n] = (mine[c.n] || 0) + c.count });
+    arch.m.usage.filter(([name, share, avg]) => share >= 60 && (mine[name] || 0) + 1 <= avg).slice(0, 5)
+      .forEach(([name, share, avg]) => tip(`${share}% of ${arch.m.name} lists run ${name} (${avg} on average); you run ${mine[name] || 0}.`, "M"));
+    cards.filter(c => !c.dead && !(arch.m.usage.find(u => u[0] === c.n)?.[1] >= 10)).slice(0, 3)
+      .forEach(c => tip(`${c.n} is in under 10% of ${arch.m.name} lists — is it pulling its weight?`, "M"));
+  }
+  return T;
+}
+
+// what to try swapping: what winning lists run, common staples, a thicker main line; out goes
+// whatever does least (no draw, search, gust, recovery — Support Pokémon before Engines)
+function swapCandidates(d, cards) {
+  const has = name => cards.filter(c => c.n === name).reduce((s, c) => s + c.count, 0);
+  const ace = cards.some(c => c.sub.includes("ACE SPEC")), adds = new Map();
+  const add = c => { if (c && !adds.has(c.k) && (ENG.basicEnergy(c) || has(c.n) < COPIES) && !(ace && c.sub.includes("ACE SPEC"))) adds.set(c.k, c) };
+  const arch = archetype(cards), fs = ENG.roles(cards, d.roles);
+  if (arch) arch.m.usage.filter(u => u[1] >= 50 && has(u[0]) < Math.round(u[2])).slice(0, 5).forEach(u => add(NAMED.get(u[0])));
+  for (const f of fs.filter(f => f.role !== "S")) add(cards.find(c => c.root === f.root && ENG.stage(c) === 0 && !c.dead));
+  for (const name of STAPLES) if (adds.size < 9) add(NAMED.get(name));
+  const roleOf = c => fs.find(f => f.root === c.root)?.role;
+  const worth = c => { const f = ENG.fx(c);
+    return c.dead ? -1 : c.c === "P" ? (roleOf(c) === "S" ? 1 : 9) : f.search.length || f.draw || f.drawTo || f.candy ? 6
+      : f.gust || f.recover || f.sw ? 4 : c.c === "E" ? 3 : 2 };
+  return { adds: [...adds.values()].slice(0, 9).map(expandCard),
+           removes: cards.filter(c => !c.dead).sort((a, b) => worth(a) - worth(b)).slice(0, 5) };
+}
+
+// € of the chosen print (or of the card's other prints when that one has none); $ only for cards
+// with no Cardmarket price at all; "cheapest" swaps every card for its cheapest € print
+function deckPrice(d) {
+  let eur = 0, usd = 0, cheap = 0, none = 0;
+  for (const l of d.cards) {
+    const hit = PRINT.get(l.id);
+    if (!hit) { none += l.n; continue }
+    const ps = hit[0].p.map(x => x[4]).filter(v => v != null), low = ps.length ? Math.min(...ps) : null;
+    if (hit[1][4] != null || low != null) { eur += (hit[1][4] ?? low) * l.n; cheap += low * l.n }
+    else if (hit[1][5] != null) usd += hit[1][5] * l.n;
+    else none += l.n;
+  }
+  return { eur, usd, cheap, none };
+}
+const money = (v, sym = "€") => `${sym}${v.toFixed(2)}`;
+const linePrice = l => { const p = PRINT.get(l.id)?.[1]; return !p ? "" : p[4] != null ? money(p[4] * l.n) : p[5] != null ? money(p[5] * l.n, "$") : "" };
+
+// ---- versions: one snapshot per editing session, plus 📌 with a label; the last 20 are kept ----
+const compact = d => d.cards.map(l => `${l.id}:${l.n}`).sort().join(",");
+const uncompact = s => (s ? s.split(",") : []).map(x => {
+  const [id, n] = x.split(":"), c = PRINT.get(id)?.[0];
+  return { id, n: +n || 1, name: c ? c.n : id, cat: c ? CAT[c.c] : "Trainer" };
+});
+function snapshot(d, label = "") {
+  const list = compact(d);
+  if (!label && d.versions[0]?.list === list) return;
+  d.versions.unshift({ t: Date.now(), label, list });
+  d.versions.length = Math.min(d.versions.length, 20);
+  save();
+}
+function openDeck(d) {
+  if (open && open !== d && compact(open) !== openedAs) {        // leaving a deck that changed: end of session
+    if (!open.versions.length && openedAs) open.versions.unshift({ t: Date.now() - 1, label: "before", list: openedAs });
+    snapshot(open);
+  }
+  open = d; pane = "cards"; dlg.hidden = true; hand = null;
+  openedAs = d ? compact(d) : "";
+}
+addEventListener("visibilitychange", () => { if (document.hidden && open && compact(open) !== openedAs) { snapshot(open); openedAs = compact(open) } });
 
 function renderDecks() {
   deckview.style.setProperty("--hh", head.offsetHeight + "px");
@@ -1018,23 +1747,45 @@ function renderDecks() {
   else renderDeckList();
 }
 
+const bars = s => Object.entries(FACTOR).map(([k, label]) => `
+  <div class="fb"><span>${label}</span><i><b style="width:${s ? s[k] : 0}%"></b></i><em>${s ? s[k] : "…"}</em></div>`).join("");
+
 function renderDeckList() {
+  const rows = decks.map((d, i) => ({ d, i, s: deckProfile(d)?.score, t: tally(d) }));
+  const tags = [...new Set(decks.flatMap(d => d.tags))].sort();
+  if (deckTag && !tags.includes(deckTag)) deckTag = "";
+  const by = { created: null, total: r => -(r.s?.total ?? -1), C: r => -(r.s?.C ?? -1), P: r => -(r.s?.P ?? -1),
+               D: r => -(r.s?.D ?? -1), G: r => -(r.s?.G ?? -1), name: r => r.d.name.toLowerCase() }[deckSort];
+  const shown = rows.filter(r => !deckTag || r.d.tags.includes(deckTag));
+  if (by) shown.sort((a, b) => by(a) < by(b) ? -1 : by(a) > by(b) ? 1 : a.i - b.i);
   deckview.innerHTML = `
     <div class="dk-head">
       <div><h1>My Decks</h1>
-        <div class="sub">Standard-legal cards: regulation marks ${CARDS.legal.join(", ")} + basic Energy · cards.js ${CARDS.fetched || ""}</div></div>
+        <div class="sub">Standard-legal cards: regulation marks ${CARDS.legal.join(", ")} + basic Energy · cards.js ${CARDS.fetched || ""}
+          ${META.decks.length ? ` · meta: ${META.events} Limitless events, ${META.fetched}` : ""}</div></div>
       <button class="pill on" data-dk="new">＋ New deck</button>
       <button class="pill" data-dk="import">⇧ Import list</button>
     </div>
-    <div class="dk-grid">${decks.length ? decks.map((d, i) => {
-      const t = tally(d), probs = issues(t), cov = coverOf(d);
+    ${decks.length > 1 || tags.length ? `<div class="dk-tools">
+      <span class="lbl">Sort</span>
+      <select id="dk-sort">${Object.entries({ created: "Created", total: "Total", C: "Consistency", P: "Power", D: "Speed deck", G: "Speed grow", name: "Name" })
+        .map(([v, t]) => `<option value="${v}" ${deckSort === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+      ${tags.length ? `<span class="lbl">Tag</span>` + ["", ...tags].map(t =>
+        `<button class="chip ${deckTag === t ? "on" : ""}" data-tag="${esc(t)}">${t ? esc(t) : "All"}</button>`).join("") : ""}
+    </div>` : ""}
+    <div class="dk-grid">${shown.length ? shown.map(({ d, i, s, t }) => {
+      const probs = issues(t), cov = coverOf(d), arch = archetype(expand(d.cards));
       return `<article class="deck" data-i="${i}">
-        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}</div>
+        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}
+          <div class="tot t-${s ? s.tier : "x"}">${s ? `${s.total}<b>${s.tier}</b>` : "…"}</div></div>
         <div class="dbody">
           <div class="dn">${esc(d.name)}</div>
           <div class="ds"><b>${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
+          ${arch ? `<div class="ds">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match</div>` : ""}
           ${probs.length ? `<div class="dw">⚠ ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more)` : ""}</div>`
                          : `<div class="dok">✓ Ready to play</div>`}
+          <div class="fbs">${bars(s)}</div>
+          ${d.tags.length ? `<div class="dtags">${d.tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
           ${d.notes ? `<div class="dnote">${esc(d.notes)}</div>` : ""}
           <div class="da">
             <button class="pill sm" data-dk="edit">Edit</button>
@@ -1043,7 +1794,7 @@ function renderDeckList() {
           </div>
         </div>
       </article>`;
-    }).join("") : `<p class="empty">No decks yet — start one, or paste a list from Limitless or TCG Live.</p>`}</div>`;
+    }).join("") : `<p class="empty">${decks.length ? "No deck has this tag." : "No decks yet — start one, or paste a list from Limitless or TCG Live."}</p>`}</div>`;
 }
 
 function renderEditor() {
@@ -1053,20 +1804,27 @@ function renderEditor() {
         <button class="pill sm" data-dk="back">← My Decks</button>
         <span class="eb-name"></span>
         <span class="eb-tally"></span>
-        <div class="seg eb-pane"><button data-show="cards">Cards</button><button data-show="deck">Deck</button></div>
+        <div class="seg eb-pane">
+          <button data-show="cards">Cards</button><button data-show="insights">Insights</button>
+          <button data-show="test">Test hand</button><button data-show="deck" class="ph-only">Deck</button>
+        </div>
       </div>
       <section class="pick">
         <div class="pk-tools">
-          <input id="pk-q" type="search" placeholder="Search cards…" autocomplete="off" value="${esc(pick.q)}">
+          <input id="pk-q" type="search" placeholder="Search names and card text (draw, search your deck, attach…)" autocomplete="off" value="${esc(pick.q)}">
           <div class="seg pk-cat">${Object.entries({ all: "All", ...CAT }).map(([v, t]) =>
             `<button data-cat="${v}" class="${pick.cat === v ? "on" : ""}">${t}</button>`).join("")}</div>
           <div class="chips"></div>
         </div>
         <div class="pk-grid"></div>
       </section>
+      <section class="ins"></section>
+      <section class="tst"></section>
       <aside class="dk"></aside>
     </div>`;
   renderChips(); renderGrid(); renderPanel();
+  if (pane === "insights") renderInsights();
+  if (pane === "test") renderTest();
 }
 
 function renderChips() {
@@ -1083,7 +1841,7 @@ function renderChips() {
 
 function matches(c) {
   if (pick.cat !== "all" && c.c !== pick.cat) return false;
-  if (pick.q && !c.n.toLowerCase().includes(pick.q)) return false;
+  if (pick.q && !c.n.toLowerCase().includes(pick.q) && !(pick.q.length >= 3 && textOf(c).includes(pick.q))) return false;
   if ((pick.types.size || pick.stages.size || pick.ex) && c.c !== "P") return false;   // Pokémon-only filters
   if (pick.types.size && !c.t.some(t => pick.types.has(t))) return false;
   if (pick.stages.size && ![...pick.stages].some(s => c.sub.includes(s))) return false;
@@ -1094,6 +1852,10 @@ function matches(c) {
 
 function renderGrid() {
   const shown = CARDS.cards.filter(matches);
+  if (pick.q) {                           // name hits first, then cards that only match in their text
+    const byName = c => c.n.toLowerCase().includes(pick.q) ? 0 : 1;
+    shown.sort((a, b) => byName(a) - byName(b));
+  }
   deckview.querySelector(".pk-grid").innerHTML = shown.length ? shown.map(c => {
     const q = inDeck(c), l = q && lineOf(c);
     return `<div class="pk ${q ? "in" : ""}" data-k="${c.k}">
@@ -1106,15 +1868,20 @@ function renderGrid() {
 }
 
 function renderPanel() {
-  const d = open, t = tally(d), probs = issues(t), cov = coverOf(d)?.id;
+  const d = open, t = tally(d), probs = issues(t), cov = coverOf(d)?.id, cards = expand(d.cards);
+  const p = deckProfile(d), fs = ENG.roles(cards, d.roles), price = deckPrice(d);
   const ok = k => t[k] >= RANGE[k][0] && t[k] <= RANGE[k][1];
   const order = l => cardOf(l)?.k ?? 1e9;
   const line = l => {
-    const c = cardOf(l), p = PRINT.get(l.id)?.[1];
+    const c = cardOf(l), pr = PRINT.get(l.id)?.[1], f = c?.c === "P" && fs.find(f => f.root === c.root);
+    const odds = c && p?.seen[c.k], cost = linePrice(l);
     return `<div class="ln ${c ? "" : "rot"}" data-id="${esc(l.id)}">
       <img class="th" loading="lazy" alt="" src="${thumb(l)}">
       <b class="lq">${l.n}</b>
-      <span class="lnm" ${c ? 'data-ln="zoom"' : ""}>${esc(l.name)}<small>${p ? `${p[1]} ${p[2]}` : "rotated — not legal"}</small></span>
+      <span class="lnm" ${c ? 'data-ln="zoom"' : ""}>${esc(l.name)}
+        <small>${pr ? `${pr[1]} ${pr[2]}` : "rotated — not legal"}${cost ? ` · ${cost}` : ""}</small>
+        ${odds ? `<small class="odds">opener ${perc(odds[0])} · T2 ${perc(odds[2])} · T3 ${perc(odds[3])}</small>` : ""}</span>
+      ${f ? `<button class="role r-${f.role} ${d.roles[f.root] ? "set" : ""}" data-ln="role" title="${ROLE[f.role]} line${d.roles[f.root] ? "" : " (auto)"} — tap to change">${f.role}</button>` : ""}
       <button class="cov ${l.id === cov ? "on" : ""}" data-ln="cover" title="Deck cover">★</button>
       <button data-ln="dec" title="Remove one">−</button>
       <button data-ln="inc" title="Add one" ${c && !blocked(d, c) ? "" : "disabled"}>+</button>
@@ -1122,7 +1889,8 @@ function renderPanel() {
   };
   deckview.querySelector(".dk").innerHTML = `
     <input class="dk-name" value="${esc(d.name)}" aria-label="Deck name" maxlength="60">
-    <div class="dk-tot"><b>${t.total}</b> / ${DECK_MAX} cards</div>
+    <div class="dk-tot"><b>${t.total}</b> / ${DECK_MAX} cards
+      ${p ? `<span class="tot t-${p.score.tier}">${p.score.total}<b>${p.score.tier}</b></span>` : ""}</div>
     <div class="cnts">${Object.keys(RANGE).map(k => `
       <div class="cn ${ok(k) ? "ok" : "warn"}"><b>${t[k]}</b><span>${k}</span><small>aim ${RANGE[k].join("–")}</small></div>`).join("")}
     </div>
@@ -1131,20 +1899,151 @@ function renderPanel() {
       const ls = d.cards.filter(l => l.cat === k).sort((a, b) => order(a) - order(b));
       return ls.length ? `<h3>${k} · ${t[k]}</h3>${ls.map(line).join("")}` : "";
     }).join("") || `<p class="sub">Tap a card to add it; 🔍 shows it up close.</p>`}
+    ${d.cards.length ? `<div class="price">≈ ${money(price.eur)}${price.usd ? ` + ${money(price.usd, "$")} (no Cardmarket price)` : ""}
+      · cheapest prints ${money(price.cheap)}${price.none ? ` · ${price.none} unpriced` : ""}</div>` : ""}
     <textarea class="dk-notes" placeholder="Notes — matchups, cards to try…">${esc(d.notes)}</textarea>
     <div><button class="pill sm" data-dk="export">⧉ Copy list</button></div>`;
   const bar = deckview.querySelector(".ed-bar");
   bar.querySelector(".eb-name").textContent = d.name;
   bar.querySelector(".eb-tally").innerHTML = `<b>${t.total}</b>/${DECK_MAX} · ` + Object.keys(RANGE)
-    .map(k => `<span class="${ok(k) ? "ok" : "warn"}">${t[k]} ${k[0]}</span>`).join(" · ");
+    .map(k => `<span class="${ok(k) ? "ok" : "warn"}">${t[k]} ${k[0]}</span>`).join(" · ")
+    + (p ? ` · <b>${p.score.total} ${p.score.tier}</b>` : "");
   bar.querySelectorAll("[data-show]").forEach(b => {
     b.classList.toggle("on", b.dataset.show === pane);
     if (b.dataset.show === "deck") b.textContent = `Deck (${t.total})`;
   });
 }
 
-// after any change: autosave, then refresh only what shows it (the picker grid keeps its scroll)
-function deckChanged(c) {
+// ---- Insights: the scores and why, tips, tested swaps, matchups, Energy vs costs, versions ----
+function renderInsights() {
+  const d = open, cards = expand(d.cards), p = deckProfile(d), s = p?.score, el = deckview.querySelector(".ins");
+  if (!d.cards.length) { el.innerHTML = `<p class="empty">Add cards to see how the deck plays.</p>`; return }
+  const arch = archetype(cards), fs = ENG.roles(cards, d.roles);
+  const why = p && {
+    C: `Fully set up by turn 4 in ${perc(p.pSetup4)} of games · mulligan ${perc(p.mull)}`,
+    P: p.attacker ? `${p.attacker.name}: ~${p.attacker.v} damage${p.attacker.spread ? ` + ${p.attacker.spread} to the Bench` : ""}, vs the meta's attackers (${Math.min(...HP)}–${Math.max(...HP)} HP)` : "No attacker found",
+    D: `${p.access.toFixed(1)} extra cards drawn or searched per turn, turns 1–3`,
+    G: `Ideal board on turn ${p.avgSetup.toFixed(1)} on average${p.hist[9] ? ` · never by turn 8 in ${perc(p.hist[9] / p.games)}` : ""}`,
+  };
+  const goals = fs.filter(f => f.role !== "S").map(f => `<span class="role r-${f.role}">${f.role}</span> ${esc(f.role === "E" ? f.eng?.n || f.root : f.atk?.n || f.root)}`).join(" · ");
+  const tips = tipsOf(d, cards, p);
+  const sw = p && SWAPS.get(p.key);
+  if (p && !SWAPS.has(p.key)) {
+    SWAPS.set(p.key, null);
+    const { adds, removes } = swapCandidates(d, cards);
+    run("swaps", cards, d.roles, adds, removes, HP, p.key).then(r => { SWAPS.set(p.key, Array.isArray(r) ? r : []); refresh() });
+  }
+  const mu = (label, share, other, seed) => {
+    if (!p || !other) return `<div class="mu"><span class="mn">${label}</span><span class="sub">simulating…</span></div>`;
+    const m = ENG.matchup(p, other, seed), w = Math.round(m.win * 100);
+    return `<div class="mu"><span class="mn">${label}${share ? ` <small>${share}%</small>` : ""}</span>
+      <span class="mb"><b style="width:${w}%" class="${w >= 55 ? "ok" : w < 45 ? "bad" : ""}"></b></span>
+      <span class="mw ${w >= 55 ? "ok" : w < 45 ? "bad" : ""}">${w}% · ${w >= 55 ? "Favoured" : w < 45 ? "Unfavoured" : "Even"}</span>
+      <small class="mr">${m.reasons.map(esc).join(" · ")}</small></div>`;
+  };
+  const mine = decks.filter(x => x !== d && x.cards.length);
+  const atkF = fs.filter(f => f.role === "A");
+  const ens = {}; cards.filter(c => c.c === "E").forEach(c => { const L = ENG.etype(c); ens[L] = (ens[L] || 0) + c.count });
+  el.innerHTML = `
+    <div class="sc-hero">
+      <div class="ring" style="--p:${s ? s.total : 0}"><span>${s ? s.total : "…"}</span></div>
+      <div><div class="tier t-${s ? s.tier : "x"}">${s ? `Tier ${s.tier}` : "Simulating 1,200 games…"}</div>
+        ${arch ? `<div class="sub">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match (${arch.m.share}% of the meta)</div>` : `<div class="sub">No close meta archetype</div>`}
+        <div class="sub">Ideal board: ${goals || "—"}</div></div>
+    </div>
+    <div class="fx-rows">${Object.entries(FACTOR).map(([k, label]) => `
+      <div class="fx-row"><div class="fb"><span>${label}</span><i><b style="width:${s ? s[k] : 0}%"></b></i><em>${s ? s[k] : "…"}</em></div>
+        <small>${why ? why[k] : ""}</small></div>`).join("")}</div>
+    <div class="ins-tags"><span class="lbl">Tags</span>${d.tags.map(t => `<button class="chip on" data-untag="${esc(t)}">${esc(t)} ✕</button>`).join("")}
+      <input id="tag-in" placeholder="＋ tag, Enter" maxlength="24"></div>
+
+    <h3>How to improve</h3>
+    <ul class="tips">${tips.map(t => `<li><span class="ft f-${t.f}">${t.f === "M" ? "Meta" : FACTOR[t.f]}</span>${esc(t.text)}</li>`).join("") || "<li>No obvious gaps — nice.</li>"}</ul>
+    <div class="swaps"><div class="lbl">Tested swaps ${d.cards.length >= DECK_MAX ? "(one in, one out)" : "(cards to add)"}</div>
+      ${!p || sw === null || sw === undefined ? `<p class="sub">Testing swaps in simulation…</p>`
+        : sw.length ? sw.map((x, i) => `<div class="sw">
+            <span>${x.rem ? `−1 ${esc(x.rem)} ` : ""}<b>+1 ${esc(x.add)}</b></span>
+            <span class="sub">Total +${x.d}${["C", "G", "P", "D"].filter(k => x[k]).map(k => ` · ${FACTOR[k]} ${x[k] > 0 ? "+" : ""}${x[k]}`).join("")}</span>
+            <button class="pill sm" data-swap="${i}">Apply</button></div>`).join("")
+        : `<p class="sub">No single swap scored better — the list is well balanced.</p>`}</div>
+
+    <h3>Matchups vs the meta</h3>
+    ${META.decks.length ? META.decks.map((m, i) => mu(esc(m.name), m.share, metaProfile(i), i + 1)).join("")
+      : `<p class="sub">No meta.js yet — run python3 fetch_data.py.</p>`}
+    ${mine.length ? `<h3>vs my decks</h3>${mine.map((x, i) => mu(esc(x.name), 0, deckProfile(x), 101 + i)).join("")}` : ""}
+    <p class="sub">Estimates from a prize race (setup speed, attacks needed for 6 Prizes, Weakness, Bench damage) — good for comparing, not a prediction.</p>
+
+    <h3>Energy vs attack costs</h3>
+    <div class="ech">
+      <div><span class="lbl">You run</span> ${Object.entries(ens).map(([L, n]) => `${L === "*" ? "Special" : dot(L)} ${n}`).join(" · ") || "no Energy"}</div>
+      ${atkF.map(f => { const b = f.hit, miss = [...new Set(b.cost)].filter(L => L !== "C" && !ens[L]);
+        return `<div>${esc(f.atk.n)}: ${[...b.cost].map(dot).join("") || "free"} ${miss.length ? `<span class="bad">⚠ no ${miss.map(L => TNAME[L]).join("/")} Energy</span>` : `<span class="ok">✓</span>`}</div>` }).join("")}
+    </div>
+
+    <h3>Versions</h3>
+    <div class="vers-tools"><input id="ver-label" placeholder="Label (optional)" maxlength="40">
+      <button class="pill sm" data-ver="save">📌 Save version</button>
+      <select id="cmp-with"><option value="">Compare with…</option>
+        ${mine.map(x => `<option value="d:${esc(x.name)}">My deck: ${esc(x.name)}</option>`).join("")}
+        ${META.decks.map((m, i) => `<option value="m:${i}">Meta: ${esc(m.name)}</option>`).join("")}</select></div>
+    ${d.versions.map((v, i) => `<div class="ver"><span>${new Date(v.t).toLocaleString()}${v.label ? ` · <b>${esc(v.label)}</b>` : ""}</span>
+      <small class="sub">${uncompact(v.list).reduce((s, l) => s + l.n, 0)} cards</small>
+      <button class="pill sm" data-ver="cmp" data-i="${i}">Compare</button>
+      <button class="pill sm" data-ver="restore" data-i="${i}">Restore</button></div>`).join("") || `<p class="sub">A version is kept each time you finish editing; 📌 saves one now.</p>`}`;
+}
+
+// ---- compare two lists: card by card, and their scores ----
+async function compare(label, lines) {
+  const a = expand(open.cards), b = expand(lines), names = {};
+  open.cards.forEach(l => { names[l.name] = (names[l.name] || 0) + l.n });
+  const theirs = {}; lines.forEach(l => { theirs[l.name] = (theirs[l.name] || 0) + l.n });
+  const diff = [...new Set([...Object.keys(names), ...Object.keys(theirs)])]
+    .map(n => [n, (names[n] || 0) - (theirs[n] || 0)]).filter(x => x[1]).sort((x, y) => y[1] - x[1]);
+  zoomCard = null; dlg.hidden = false;
+  dlgBox.innerHTML = `<div class="m-head"><div><h2>${esc(open.name)} vs ${esc(label)}</h2><div class="sub">Simulating both…</div></div>
+    <button class="x" data-z="close">✕</button></div>`;
+  const [pa, pb] = await Promise.all([profile(a, open.roles), profile(b, {})]);
+  if (dlg.hidden) return;
+  const row = (k, t) => `<tr><td>${t}</td><td>${pa?.score[k] ?? "…"}</td><td>${pb?.score[k] ?? "…"}</td>
+    <td class="${(pa?.score[k] ?? 0) >= (pb?.score[k] ?? 0) ? "ok" : "bad"}">${pa && pb ? (pa.score[k] - pb.score[k] > 0 ? "+" : "") + (pa.score[k] - pb.score[k]) : ""}</td></tr>`;
+  dlgBox.innerHTML = `<div class="m-head"><div><h2>${esc(open.name)} vs ${esc(label)}</h2>
+      <div class="sub">+ means this deck has more</div></div><button class="x" data-z="close">✕</button></div>
+    <div class="imp"><table class="cmp"><tr><th></th><th>This deck</th><th>${esc(label)}</th><th></th></tr>
+      ${row("total", "Total")}${Object.entries(FACTOR).map(([k, t]) => row(k, t)).join("")}</table>
+      <div class="diff">${diff.map(([n, v]) => `<div class="${v > 0 ? "ok" : "bad"}">${v > 0 ? "+" : ""}${v} ${esc(n)}</div>`).join("") || "<div>Same cards.</div>"}</div></div>`;
+}
+
+// ---- test hands: an opening 7 and 6 Prizes, then draw turn by turn ----
+function newHand() {
+  const deck = []; open.cards.forEach(l => { for (let k = 0; k < l.n; k++) deck.push(l) });
+  let mull = -1, h;
+  do {
+    for (let i = deck.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [deck[i], deck[j]] = [deck[j], deck[i]] }
+    h = deck.slice(0, 7); mull++;
+  } while (!h.some(l => { const c = cardOf(l); return c?.c === "P" && ENG.stage(c) === 0 }) && mull < 10 && deck.length >= 7);
+  hand = { cards: h, prizes: deck.slice(7, 13), rest: deck.slice(13), mull, reveal: false, turn: 0 };
+}
+function renderTest() {
+  const el = deckview.querySelector(".tst");
+  if (open.cards.length && sum(open.cards) < 13) { el.innerHTML = `<p class="empty">Add at least 13 cards to draw a test hand.</p>`; return }
+  if (!open.cards.length) { el.innerHTML = `<p class="empty">Add cards to draw a test hand.</p>`; return }
+  if (!hand) newHand();
+  const fs = ENG.roles(expand(open.cards), open.roles), key = new Set(fs.filter(f => f.role !== "S").map(f => f.root));
+  const prized = hand.prizes.filter(l => key.has(cardOf(l)?.root));
+  const tile = l => `<img loading="lazy" alt="${esc(l.name)}" title="${esc(l.name)}" src="${thumb(l)}">`;
+  el.innerHTML = `
+    <div class="th-tools">
+      <button class="pill sm on" data-th="new">🔄 New hand</button>
+      <button class="pill sm" data-th="draw" ${hand.rest.length ? "" : "disabled"}>＋ Draw (turn ${hand.turn + 1})</button>
+      <button class="pill sm" data-th="prizes">${hand.reveal ? "Hide" : "Reveal"} Prizes</button>
+      <span class="sub">${hand.mull ? `⚠ ${hand.mull} mulligan${hand.mull > 1 ? "s" : ""} before a Basic · ` : ""}${hand.rest.length} cards left in deck</span>
+    </div>
+    ${prized.length ? `<div class="dw">⚠ Prized key cards: ${prized.map(l => esc(l.name)).join(", ")}</div>` : ""}
+    <div class="lbl">Hand · ${hand.cards.length}</div><div class="th-row">${hand.cards.map(tile).join("")}</div>
+    <div class="lbl">Prizes</div><div class="th-row prizes">${hand.prizes.map(l => hand.reveal ? tile(l) : `<span class="back"></span>`).join("")}</div>`;
+}
+
+function deckChanged(c) {               // after any change: autosave, then refresh only what shows it
   save();
   const tile = c && deckview.querySelector(`.pk[data-k="${c.k}"]`);
   if (tile) {
@@ -1153,7 +2052,10 @@ function deckChanged(c) {
     tile.querySelector(".qty").textContent = q ? "×" + q : "";
     tile.querySelector("img").src = imgOf(l ? PRINT.get(l.id)[1] : c.p[0]);
   }
+  hand = null;
   renderPanel();
+  if (pane === "insights") renderInsights();
+  if (pane === "test") renderTest();
   if (!dlg.hidden && zoomCard) renderZoom();
 }
 
@@ -1173,7 +2075,7 @@ function removeCard(id) {
   deckChanged(c);
 }
 
-// ---- 🔍 a card up close: big image, its prints, − / + ----
+// ---- 🔍 a card up close: big image, its prints, its text, − / + ----
 function openZoom(c, id) {
   zoomCard = c; zoomPrint = id || lineOf(c)?.id || c.p[0][0];
   dlg.hidden = false; renderZoom();
@@ -1181,6 +2083,9 @@ function openZoom(c, id) {
 
 function renderZoom() {
   const c = zoomCard, p = PRINT.get(zoomPrint)[1], q = inDeck(c), why = blocked(open, c);
+  const f = ENG.fx(expandCard(c)), does = [f.draw && `draws ${f.draw}`, f.drawTo && `draws to ${f.drawTo}`,
+    f.search.length && `searches ${f.search.map(s => `${s.n} ${s.kind}`).join(", ")}`, f.candy && "Rare Candy",
+    f.accel && `attaches ${f.accel} Energy`, f.gust && "gusts", f.sw && "switches", f.recover && "recovers"].filter(Boolean);
   dlgBox.innerHTML = `
     <div class="m-head">
       <div><h2>${c.n}</h2><div class="sub">${[CAT[c.c], ...c.sub, c.hp && c.hp + " HP"].filter(Boolean).join(" · ")}</div></div>
@@ -1189,9 +2094,10 @@ function renderZoom() {
     <div class="zm-body">
       <img class="zm-img" alt="${c.n}" src="${bigImg(imgOf(p))}" onerror="this.onerror=null;this.src='${imgOf(p)}'">
       <div class="zm-side">
-        <div class="lbl">Print · ${esc(CARDS.sets[p[1]] || p[1])}</div>
+        <div class="lbl">Print · ${esc(CARDS.sets[p[1]] || p[1])}${p[4] != null ? ` · ${money(p[4])}` : p[5] != null ? ` · ${money(p[5], "$")}` : ""}</div>
         <div class="zm-prints">${c.p.map(x => `<button class="chip ${x[0] === zoomPrint ? "on" : ""}"
-          data-z="print" data-id="${x[0]}">${x[1]} ${x[2]}</button>`).join("")}</div>
+          data-z="print" data-id="${x[0]}">${x[1]} ${x[2]}${x[4] != null ? ` · ${money(x[4])}` : ""}</button>`).join("")}</div>
+        ${does.length ? `<div class="sub">Read as: ${does.join(" · ")}</div>` : ""}
         <div class="lbl">In this deck</div>
         <div class="zm-q">
           <button class="pill" data-z="dec" ${q ? "" : "disabled"}>−</button><b>${q}</b>
@@ -1279,15 +2185,22 @@ function openImport() {
   dlgBox.querySelector("#imp-text").focus();
 }
 
+const newDeck = (name, cards = [], notes = "") => {
+  const d = { name: uniqueName(name), notes, cover: null, cards, tags: [], roles: {}, versions: [] };
+  decks.push(d); save();
+  return d;
+};
+
 function doImport() {
   const { cards, miss } = parseList(dlgBox.querySelector("#imp-text").value);
   if (!cards.length) {
     dlgBox.querySelector("#imp-out").textContent = "No card lines recognised — they look like “4 Charmander PAF 7”.";
     return;
   }
-  const d = { name: uniqueName(dlgBox.querySelector("#imp-name").value.trim() || "Imported deck"), notes: "", cover: null, cards };
-  decks.push(d); save(); openDeck(d); renderDecks();
-  if (!miss.length) return say(`Imported ${sum(cards)} cards`);
+  const want = dlgBox.querySelector("#imp-name").value.trim() || "Imported deck", d = newDeck(want, cards);
+  openDeck(d); renderDecks();
+  if (d.name !== want) say(`“${want}” was taken — saved as “${d.name}”`);
+  if (!miss.length) { if (d.name === want) say(`Imported ${sum(cards)} cards`); return }
   dlg.hidden = false;
   dlgBox.querySelector(".imp").innerHTML = `
     <p>Imported ${sum(cards)} cards into “${esc(d.name)}”. ${miss.length} line${miss.length > 1 ? "s" : ""} didn't match
@@ -1296,20 +2209,27 @@ function doImport() {
     <button class="pill on" data-z="close">Open the deck</button>`;
 }
 
+function applySwap(x) {
+  const add = CARDS.cards[x.addK];
+  if (x.rem) { const l = open.cards.find(l => l.name === x.rem); if (l) removeCard(l.id) }
+  if (add) addCard(add);
+  say(`Swapped${x.rem ? ` −1 ${x.rem}` : ""} +1 ${x.add}`);
+}
+
 deckview.addEventListener("click", e => {
   const act = e.target.closest("[data-dk]")?.dataset.dk, tile = e.target.closest(".deck");
-  if (act === "new") {
-    const d = { name: uniqueName("New deck"), notes: "", cover: null, cards: [] };
-    decks.push(d); save(); openDeck(d); return renderDecks();
-  }
+  if (act === "new") { const d = newDeck("New deck"); openDeck(d); return renderDecks() }
   if (act === "import") return openImport();
   if (act === "back") { openDeck(null); return renderDecks() }
   if (act === "export") return exportDeck(open);
+  const tag = e.target.closest("[data-tag]");
+  if (tag) { deckTag = tag.dataset.tag; return renderDeckList() }
   if (tile) {
     const i = +tile.dataset.i, d = decks[i];
     if (act === "dup") {
-      decks.splice(i + 1, 0, { ...structuredClone(d), name: uniqueName(`${d.name} copy`) });
-      save(); return renderDecks();
+      const copy = structuredClone(d);
+      copy.name = uniqueName(d.name); copy.versions = [];
+      decks.splice(i + 1, 0, copy); save(); return renderDecks();
     }
     if (act === "del") {
       if (confirm(`Delete the deck “${d.name}”? This can't be undone.`)) { decks.splice(i, 1); save(); renderDecks() }
@@ -1320,7 +2240,13 @@ deckview.addEventListener("click", e => {
   if (!open) return;
 
   const show = e.target.closest("[data-show]")?.dataset.show;
-  if (show) { pane = show; deckview.querySelector(".ed").dataset.pane = pane; return renderPanel() }
+  if (show) {
+    pane = show; deckview.querySelector(".ed").dataset.pane = pane;
+    renderPanel();
+    if (pane === "insights") renderInsights();
+    if (pane === "test") renderTest();
+    return;
+  }
   const cat = e.target.closest("[data-cat]")?.dataset.cat;
   if (cat) {
     pick.cat = cat;
@@ -1348,27 +2274,67 @@ deckview.addEventListener("click", e => {
     if (ln.dataset.ln === "dec") removeCard(id);
     if (ln.dataset.ln === "zoom" && c) openZoom(c, id);
     if (ln.dataset.ln === "cover") { open.cover = open.cover === id ? null : id; save(); renderPanel() }
+    if (ln.dataset.ln === "role" && c) {             // auto → Attacker → Engine → Support → auto
+      const f = ENG.roles(expand(open.cards), open.roles).find(f => f.root === c.root), order = ["A", "E", "S"];
+      const was = open.roles[c.root];
+      let next = was ? order[order.indexOf(was) + 1] : "A";
+      if (next === f.auto) next = order[order.indexOf(next) + 1];   // the auto role is the "auto" step
+      if (next) open.roles[c.root] = next; else delete open.roles[c.root];
+      deckChanged(null);
+    }
+    return;
   }
+  const swap = e.target.closest("[data-swap]");
+  if (swap) return applySwap(SWAPS.get(deckProfile(open)?.key)?.[+swap.dataset.swap] || {});
+  const untag = e.target.closest("[data-untag]");
+  if (untag) { open.tags = open.tags.filter(t => t !== untag.dataset.untag); save(); return renderInsights() }
+  const ver = e.target.closest("[data-ver]");
+  if (ver) {
+    const v = open.versions[+ver.dataset.i];
+    if (ver.dataset.ver === "save") { snapshot(open, deckview.querySelector("#ver-label").value.trim() || "saved"); openedAs = compact(open); say("Version saved"); return renderInsights() }
+    if (ver.dataset.ver === "cmp" && v) return compare(v.label || new Date(v.t).toLocaleString(), uncompact(v.list));
+    if (ver.dataset.ver === "restore" && v && confirm("Restore this version? The current list is saved as a version first.")) {
+      snapshot(open, "before restore"); open.cards = uncompact(v.list); openedAs = compact(open); deckChanged(null); say("Version restored");
+    }
+    return;
+  }
+  const th = e.target.closest("[data-th]")?.dataset.th;
+  if (th === "new") { newHand(); renderTest() }
+  if (th === "draw" && hand.rest.length) { hand.cards.push(hand.rest.shift()); hand.turn++; renderTest() }
+  if (th === "prizes") { hand.reveal = !hand.reveal; renderTest() }
 });
 
 let typing;
 deckview.addEventListener("input", e => {
   if (e.target.id === "pk-q") {
     clearTimeout(typing);
-    typing = setTimeout(() => { pick.q = e.target.value.trim().toLowerCase(); renderGrid() }, 120);
+    typing = setTimeout(() => { pick.q = e.target.value.trim().toLowerCase(); renderGrid() }, 150);
   }
   if (e.target.matches(".dk-notes")) { open.notes = e.target.value; save() }
 });
 
 deckview.addEventListener("change", e => {
-  if (!e.target.matches(".dk-name")) return;
-  const v = e.target.value.trim();
-  if (!v || decks.some(d => d !== open && d.name === v)) {
-    e.target.value = open.name;
-    return say(v ? `You already have a deck called “${v}”` : "A deck needs a name");
+  if (e.target.id === "dk-sort") { deckSort = e.target.value; store.set("deckSort", deckSort); return renderDeckList() }
+  if (e.target.id === "cmp-with" && e.target.value) {
+    const [kind, key] = [e.target.value[0], e.target.value.slice(2)];
+    const other = kind === "m" ? META.decks[+key] : decks.find(x => x.name === key);
+    e.target.value = "";
+    return other && compare(other.name, other.cards);
   }
-  open.name = v; save();
+  if (!e.target.matches(".dk-name")) return;
+  const want = e.target.value.trim();
+  if (!want) { e.target.value = open.name; return say("A deck needs a name") }
+  const v = uniqueName(want, open);
+  if (v !== want) say(`“${want}” is taken — named “${v}”`);
+  open.name = e.target.value = v; save();
   deckview.querySelector(".eb-name").textContent = v;
+});
+
+deckview.addEventListener("keydown", e => {
+  if (e.target.id !== "tag-in" || e.key !== "Enter") return;
+  const t = e.target.value.trim();
+  if (t && !open.tags.includes(t)) { open.tags.push(t); save() }
+  renderInsights(); deckview.querySelector("#tag-in")?.focus();
 });
 
 dlg.addEventListener("click", e => {
@@ -1457,21 +2423,51 @@ function tabsOut() {
     return [c.name, have.has(c.id) ? "✓" : "", c.id, `${c.number}/${c.total ?? "?"}`, c.rarity, c.section];
   });
   // owned cards no row claims (a filter change, a dropped species) park here instead of vanishing
-  const known = new Map(Object.values(DEX.tcg).flat().map(c => [c.id, c]));
+  const byId = new Map(Object.values(DEX.tcg).flat().map(c => [c.id, c]));
   const rest = [...have].filter(id => !placed.has(id));
-  gen1.push([UNSORTED, "", rest.map(id => label(known.get(id)) || id).join("\n"), ""]);
-  // one row per card per deck; a deck's notes ride on its first row, an empty deck keeps a bare row
-  const deckRows = decks.flatMap(d => {
-    const rows = d.cards.map(l => [d.name, String(l.n), l.name, l.id, l.cat, l.id === d.cover ? "✓" : "", ""]);
-    if (!rows.length) rows.push([d.name, "", "", "", "", "", ""]);
-    rows[0][6] = d.notes || "";
-    return rows;
-  });
-  return { gen1, anniv, decks: deckRows };
+  gen1.push([UNSORTED, "", rest.map(id => label(byId.get(id)) || id).join("\n"), ""]);
+  return { tabs: { gen1, anniv }, decks: decks.map(deckSheet) };
 }
 
-function fromTabs(t) {
-  const byName = new Map(COLLECTIONS.gen1.items.map(p => [p.name, p]));
+// One tab per deck: its cards in A–F; on the right (H–I) the deck's facts, then its versions.
+function deckSheet(d, order) {
+  const s = deckProfile(d)?.score, arch = archetype(expand(d.cards)), price = deckPrice(d);
+  const fs = ENG.roles(expand(d.cards), d.roles);
+  const role = l => { const c = cardOf(l), f = c?.c === "P" && fs.find(f => f.root === c.root); return f ? ROLE[f.role] : "" };
+  const grid = [["Qty", "Card", "Card ID", "Category", "Role", "Cover"],
+    ...d.cards.map(l => [String(l.n), l.name, l.id, l.cat, role(l), l.id === d.cover ? "✓" : ""])];
+  const facts = [["Deck", d.name], ["Total", s ? `${s.total} · ${s.tier}` : ""],
+    ...Object.entries(FACTOR).map(([k, t]) => [t, s ? String(s[k]) : ""]),
+    ["Archetype", arch ? `${arch.m.name} · ${perc(arch.sim)}` : ""], ["Price", d.cards.length ? money(price.eur) : ""],
+    ["Tags", d.tags.join(", ")], ["Notes", d.notes || ""], ["Order", String(order)],
+    ["Roles", Object.entries(d.roles).map(([k, v]) => `${k}=${v}`).join("; ")], ["Versions", String(d.versions.length)],
+    ...d.versions.map(v => [new Date(v.t).toISOString().slice(0, 16) + (v.label ? " — " + v.label : ""), v.list])];
+  const rows = [];
+  for (let r = 0; r < Math.max(grid.length, facts.length); r++) rows.push([...(grid[r] || ["", "", "", "", "", ""]), "", ...(facts[r] || ["", ""])]);
+  return { name: d.name, rows };
+}
+
+function deckFromSheet(name, rows) {
+  const d = { name, notes: "", cover: null, cards: [], tags: [], roles: {}, versions: [], order: 0 };
+  let versions = false;
+  rows.forEach((r, i) => {
+    if (i && r[2]) { d.cards.push({ id: r[2], n: +r[0] || 1, name: r[1], cat: r[3] || "Trainer" }); if (r[5]) d.cover = r[2] }
+    const [k, v = ""] = [r[7], r[8]];
+    if (!k) return;
+    if (versions) {
+      const [when, label = ""] = k.split(" — ");
+      d.versions.push({ t: Date.parse(when + "Z") || 0, label, list: v });
+    } else if (k === "Notes") d.notes = v;
+    else if (k === "Tags") d.tags = v.split(/,\s*/).filter(Boolean);
+    else if (k === "Order") d.order = +v || 0;
+    else if (k === "Roles") v.split(/;\s*/).forEach(x => { const [root, role] = x.split("="); if (root && role) d.roles[root] = role });
+    else if (k === "Versions") versions = true;
+  });
+  return d;
+}
+
+function fromTabs(r) {
+  const t = r.tabs, byName = new Map(COLLECTIONS.gen1.items.map(p => [p.name, p]));
   const d = { have: [], favs: {} };
   for (const [name, , ids, fav] of t.gen1 || []) {
     d.have.push(...idsIn(ids));
@@ -1479,16 +2475,20 @@ function fromTabs(t) {
     if (p && id) d.favs["gen1:" + p.i] = { id, img: CARD_IMG(id) };
   }
   for (const [, own, id] of t.anniv || []) if (own) d.have.push(id);
-  const byDeck = new Map();
-  for (const [deck, qty, name, id, cat, cover, notes] of t.decks || []) {
-    if (!deck) continue;
-    if (!byDeck.has(deck)) byDeck.set(deck, { name: deck, notes: "", cover: null, cards: [] });
-    const dk = byDeck.get(deck);
-    if (notes) dk.notes = notes;
-    if (id) dk.cards.push({ id, n: +qty || 1, name, cat });
-    if (id && cover) dk.cover = id;
+  if (r.decks.length) d.decks = r.decks.map(x => deckFromSheet(x.name, x.rows)).sort((a, b) => a.order - b.order);
+  else {                                 // the earlier single Decks tab, read once before the switch
+    const byDeck = new Map();
+    for (const [deck, qty, name, id, cat, cover, notes] of r.oldDecks || []) {
+      if (!deck) continue;
+      if (!byDeck.has(deck)) byDeck.set(deck, { name: deck, notes: "", cover: null, cards: [], tags: [], roles: {}, versions: [] });
+      const dk = byDeck.get(deck);
+      if (notes) dk.notes = notes;
+      if (id) dk.cards.push({ id, n: +qty || 1, name, cat });
+      if (id && cover) dk.cover = id;
+    }
+    d.decks = [...byDeck.values()];
   }
-  d.decks = [...byDeck.values()];
+  d.decks.forEach(x => delete x.order);
   return d;
 }
 
@@ -1498,6 +2498,7 @@ function applyState(d) {
   Object.entries(d.favs || {}).forEach(([k, v]) => { if (k.split(":")[0] in COLLECTIONS) favs[k] = v });
   if (d.decks) {                 // the old state JSON and older backups carry none: keep this device's
     decks.splice(0, decks.length, ...d.decks);
+    decks.forEach(x => { x.tags ||= []; x.roles ||= {}; x.versions ||= [] });
     open &&= decks.find(x => x.name === open.name) || null;
   }
   save(false); render();
@@ -1509,18 +2510,18 @@ async function pull() {
   if (!cfg.url || !cfg.tok) return status("☁ Sign in");
   status("☁ Syncing…");
   try {
-    const d = await (await fetch(`${cfg.url}?v=2&idToken=${encodeURIComponent(cfg.tok)}`)).json();
+    const d = await (await fetch(`${cfg.url}?v=3&idToken=${encodeURIComponent(cfg.tok)}`)).json();
     if (!d.ok) {
       if (/sign in/i.test(d.error || "")) { cfg.tok = ""; store.set("syncTok", ""); applyLock() }
       throw new Error(d.error || "rejected");
     }
-    // an old script would store this site's save as an empty JSON blob -> never write to one
-    // ...and one without the Decks tab would hand back no decks, wiping this device's on apply
-    if (!("tabs" in d) || (d.tabs && !("decks" in d.tabs))) throw new Error("update the Apps Script first");
+    // an older script would misread this site's saves (a blob, one Decks tab) and hand back no
+    // decks, wiping this device's on apply -> never sync with one
+    if (d.v !== 3) throw new Error("update the Apps Script first");
     cfg.ready = true;
     // whichever side was written last wins — plain and predictable for one person, two devices.
     // No tabs yet = first run on the new script: the old state JSON comes along once to fill them.
-    const remote = d.tabs ? fromTabs(d.tabs) : d.legacy;
+    const remote = d.tabs ? fromTabs(d) : d.legacy;
     if (remote && (d.updated || 0) > store.get("updated", 0)) {
       applyState(remote);
       store.set("updated", d.updated);
@@ -1540,7 +2541,7 @@ function push(wait = 900) {
       // text/plain keeps it a simple request: no CORS preflight, which Apps Script cannot answer
       const d = await (await fetch(cfg.url, {
         method: "POST", headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ idToken: cfg.tok, v: 2, updated, tabs: tabsOut() }),
+        body: JSON.stringify({ idToken: cfg.tok, v: 3, updated, ...tabsOut() }),
       })).json();
       if (!d.ok) throw new Error(d.error || "rejected");
       store.set("updated", updated);
