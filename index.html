@@ -1675,7 +1675,7 @@ const uniqueName = (want, self) => {
 
 let open = null, pane = "cards", zoomCard = null, zoomPrint = null, openedAs = "", hand = null;
 let deckSort = store.get("deckSort", "created"), deckTag = "";
-const pick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false };
+const pick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false, inDeck: false };
 const bpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false };   // My Cards
 const dlgBox = document.getElementById("dlg-box");
 const lineOf = c => open.cards.find(l => cardOf(l) === c);
@@ -2214,7 +2214,8 @@ function chipsHTML(st) {
   const chip = (g, v, label = v) =>
     `<button class="chip ${st[g].has(v) ? "on" : ""}" data-chip="${g}" data-v="${v}">${label}</button>`;
   let h = `<button class="chip own ${st.own ? "on" : ""}" data-chip="own" title="${st === pick
-    ? "Only cards you own and no other deck holds" : "Only cards you own"}">✓ Owned only</button>`;
+    ? "Only cards you own and no other deck holds" : "Only cards you own"}">✓ Owned only</button>`
+    + (st === pick ? `<button class="chip ${st.inDeck ? "on" : ""}" data-chip="inDeck" title="Only cards already in this deck">▣ In this deck</button>` : "");
   if (st.cat === "all" || st.cat === "P") h +=
     Object.entries(TYPES).map(([t, col]) => chip("types", t, `<i style="background:${col}"></i>${t}`)).join("") +
     ["Basic", "Stage 1", "Stage 2"].map(s => chip("stages", s)).join("") +
@@ -2233,6 +2234,7 @@ function matches(c, st = pick) {
   if (st.ex && !c.sub.includes("ex")) return false;
   if (st.kinds.size && ![...st.kinds].some(k => c.sub.includes(KINDS[k]))) return false;
   if (st.own && (st === pick ? freeFor(open, c) <= 0 : !ownedOf(c))) return false;
+  if (st.inDeck && !inDeck(c)) return false;
   return true;
 }
 // the names to show, name hits first, then names that only match in their text
@@ -2277,7 +2279,7 @@ function renderGrid() {
   const shown = shownNames(pick);
   deckview.querySelector(".pk-grid").innerHTML = shown.length
     ? shown.map(([, g]) => nameTile(g) + (listOpen?.view === "deck" && listOpen.g === g ? variations(g, "deck") : "")).join("")
-    : `<p class="empty">No legal cards match these filters${pick.own ? " among the cards you own and have free" : ""}.</p>`;
+    : `<p class="empty">${pick.inDeck && !open.cards.length ? "This deck has no cards yet." : `No legal cards match these filters${pick.own ? " among the cards you own and have free" : ""}${pick.inDeck ? " in this deck" : ""}.`}</p>`;
 }
 
 function renderPanel() {
@@ -2498,7 +2500,8 @@ function renderTest() {
 function deckChanged(c) {               // after any change: autosave, then refresh only what shows it
   save();
   const g = c && NAME_OF.get(c.k), tile = c && deckview.querySelector(`.pk[data-g="${g}"]`);
-  if (tile) {
+  if (c && pick.inDeck) renderGrid();                 // a card can leave (or join) the filtered grid
+  else if (tile) {
     tile.outerHTML = nameTile(g);
     const vl = deckview.querySelector(`.vlist[data-g="${g}"]`);
     if (vl) vl.outerHTML = variations(g, "deck");
@@ -2719,7 +2722,7 @@ deckview.addEventListener("click", e => {
   const chip = e.target.closest("[data-chip]");
   if (chip) {
     const g = chip.dataset.chip, v = chip.dataset.v;
-    if (g === "ex" || g === "own") pick[g] = !pick[g];
+    if (g === "ex" || g === "own" || g === "inDeck") pick[g] = !pick[g];
     else pick[g].has(v) ? pick[g].delete(v) : pick[g].add(v);
     chip.classList.toggle("on"); return renderGrid();
   }
