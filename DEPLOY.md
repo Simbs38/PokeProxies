@@ -102,11 +102,27 @@ git commit -am "update" && git push
 ```
 
 Every run also rebuilds `cards.js`, the deckbuilder's list of Standard-legal cards (with their
-text and Cardmarket prices), and `meta.js`, the top 10 archetypes of the last 4 weeks of Limitless
-online Standard events that the deck scores and matchups are measured against — so a plain
+text and Cardmarket prices), and `meta.js`: up to 100 archetypes from the 150 biggest Limitless
+online Standard events of the last 4 weeks, with card usage (all lists and top-placing ones) and
+real archetype-vs-archetype match results — what the deck scores, tips and matchups are measured
+against. It takes a few minutes (about 300 requests to Limitless). So a plain
 `python3 fetch_data.py` is enough to pick up a new set or a new meta. At rotation, edit `LEGAL` in
 `fetch_data.py` (the regulation marks still legal) and re-run; saved decks keep their rotated cards,
 flagged "not legal" until you swap them.
+
+**Refreshing data without a computer** — `.github/workflows/refresh-data.yml` runs
+`fetch_data.py` on GitHub, commits whatever changed and republishes the site. It runs every Monday
+06:00 UTC on its own; the site's **Data** tab has a **Refresh data now** button that starts it on
+demand through the Apps Script. That button needs a token the script keeps:
+
+1. GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens →
+   Generate new token**. Repository access: **Only select repositories → PokeProxies**.
+   Permissions → Repository → **Actions: Read and write**. Pick an expiry, generate, copy it.
+2. Apps Script → **Project Settings → Script Properties → Add script property**: `GITHUB_TOKEN` =
+   the token. (It never reaches the public site.)
+3. When the token expires, generate a new one and replace the property — no redeploy needed.
+
+The Action commits to `main`, so pull before editing locally (`git pull`).
 
 ---
 

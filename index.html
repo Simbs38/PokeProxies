@@ -250,7 +250,7 @@
     border: 1px solid var(--line); border-radius: 12px;
   }
   /* ---- signed-out gate: the sync dialog becomes the whole page ---- */
-  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview,
+  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview, body.locked > #dataview,
   body.locked > footer { display: none }
   body.locked #login { background: none; backdrop-filter: none }
   #login .brand { display: none; font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-bottom: 10px }
@@ -262,6 +262,24 @@
 
   /* ---- deckbuilder: My Decks list, then an editor with the card picker beside the deck ---- */
   body.decking :is(#banner, #list, footer), body:not(.decking) #deckview { display: none }
+  body.datapage :is(#banner, #list, footer), body:not(.datapage) #dataview { display: none }
+  #dataview { padding: 22px }
+  #dataview .sub { font-size: 13px; color: var(--dim) }
+  .data-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) }
+  .dcard { padding: 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card) }
+  .dcard h3 { margin: 0 0 8px; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em }
+  .dcard .big { font-size: 15px; line-height: 1.5 }
+  .dcard .big b { font-size: 22px }
+  .fresh { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 99px; font-size: 12px; font-weight: 700; color: #16181f }
+  .fresh.ok { background: #4ade80 } .fresh.mid { background: #fbbf24 } .fresh.old { background: #f87171 }
+  .sets { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px }
+  .sets span { padding: 1px 8px; border-radius: 99px; font-size: 11px; background: rgba(255,255,255,.08); color: var(--dim) }
+  .arch-t { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px }
+  .arch-t td { padding: 3px 4px; border-top: 1px solid var(--line) }
+  .arch-t td:not(:first-child) { text-align: right; color: var(--dim) }
+  .run { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px }
+  .run a { margin-left: auto; color: var(--acc) }
+  .refresh-msg { margin: 0 0 14px }
   #deckview { --hh: 64px; padding: 22px }
   #deckview .sub, #dlg .sub { font-size: 13px; color: var(--dim) }
   .dk-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px }
@@ -452,6 +470,8 @@
   .mb b.ok { background: #4ade80 } .mb b.bad { background: #f87171 }
   .mw { font-size: 12px; font-weight: 700 }
   .mr { grid-column: 1/-1; color: var(--dim); font-size: 11px }
+  .mr .real { font-weight: 700; color: var(--fg) } .mr .real.ok { color: #4ade80 } .mr .real.bad { color: #f87171 }
+  [data-mu="all"] { margin-top: 10px }
   .ech { display: grid; gap: 6px; font-size: 13px }
   .ed-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin: 0 1px; vertical-align: -1px }
   .vers-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px }
@@ -618,6 +638,7 @@
     <button class="pill" data-c="anniv"><span class="wide">30th Celebration</span><span class="narrow">30th</span></button>
     <button class="pill" data-c="all">All</button>
     <button class="pill" data-c="decks">Decks</button>
+    <button class="pill" data-c="data">Data</button>
   </nav>
   <div class="toolbar">
   <button class="pill sm" id="sync">☁ Sign in</button>
@@ -642,6 +663,7 @@
 <section id="banner"></section>
 <main id="list"></main>
 <section id="deckview"></section>
+<section id="dataview"></section>
 
 <div id="dlg" hidden><div class="box" id="dlg-box"></div></div>
 <div id="toast"></div>
@@ -682,9 +704,9 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202611010023"></script>
-<script src="cards.js?v=202611010023"></script>
-<script src="meta.js?v=202611010023"></script>
+<script src="data.js?v=202611010146"></script>
+<script src="cards.js?v=202611010146"></script>
+<script src="meta.js?v=202611010146"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
 const LABELS = { gen1: "Gen 1", anniv: "30th Celebration" };
@@ -725,7 +747,7 @@ function applyPrefs() {
 }
 
 const HASH = location.hash.slice(1);
-let cur = HASH === "all" || HASH === "decks" || HASH in COLLECTIONS ? HASH : "gen1";
+let cur = ["all", "decks", "data"].includes(HASH) || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const count = k => kindOf(k) === "cards"
   ? COLLECTIONS[k].items.filter(p => have.has(p.id)).length
@@ -791,7 +813,9 @@ function render() {
   document.querySelectorAll("nav .pill").forEach(b => b.classList.toggle("on", b.dataset.c === cur));
   document.body.classList.toggle("overview", cur === "all");
   document.body.classList.toggle("decking", cur === "decks");
+  document.body.classList.toggle("datapage", cur === "data");
   if (cur === "decks") return renderDecks();
+  if (cur === "data") { renderData(); if (!runs) loadRuns(); return }
   stats();
 
   if (cur === "all") { list.innerHTML = ""; foot.textContent = ""; return }
@@ -1622,10 +1646,21 @@ function expand(lines) {
   }
   return [...m.values()];
 }
+// meta.js stores lists compactly ([print id, n], or [null, n, name, P/T/E]): spell them out as deck lines
+META.decks.forEach(m => {
+  m.cards = m.cards.map(x => !Array.isArray(x) ? x : x[0]
+    ? { id: x[0], n: x[1], name: PRINT.get(x[0])?.[0].n || x[0], cat: CAT[PRINT.get(x[0])?.[0].c] || "Trainer" }
+    : { id: null, n: x[1], name: x[2], cat: CAT[x[3]] || "Trainer" });
+});
 const metaCards = META.decks.map(m => expand(m.cards));
-// Power is judged against what has to be knocked out: the HP of the meta's main attackers
+// real results between archetypes on Limitless: "i|j" -> [i's wins, losses, ties]
+const REAL = new Map();
+(META.mu || []).forEach(([i, j, w, l, t]) => { REAL.set(i + "|" + j, [w, l, t]); REAL.set(j + "|" + i, [l, w, t]) });
+const realWin = (i, j) => { const r = REAL.get(i + "|" + j), n = r && r[0] + r[1] + r[2]; return n ? { win: (r[0] + r[2] / 2) / n, n } : null };
+let allMatchups = false;
+// Power is judged against what has to be knocked out: the HP of the main meta's main attackers
 const HP = (() => {
-  const h = metaCards.map(cs => ENG.roles(cs).filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0]?.atk?.hp).filter(Boolean);
+  const h = metaCards.slice(0, 15).map(cs => ENG.roles(cs).filter(f => f.role === "A").sort((a, b) => b.weight - a.weight)[0]?.atk?.hp).filter(Boolean);
   return h.length ? h : [130, 220, 280, 320, 340];
 })();
 
@@ -1785,10 +1820,16 @@ function tipsOf(d, cards, p) {
   }
   if (arch) {
     const mine = {}; cards.forEach(c => { mine[c.n] = (mine[c.n] || 0) + c.count });
-    arch.m.usage.filter(([name, share, avg]) => share >= 60 && (mine[name] || 0) + 1 <= avg).slice(0, 5)
-      .forEach(([name, share, avg]) => tip(`${share}% of ${arch.m.name} lists run ${name} (${avg} on average); you run ${mine[name] || 0}.`, "M"));
-    cards.filter(c => !c.dead && !(arch.m.usage.find(u => u[0] === c.n)?.[1] >= 10)).slice(0, 3)
-      .forEach(c => tip(`${c.n} is in under 10% of ${arch.m.name} lists — is it pulling its weight?`, "M"));
+    // usage rows: [name, % of lists, average count, most common count, % of the top-placing quarter]
+    const U = arch.m.usage, A = arch.m.name;
+    U.filter(([name, share, avg, mode]) => share >= 60 && (mine[name] || 0) < (mode ?? Math.round(avg))).slice(0, 5)
+      .forEach(([name, share, avg, mode]) => tip(`Most ${A} lists (${share}%) run ${mode ?? avg} ${name}; you run ${mine[name] || 0}.`, "M"));
+    U.filter(([name, share, , , top]) => top - share >= 15 && !mine[name]).slice(0, 3)
+      .forEach(([name, share, , mode, top]) => tip(`Top-placing ${A} lists favour ${name}: ${top}% of them run it vs ${share}% overall.`, "M"));
+    const techs = U.filter(([name, share]) => share >= 20 && share < 60 && !mine[name]).slice(0, 5);
+    if (techs.length) tip(`Tech options other ${A} players use: ${techs.map(([n, sh]) => `${n} (${sh}%)`).join(", ")}.`, "M");
+    cards.filter(c => !c.dead && !(U.find(u => u[0] === c.n)?.[1] >= 10)).slice(0, 3)
+      .forEach(c => tip(`${c.n} is in under 10% of ${A} lists — is it pulling its weight?`, "M"));
   }
   return T;
 }
@@ -1851,7 +1892,10 @@ function swapCandidates(d, cards) {
   const add = c => { if (c && !adds.has(c.k) && (ENG.basicEnergy(c) || has(c.n) < COPIES) && !(ace && c.sub.includes("ACE SPEC")) && evenUp(c)) adds.set(c.k, c) };
   const arch = archetype(cards), fs = ENG.roles(cards, d.roles);
   Object.keys(partner).forEach(name => add(NAMED.get(name)));
-  if (arch) arch.m.usage.filter(u => u[1] >= 50 && has(u[0]) < Math.round(u[2])).slice(0, 4).forEach(u => add(NAMED.get(u[0])));
+  if (arch) {
+    arch.m.usage.filter(u => u[1] >= 50 && has(u[0]) < (u[3] ?? Math.round(u[2]))).slice(0, 4).forEach(u => add(NAMED.get(u[0])));
+    arch.m.usage.filter(u => u[4] - u[1] >= 15 && !has(u[0])).slice(0, 2).forEach(u => add(NAMED.get(u[0])));
+  }
   for (const f of fs.filter(f => f.role !== "S")) add(cards.find(c => c.root === f.root && ENG.stage(c) === 0 && !c.dead));
   usefulTrainers(d, cards).slice(0, 6).forEach(x => add(x.c));
   for (const name of STAPLES) if (adds.size < 12) add(NAMED.get(name));
@@ -1860,7 +1904,7 @@ function swapCandidates(d, cards) {
     return c.dead ? -1 : c.c === "P" ? (roleOf(c) === "S" ? 1 : 9) : f.search.length || f.draw || f.drawTo || f.candy ? 6
       : f.gust || f.recover || f.sw ? 4 : c.c === "E" ? 3 : 2 };
   return { adds: [...adds.values()].slice(0, 12).map(expandCard),
-           removes: cards.filter(c => !c.dead && (!partner[c.n] || has(c.n) > has(partner[c.n])))
+           removes: cards.filter(c => !c.dead && !ENG.fx(c).gust && (!partner[c.n] || has(c.n) > has(partner[c.n])))
                          .sort((a, b) => worth(a) - worth(b)).slice(0, 5) };
 }
 
@@ -2100,14 +2144,20 @@ function renderInsights() {
     const { adds, removes } = swapCandidates(d, cards);
     run("swaps", cards, d.roles, adds, removes, HP, p.key).then(r => { SWAPS.set(p.key, Array.isArray(r) ? r : []); refresh() });
   }
-  const mu = (label, share, other, seed) => {
+  const mu = (label, share, other, seed, real) => {
     if (!p || !other) return `<div class="mu"><span class="mn">${label}</span><span class="sub">simulating…</span></div>`;
-    const m = ENG.matchup(p, other, seed), w = Math.round(m.win * 100);
+    const m = ENG.matchup(p, other, seed), sim = Math.round(m.win * 100), tone = v => v >= 55 ? "ok" : v < 45 ? "bad" : "";
+    // real games beat the model: when the deck is clearly its archetype and enough were played, they lead
+    const lead = real && real.n >= 30 && arch.sim >= 0.5, w = lead ? Math.round(real.win * 100) : sim;
     return `<div class="mu"><span class="mn">${label}${share ? ` <small>${share}%</small>` : ""}</span>
-      <span class="mb"><b style="width:${w}%" class="${w >= 55 ? "ok" : w < 45 ? "bad" : ""}"></b></span>
-      <span class="mw ${w >= 55 ? "ok" : w < 45 ? "bad" : ""}">${w}% · ${w >= 55 ? "Favoured" : w < 45 ? "Unfavoured" : "Even"}</span>
-      <small class="mr">${m.reasons.map(esc).join(" · ")}</small></div>`;
+      <span class="mb"><b style="width:${w}%" class="${tone(w)}"></b></span>
+      <span class="mw ${tone(w)}">${w}% · ${w >= 55 ? "Favoured" : w < 45 ? "Unfavoured" : "Even"}</span>
+      <small class="mr">${lead ? `<span class="real" title="${esc(arch.m.name)} against this archetype in Limitless online events">${real.n} real games</span> · simulated ${sim}% · `
+        : real ? `${real.n} real games: ${Math.round(real.win * 100)}% · ` : "simulated · "}${m.reasons.map(esc).join(" · ")}</small></div>`;
   };
+  const metaRows = META.decks.map((m, i) => [m, i]).filter(([, i]) => allMatchups || i < 10 || arch?.i === i);
+  const realAll = arch ? META.decks.map((m, i) => [m, realWin(arch.i, i)]).filter(([, r]) => r && r.n >= 10) : [];
+  const best = realAll.slice().sort((a, b) => b[1].win - a[1].win).slice(0, 3), worst = realAll.slice().sort((a, b) => a[1].win - b[1].win).slice(0, 3);
   const mine = decks.filter(x => x !== d && x.cards.length);
   const atkF = fs.filter(f => f.role === "A");
   const ens = {}; cards.filter(c => c.c === "E").forEach(c => { const L = ENG.etype(c); ens[L] = (ens[L] || 0) + c.count });
@@ -2115,7 +2165,8 @@ function renderInsights() {
     <div class="sc-hero">
       <div class="ring" style="--p:${s ? s.total : 0}"><span>${s ? s.total : "…"}</span></div>
       <div><div class="tier t-${s ? s.tier : "x"}">${s ? `Tier ${s.tier}` : "Simulating 1,200 games…"}</div>
-        ${arch ? `<div class="sub">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match (${arch.m.share}% of the meta)</div>` : `<div class="sub">No close meta archetype</div>`}
+        ${arch ? `<div class="sub">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match · ${arch.m.share}% of the meta${arch.m.win != null
+          ? ` · wins ${arch.m.win}% of its matches on Limitless (${arch.m.games.toLocaleString()} games)` : ""}</div>` : `<div class="sub">No close meta archetype among the ${META.decks.length} tracked</div>`}
         <div class="sub">Ideal board: ${goals || "—"}</div></div>
     </div>
     <div class="fx-rows">${Object.entries(FACTOR).map(([k, label]) => `
@@ -2153,10 +2204,14 @@ function renderInsights() {
     })()}
 
     <h3>Matchups vs the meta</h3>
-    ${META.decks.length ? META.decks.map((m, i) => mu(esc(m.name), m.share, metaProfile(i), i + 1)).join("")
+    ${best.length ? `<p class="sub">On Limitless, ${esc(arch.m.name)} does best against ${best.map(([m, r]) => `${esc(m.name)} (${perc(r.win)})`).join(", ")}
+      and worst against ${worst.map(([m, r]) => `${esc(m.name)} (${perc(r.win)})`).join(", ")}.</p>` : ""}
+    ${META.decks.length ? metaRows.map(([m, i]) => mu(esc(m.name), m.share, metaProfile(i), i + 1, arch && realWin(arch.i, i))).join("")
+      + (META.decks.length > 10 ? `<button class="pill sm" data-mu="all">${allMatchups ? "Show the top 10" : `Show all ${META.decks.length} archetypes`}</button>` : "")
       : `<p class="sub">No meta.js yet — run python3 fetch_data.py.</p>`}
     ${mine.length ? `<h3>vs my decks</h3>${mine.map((x, i) => mu(esc(x.name), 0, deckProfile(x), 101 + i)).join("")}` : ""}
-    <p class="sub">Estimates from a prize race (setup speed, attacks needed for 6 Prizes, Weakness, Bench damage) — good for comparing, not a prediction.</p>
+    <p class="sub">With 30+ real games of your archetype, the number is its real win rate on Limitless; otherwise it's
+      an estimate from a prize race (setup speed, attacks needed for 6 Prizes, Weakness, Bench damage).</p>
 
     <h3>Energy vs attack costs</h3>
     <div class="ech">
@@ -2471,6 +2526,7 @@ deckview.addEventListener("click", e => {
     }
     return;
   }
+  if (e.target.closest('[data-mu="all"]')) { allMatchups = !allMatchups; return renderInsights() }
   const useful = e.target.closest("[data-useful]");
   if (useful) return addCard(CARDS.cards[+useful.dataset.useful]);
   const swap = e.target.closest("[data-swap]");
@@ -2738,6 +2794,73 @@ function push(wait = 900) {
     } catch (e) { status("☁ " + e.message) }
   }, wait);
 }
+
+// ---- Data: how fresh each dataset is, and a button that refreshes them all ----
+// A GitHub Action re-runs fetch_data.py and republishes the site; the Apps Script starts it, since it
+// holds the only token allowed to. The run list is public, read straight from GitHub.
+const RUNS = "https://api.github.com/repos/Simbs38/PokeProxies/actions/workflows/refresh-data.yml/runs?per_page=6";
+let runs = null, runsT, refreshMsg = "";
+async function loadRuns() {
+  try { runs = (await (await fetch(RUNS)).json()).workflow_runs || [] } catch { runs = [] }
+  if (cur !== "data") return;
+  renderData();
+  clearTimeout(runsT);
+  if (runs.some(r => r.status !== "completed")) runsT = setTimeout(loadRuns, 20000);   // follow a run in progress
+}
+async function refreshData() {
+  refreshMsg = "Starting a refresh…"; renderData();
+  try {
+    // no sync version on purpose: an older script answers "reload" instead of reading it as a save
+    const d = await (await fetch(cfg.url, { method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ idToken: cfg.tok, action: "refresh" }) })).json();
+    refreshMsg = d.ok ? "Started. Fetching takes about 5–10 minutes, then the site republishes itself — reload this page once the run below shows ✓."
+      : /reload/.test(d.error || "") ? "Your Apps Script is the previous version — paste the new one and deploy it first."
+      : "Couldn't start: " + d.error;
+  } catch (e) { refreshMsg = "Couldn't start: " + e.message }
+  renderData(); setTimeout(loadRuns, 5000);
+}
+function renderData() {
+  const age = s => {
+    if (!s) return `<span class="fresh old">never</span>`;
+    const days = (Date.now() - Date.parse(s.replace(" ", "T"))) / 864e5;
+    return `<span class="fresh ${days < 8 ? "ok" : days < 31 ? "mid" : "old"}" title="${esc(s)}">${days < 1 ? "today" : `${Math.round(days)} day${Math.round(days) === 1 ? "" : "s"} ago`}</span>`;
+  };
+  const prints = CARDS.cards.reduce((s, c) => s + c.p.length, 0);
+  const run = r => {
+    const mins = r.updated_at && r.run_started_at ? Math.round((Date.parse(r.updated_at) - Date.parse(r.run_started_at)) / 60000) : 0;
+    const icon = r.status !== "completed" ? "⏳ running" : r.conclusion === "success" ? "✓ done" : `✕ ${r.conclusion}`;
+    return `<div class="run"><b class="${r.conclusion === "success" ? "ok" : r.status !== "completed" ? "" : "bad"}">${icon}</b>
+      <span>${new Date(r.created_at).toLocaleString()} · ${r.event === "schedule" ? "weekly" : "manual"}${mins ? ` · ${mins} min` : ""}</span>
+      <a href="${r.html_url}" target="_blank" rel="noopener">log ↗</a></div>`;
+  };
+  dataview.innerHTML = `
+    <div class="dk-head"><div><h1>Data</h1>
+      <div class="sub">Where the cards, prices and meta come from, and how fresh they are. Refreshes run on GitHub
+        and republish the site; they also run by themselves every Monday.</div></div>
+      <button class="pill on" data-data="refresh" ${cfg.ready ? "" : "disabled title=\"Sign in first\""}>🔄 Refresh data now</button>
+    </div>
+    ${refreshMsg ? `<p class="sub refresh-msg">${esc(refreshMsg)}</p>` : ""}
+    <div class="data-grid">
+      <div class="dcard"><h3>Cards &amp; sets</h3>
+        <div class="big"><b>${CARDS.cards.length.toLocaleString()}</b> Standard-legal cards · ${prints.toLocaleString()} prints ·
+          ${Object.keys(CARDS.sets).length} sets · regulation marks ${(CARDS.legal || []).join(", ")}</div>
+        <div class="sub">From pokemontcg.io, with Cardmarket and TCGplayer prices · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}
+        <div class="sets">${Object.values(CARDS.sets).sort().map(n => `<span>${esc(n)}</span>`).join("")}</div></div>
+      <div class="dcard"><h3>Meta</h3>
+        <div class="big"><b>${META.decks.length}</b> archetypes · ${(META.events || 0).toLocaleString()} events ·
+          ${(META.players || 0).toLocaleString()} players · ${(META.mu || []).length.toLocaleString()} real matchups</div>
+        <div class="sub">Limitless online Standard events, last ${META.days || "?"} days · fetched ${esc(META.fetched || "—")}</div>${age(META.fetched)}
+        <table class="arch-t"><tr><td class="lbl">Top archetypes</td><td class="lbl">share</td><td class="lbl">wins</td></tr>
+          ${META.decks.slice(0, 12).map(m => `<tr><td>${esc(m.name)}</td><td>${m.share}%</td><td>${m.win != null ? m.win + "%" : "—"}</td></tr>`).join("")}</table></div>
+      <div class="dcard"><h3>Collection</h3>
+        <div class="big"><b>${COLLECTIONS.gen1.items.length}</b> Gen 1 entries · <b>${COLLECTIONS.anniv.items.length}</b> 30th Celebration cards</div>
+        <div class="sub">Card lists and prices for the collection tabs · fetched ${esc(DEX.fetched || "—")}</div>${age(DEX.fetched)}</div>
+      <div class="dcard"><h3>Refresh runs</h3>
+        ${runs === null ? `<p class="sub">Loading…</p>` : runs.length ? runs.map(run).join("") : `<p class="sub">No runs yet.</p>`}
+        <p class="sub">Every Monday 06:00 UTC, or when you press Refresh. When a run finishes, reload to load the new data.</p></div>
+    </div>`;
+}
+dataview.addEventListener("click", e => { if (e.target.closest('[data-data="refresh"]')) refreshData() });
 
 // Google Identity Services hands us an ID token; the Apps Script verifies it and checks the
 // email against its allow list. The token expires after ~1h, so auto_select re-issues one on load.

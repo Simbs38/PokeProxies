@@ -36,7 +36,8 @@ ECODE = {"Grass": "G", "Fire": "R", "Water": "W", "Lightning": "L", "Psychic": "
 
 # Deckbuilder -> meta.js: the archetypes winning right now, from Limitless online Standard events.
 LIMITLESS = "https://play.limitlesstcg.com/api"
-META_DAYS, META_EVENTS, META_TOP = 28, 40, 10   # window, biggest events read, archetypes kept
+META_DAYS, META_EVENTS, META_TOP = 28, 150, 100  # window, biggest events read, archetypes kept
+META_MIN, META_GAMES = 5, 6                       # lists to count as an archetype, games for a real matchup
 
 FORM = re.compile(r"^(Mega|Gigantamax|Alolan|Galarian|Hisuian|Paldean)\s+")
 SUFFIX = [("Mega ", "-mega"), ("Gigantamax ", "-gmax"), ("Alolan ", "-alola"),
@@ -180,16 +181,17 @@ def eur_usd(card):
 
 
 def meta_decks(legal):
-    """The META_TOP archetypes by play share over the META_DAYS window of Limitless online Standard
-    events (the META_EVENTS biggest), each with its best-placed list mapped onto cards.js prints and
-    how often every card shows up across that archetype's lists."""
+    """Up to META_TOP archetypes (each with META_MIN lists or more) by play share over the META_DAYS
+    window of Limitless online Standard events, the META_EVENTS biggest. For each: its best-placed
+    list mapped onto cards.js prints; how often every card shows up, in all lists and in the
+    top-placing quarter; and its real match results, overall and against every other archetype."""
     by_code, by_name = {}, {}
     norm = lambda s: re.sub(r"^basic ", "", s.lower().replace("’", "'")).strip()
     for g in legal["cards"]:
         for p in g["p"]:
             by_code[f"{p[1]} {p[2]}".upper()] = (p[0], g)
         by_name.setdefault(norm(g["n"]), (g["p"][0][0], g))
-    cat = {"P": "Pokémon", "T": "Trainer", "E": "Energy"}
+    by_code_id = {p[0]: g["n"] for g in legal["cards"] for p in g["p"]}
 
     cut = time.strftime("%Y-%m-%dT%H:%M", time.gmtime(time.time() - META_DAYS * 86400))
     events, page = [], 1
@@ -205,41 +207,71 @@ def meta_decks(legal):
     if not events:
         return None
 
-    lists = {}                                            # archetype id -> [(score, name, cards)]
-    names, players = {}, 0
+    lists, names, players = {}, {}, 0                   # archetype id -> [(score, cards)]
+    results = {}                                          # (a, b) -> [a's wins, losses, ties]
     for n, t in enumerate(events, 1):
+        time.sleep(0.6)                                   # Limitless answers 429 to a faster pace
         rows = get(f"{LIMITLESS}/tournaments/{t['id']}/standings", fatal=False) or []
-        print(f"  [{n:2}/{len(events)}] {t['name'][:40]:40} {t['players']:4} players")
+        print(f"  [{n:3}/{len(events)}] {t['name'][:40]:40} {t['players']:4} players")
+        deck_of = {}
         for r in rows:
             deck, dl = r.get("deck") or {}, r.get("decklist")
-            if not deck.get("id") or not isinstance(dl, dict):
+            if not deck.get("id") or deck["id"] == "other":    # Limitless's catch-all, not an archetype
+                continue
+            deck_of[r.get("player")] = deck["id"]
+            if not isinstance(dl, dict):
                 continue
             players += 1
             names[deck["id"]] = deck["name"]
-            cards = []
+            cards = []                                    # [print id, n], or [None, n, name, P/T/E] if unknown
             for part in ("pokemon", "trainer", "energy"):
                 for e in dl.get(part) or []:
                     hit = by_code.get(f"{e.get('set')} {e.get('number')}".upper()) or by_name.get(norm(e["name"]))
-                    cards.append({"id": hit[0] if hit else None, "n": e["count"], "name": hit[1]["n"] if hit else e["name"],
-                                  "cat": cat[hit[1]["c"]] if hit else {"pokemon": "Pokémon", "trainer": "Trainer"}.get(part, "Energy")})
+                    cards.append([hit[0], e["count"]] if hit else [None, e["count"], e["name"], part[0].upper()])
             rec = r.get("record") or {}
             score = (rec.get("wins", 0) * 3 + rec.get("ties", 0)) * 1000 + t["players"] - (r.get("placing") or 999)
             lists.setdefault(deck["id"], []).append((score, cards))
+        time.sleep(0.6)
+        for m in get(f"{LIMITLESS}/tournaments/{t['id']}/pairings", fatal=False) or []:
+            a, b, w = deck_of.get(m.get("player1")), deck_of.get(m.get("player2")), m.get("winner")
+            if not a or not b or a == b:
+                continue
+            r = (1, 0, 0) if w == m["player1"] else (0, 1, 0) if w == m["player2"] else (0, 0, 1) if w == 0 else None
+            if r:
+                for x, y, rr in ((a, b, r), (b, a, (r[1], r[0], r[2]))):
+                    acc = results.setdefault((x, y), [0, 0, 0])
+                    for k in range(3):
+                        acc[k] += rr[k]
 
-    top = sorted(lists, key=lambda k: -len(lists[k]))[:META_TOP]
+    top = [k for k in sorted(lists, key=lambda k: -len(lists[k])) if len(lists[k]) >= META_MIN][:META_TOP]
+    where = {k: i for i, k in enumerate(top)}
     out = []
     for k in top:
         ls = sorted(lists[k], key=lambda x: -x[0])
-        usage = {}
-        for _, cards in ls:
-            for name in {c["name"] for c in cards}:
-                usage.setdefault(name, []).append(sum(c["n"] for c in cards if c["name"] == name))
+        best = ls[:max(3, len(ls) // 4)]                  # the top-placing quarter
+        name_of = lambda c: (by_code_id.get(c[0]) if c[0] else None) or c[2]
+        counts, top_counts = {}, {}
+        for group, acc in ((ls, counts), (best, top_counts)):
+            for _, cards in group:
+                seen = {}
+                for c in cards:
+                    seen[name_of(c)] = seen.get(name_of(c), 0) + c[1]
+                for nm, v in seen.items():
+                    acc.setdefault(nm, []).append(v)
+        usage = []
+        for nm, v in counts.items():
+            pct, tpct = round(100 * len(v) / len(ls)), round(100 * len(top_counts.get(nm, [])) / len(best))
+            if pct >= 5 or tpct >= 10:
+                mode = max(set(v), key=v.count)
+                usage.append([nm, pct, round(sum(v) / len(v), 1), mode, tpct])
+        won = [sum(results.get((k, o), [0, 0, 0])[i] for o in lists) for i in range(3)]
         out.append({"id": k, "name": names[k], "share": round(100 * len(ls) / players, 1), "lists": len(ls),
-                    "cards": ls[0][1],                    # the best-placed list stands in for the archetype
-                    "usage": sorted(([n, round(100 * len(v) / len(ls)), round(sum(v) / len(v), 1)]
-                                     for n, v in usage.items()), key=lambda u: -u[1])})
+                    "cards": ls[0][1], "usage": sorted(usage, key=lambda u: -u[1]),
+                    "win": round(100 * (won[0] + won[2] / 2) / sum(won), 1) if sum(won) else None, "games": sum(won)})
+    mu = [[where[a], where[b], *r] for (a, b), r in results.items()
+          if a in where and b in where and where[a] < where[b] and sum(r) >= META_GAMES]
     return {"fetched": time.strftime("%Y-%m-%d %H:%M"), "days": META_DAYS, "events": len(events),
-            "players": players, "decks": out}
+            "players": players, "decks": out, "mu": mu}
 
 
 def query_all(q, fields):
@@ -306,6 +338,16 @@ def legal_cards():
     cards = sorted(groups.values(), key=lambda g: (
         order[g["c"]], g.get("dex", 9999), g["c"] == "E" and "Basic" not in g["sub"], g["n"]))
     return {"fetched": time.strftime("%Y-%m-%d %H:%M"), "legal": LEGAL, "sets": sets, "cards": cards}
+
+
+def previous_js(name):
+    """A data file this script wrote earlier, read back (window.X = {...};), or None."""
+    path = os.path.join(HERE, name)
+    try:
+        raw = open(path, encoding="utf-8").read().strip()
+        return json.loads(raw[raw.index("=") + 1:].rstrip(";\n"))
+    except Exception:
+        return None
 
 
 def previous():
@@ -394,12 +436,14 @@ def main():
     legal = legal_cards()
     if legal is None:
         print("  ! pokemontcg.io gave up — kept the previous cards.js, just run the script again")
+        legal = previous_js("cards.js")                  # the meta can still be mapped onto it
     else:
         with open(os.path.join(HERE, "cards.js"), "w", encoding="utf-8") as f:
             f.write("window.CARDS = " + json.dumps(legal, ensure_ascii=False, separators=(",", ":")) + ";\n")
         prints = sum(len(g["p"]) for g in legal["cards"])
         print(f"  {len(legal['cards'])} cards ({prints} prints) -> cards.js")
 
+    if legal:
         print(f"· Deckbuilder: meta from Limitless (last {META_DAYS} days, {META_EVENTS} biggest events) …")
         meta = meta_decks(legal)
         if meta is None:
@@ -407,7 +451,8 @@ def main():
         else:
             with open(os.path.join(HERE, "meta.js"), "w", encoding="utf-8") as f:
                 f.write("window.META = " + json.dumps(meta, ensure_ascii=False, separators=(",", ":")) + ";\n")
-            print("  " + " · ".join(f"{d['name']} {d['share']}%" for d in meta["decks"]) + " -> meta.js")
+            print(f"  {len(meta['decks'])} archetypes, {len(meta['mu'])} real matchups; top: "
+                  + " · ".join(f"{d['name']} {d['share']}%" for d in meta["decks"][:8]) + " -> meta.js")
 
     # Browsers cache data.js / cards.js / meta.js hard, so a refresh would keep showing the old data
     # until a manual hard-reload. Stamp the tags with this run's timestamp instead.

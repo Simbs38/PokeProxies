@@ -27,6 +27,23 @@ const LEGACY = 'state';
 const CHUNK = 40000;               // a Sheets cell tops out at 50k chars, so the JSON is split
 const STALE = 'site updated — reload the page';
 
+// The site's "Refresh data" button: starts the GitHub Action that re-fetches cards, prices and meta.
+// The token (Script Properties → GITHUB_TOKEN, allowed to run Actions on this one repo) never
+// leaves this script.
+const REPO = 'Simbs38/PokeProxies', WORKFLOW = 'refresh-data.yml';
+
+function refresh_() {
+  const tok = PROPS.getProperty('GITHUB_TOKEN');
+  if (!tok) return { ok: false, error: 'set GITHUB_TOKEN in Script Properties' };
+  const r = UrlFetchApp.fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json' },
+    payload: JSON.stringify({ ref: 'main' }),
+  });
+  return r.getResponseCode() === 204 ? { ok: true, started: Date.now() }
+    : { ok: false, error: 'GitHub said ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 140) };
+}
+
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -146,6 +163,7 @@ function doPost(e) {
   try { body = JSON.parse(e.postData.contents || '{}') } catch (err) { body = {} }
   const err = guard_(body.idToken);
   if (err) return json_({ ok: false, error: err });
+  if (body.action === 'refresh') return json_(refresh_());
 
   const ss = SpreadsheetApp.getActive();
   const lock = LockService.getScriptLock();          // two devices saving at once

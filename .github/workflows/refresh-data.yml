@@ -1,0 +1,44 @@
+# Re-runs fetch_data.py and publishes whatever changed: new sets and cards (cards.js), prices,
+# and the Limitless meta (meta.js). Runs every Monday, from the site's Data tab (via the Apps
+# Script, which holds a token that may start it), or by hand from the Actions page.
+name: Refresh data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"            # Mondays, 06:00 UTC
+
+permissions:
+  contents: write                  # commit the refreshed data files
+  pages: write                     # ask Pages to rebuild
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch cards, prices and meta
+        run: python3 fetch_data.py
+
+      - name: Publish what changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.js cards.js meta.js index.html
+          if git diff --cached --quiet; then echo "Nothing new"; exit 0; fi
+          git commit -m "Refresh data: sets, prices and meta"
+          git push
+          # pushes made with the workflow's own token don't start a Pages build by themselves
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || true
