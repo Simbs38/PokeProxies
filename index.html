@@ -415,10 +415,19 @@
     font-weight: 800; font-size: 13px; color: #16181f; background: var(--acc);
   }
   .pk .qty:empty { display: none }
-  .pk .zm {
-    position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; cursor: pointer;
+  /* 🔍 on every card image: top-right of tiles, a small badge on the corner of thumbnails */
+  .lw { position: relative; display: block; flex: 0 0 auto }
+  .zm {
+    position: absolute; top: 4px; right: 4px; z-index: 1; width: 30px; height: 30px; padding: 0; cursor: pointer;
+    display: grid; place-items: center; font-style: normal; line-height: 1; color: var(--fg);
     border-radius: 50%; border: 1px solid var(--line); background: rgba(12,15,22,.85); font-size: 13px;
   }
+  .zm:hover { border-color: var(--acc) }
+  .zm.sm { top: auto; bottom: -4px; right: -6px; width: 18px; height: 18px; font-size: 9px }
+  .tcg .lw .zm { top: auto; bottom: 6px; right: 6px }
+  #list .tcg .lw .zm { width: clamp(18px, 20cqi, 30px); height: clamp(18px, 20cqi, 30px); font-size: clamp(8px, 9cqi, 13px); bottom: 4%; right: 4% }
+  .row .mini { cursor: zoom-in }
+  #dlg { z-index: 21 }
   .pk .pn { margin-top: 4px; font-size: 11px; font-weight: 600; line-height: 1.2; text-align: center }
 
   .dk {
@@ -563,6 +572,10 @@
   .ln .odds { color: #8fb4e8 }
   .price { font-size: 12px; color: var(--dim) }
   .dk-tot { display: flex; gap: 10px; align-items: center; justify-content: space-between }
+  .dk-tot .nr, .dk-tot .rd { margin-left: auto; font-size: 12px; font-weight: 600 }
+  .dk-tot .nr { color: #fbbf24 }
+  .dk-tot .rd { color: #4ade80 }
+  .dk-tot .over b, .eb-tally b.over, .deck .ds b.over { color: #f87171 }
 
   /* the total as a ring: the arc fills with the score, coloured by tier */
   .dhead { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between }
@@ -925,7 +938,7 @@ function render() {
     list.innerHTML = items.length ? items.map((p, n) => !shown(p) ? "" : `
       <article class="tcg ${have.has(p.id) ? "have" : ""}" data-cid="${p.id}" data-n="${n}">
         <span class="idx">#${String(p.i + 1).padStart(3, "0")}</span>
-        <img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">
+        <span class="lw"><img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">${lens(p.img || CARD_IMG(p.id), p.name, `${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}`)}</span>
         <div class="n">${p.name}</div>
         <div class="s">${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}</div>
         <div class="p">${p.price[1]}<small>${p.price[2]}</small></div>
@@ -947,7 +960,7 @@ function render() {
         <div class="row">
           <span class="cnt" title="TCG cards you own / total prints">${badge}</span>
           <span class="name">${p.name}</span>
-          ${fav ? `<img class="mini" alt="favourite print" src="${fav.img}">` : ""}
+          ${fav ? `<img class="mini" alt="favourite print" title="Show card" src="${fav.img}" data-lens="${esc(fav.img)}" data-name="${esc(p.name)}" data-sub="Favourite print">` : ""}
         </div>
         <button class="pill sm cards" data-act="cards">View cards</button>
         ${form ? `<span class="form">${form}</span>` : ""}
@@ -1029,7 +1042,7 @@ function renderStrip(keepScroll) {
   document.getElementById("m-content").innerHTML = sorted.length
     ? `<div class="strip" id="strip">${sorted.map(c => `
         <div class="tcg ${have.has(c.id) ? "have" : ""} ${fav?.id === c.id ? "fav" : ""}" data-cid="${c.id}">
-          <img loading="lazy" alt="${c.name}" src="${CARD_IMG(c.id)}">
+          <span class="lw"><img loading="lazy" alt="${c.name}" src="${CARD_IMG(c.id)}">${lens(CARD_IMG(c.id), c.name, `${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}`)}</span>
           <div class="n">${c.name}</div>
           <div class="s">${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}</div>
           <div class="s">${c.series} · ${(c.date || "").slice(0, 4)}</div>
@@ -1139,7 +1152,8 @@ document.getElementById("m-content").addEventListener("click", e => {
 function closeModal() { modal.hidden = true }
 modal.addEventListener("click", e => { if (e.target === modal) closeModal() });
 addEventListener("keydown", e => {
-  if (e.key === "Escape") { closeModal(); closeMenu(); dlg.hidden = true; if (cfg.tok) login.hidden = true }
+  if (e.key === "Escape" && !dlg.hidden) return dlg.hidden = true;
+  if (e.key === "Escape") { closeModal(); closeMenu(); if (cfg.tok) login.hidden = true }
 });
 
 // ---- wheel: eased glide; a gentle nudge moves a little, a fast spin or flick covers ground ----
@@ -1704,6 +1718,11 @@ const perc = v => Math.round(v * 100) + "%";
 const coverOf = d => d.cards.find(l => l.id === d.cover)
   || d.cards.filter(l => l.cat === "Pokémon").sort((a, b) => b.n - a.n)[0];   // default: the most-run Pokémon
 const thumb = l => { const p = PRINT.get(l.id)?.[1]; return p ? imgOf(p) : CARD_IMG(l.id) };
+// 🔍 on a card image: a legal print opens the full card view; anything else (Gen 1, 30th, rotated) the image up close
+const lens = (img, name, sub = "", cls = "") =>
+  `<button class="zm ${cls}" data-lens="${esc(img)}" data-name="${esc(name)}" data-sub="${esc(sub)}" title="Show card">🔍</button>`;
+const cardLens = (id, img, name, cls = "") => PRINT.has(id)
+  ? `<button class="zm ${cls}" data-zid="${esc(id)}" title="Show card">🔍</button>` : lens(img, name, "", cls);
 const textOf = c => c.tx ??= [c.n, ...(c.ab || []).flat(), ...(c.atk || []).flatMap(a => [a[0], a[3]]), c.rt || ""].join(" ").toLowerCase();
 decks.forEach(d => { d.tags ||= []; d.roles ||= {}; d.versions ||= []; d.holds ||= {}; d.built = !!d.built });
 
@@ -1716,7 +1735,7 @@ const uniqueName = (want, self) => {
   return `${base} #${i}`;
 };
 
-let open = null, pane = "cards", zoomCard = null, zoomPrint = null, openedAs = "", hand = null;
+let open = null, pane = "cards", zoomCard = null, zoomPrint = null, zoomDeck = null, openedAs = "", hand = null;
 let deckSort = store.get("deckSort", "created"), deckTag = "";
 const pick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false, inDeck: false };
 const bpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false };   // My Cards
@@ -1935,9 +1954,9 @@ function archetype(cards) {
   return best && best.sim >= 0.35 ? best : null;
 }
 
-// the official limits: 60 cards, 4 of any one name (basic Energy excepted), 1 ACE SPEC
+// the official limits: 4 of any one name (basic Energy excepted), 1 ACE SPEC. Past 60 cards is allowed
+// while building — the deck just shows as not ready to play until it's trimmed back.
 function blocked(d, c) {
-  if (sum(d.cards) >= DECK_MAX) return `A deck holds ${DECK_MAX} cards`;
   if (!(c.c === "E" && c.sub.includes("Basic")) && sum(d.cards, l => l.name === c.n) >= COPIES)
     return `Max ${COPIES} copies of ${c.n}`;
   if (c.sub.includes("ACE SPEC") && d.cards.some(l => cardOf(l)?.sub.includes("ACE SPEC")))
@@ -2175,12 +2194,12 @@ function renderDeckList() {
       const probs = issues(t), cov = coverOf(d), cards = expand(d.cards), arch = archetype(cards);
       const tips = d.cards.length ? tipsOf(d, cards, deckProfile(d)).length : 0;
       return `<article class="deck" data-i="${i}">
-        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">` : ""}</div>
+        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">${cardLens(cov.id, thumb(cov), cov.name)}` : ""}</div>
         <div class="dbody">
           <div class="dhead"><div class="dn">${esc(d.name)}${d.built ? ` <span class="built" title="Holds its cards first">📦 Built</span>` : ""}</div>${scoreRing(s)}</div>
-          <div class="ds"><b>${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
+          <div class="ds"><b class="${t.total > DECK_MAX ? "over" : ""}">${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
           ${arch ? `<div class="ds">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match</div>` : ""}
-          ${probs.length ? `<div class="dw">⚠ ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more)` : ""}</div>`
+          ${probs.length ? `<div class="dw">⚠ Not ready to play · ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more)` : ""}</div>`
                          : `<div class="dok">✓ Ready to play</div>`}
           ${(() => { const o = deckOwnership(d); return o.missing || o.elsewhere ? `<div class="dw own">${[o.missing && `<span class="bad">✗ ${o.missing} missing</span>`,
               o.elsewhere && `<span class="held">⇄ ${o.elsewhere} in other decks</span>`].filter(Boolean).join(" · ")}</div>` : o.need ? `<div class="dok">✓ You own every card</div>` : "" })()}
@@ -2301,7 +2320,7 @@ function nameTile(g) {
   </div>`;
 }
 // every version and art of a name, spread out under its tile
-function variations(g, view) {
+function versionList(g, view) {
   const [name, cs] = NAMES[g];
   return `<div class="vlist" data-g="${g}">
     <div class="vhead"><b>${name}</b> · ${cs.length > 1 ? `${cs.length} versions, ` : ""}${cs.reduce((s, c) => s + c.p.length, 0)} prints
@@ -2309,7 +2328,7 @@ function variations(g, view) {
     <div class="vitems">${cs.map(c => c.p.map(pr => {
       const n = stock[pr[0]] || 0, inD = view === "deck" ? sum(open.cards, l => l.id === pr[0]) : 0;
       return `<div class="vi ${view === "deck" && !n && !ownedOf(c) && !isBasicE(c) ? "unowned" : ""}" data-id="${pr[0]}">
-        <img loading="lazy" alt="" src="${imgOf(pr)}">
+        <img loading="lazy" alt="" src="${imgOf(pr)}">${cardLens(pr[0], imgOf(pr), c.n)}
         ${inD ? `<span class="qty">×${inD}</span>` : ""}
         <small>${pr[1]} ${pr[2]}${cs.length > 1 ? `<br>${esc(versionOf(c))}` : ""}${pr[4] != null ? ` · ${money(pr[4])}` : ""}</small>
         ${view === "mine" ? `<span class="vq"><button data-own="-1">−</button><b>${n}</b><button data-own="1">+</button></span>`
@@ -2321,7 +2340,7 @@ function variations(g, view) {
 function renderGrid() {
   const shown = shownNames(pick);
   deckview.querySelector(".pk-grid").innerHTML = shown.length
-    ? shown.map(([, g]) => nameTile(g) + (listOpen?.view === "deck" && listOpen.g === g ? variations(g, "deck") : "")).join("")
+    ? shown.map(([, g]) => nameTile(g) + (listOpen?.view === "deck" && listOpen.g === g ? versionList(g, "deck") : "")).join("")
     : `<p class="empty">${pick.inDeck && !open.cards.length ? "This deck has no cards yet." : `No legal cards match these filters${pick.own ? " among the cards you own and have free" : ""}${pick.inDeck ? " in this deck" : ""}.`}</p>`;
 }
 
@@ -2339,7 +2358,7 @@ function renderPanel() {
         ? ` · <span class="held">⇄ ${st.elsewhere} in ${st.holders.map(([x, n]) => `${esc(x.name)}${st.holders.length > 1 ? ` (${n})` : ""}`).join(", ")}</span>
           ${st.holders.map(([x]) => `<button class="mv" data-move="${decks.indexOf(x)}" title="Take the copies ${esc(x.name)} holds">Move from ${esc(x.name)}</button>`).join("")}` : ""}</small>`;
     return `<div class="ln ${c ? "" : "rot"} ${il ? "imp-" + il : ""} ${st?.missing ? "short" : st?.elsewhere ? "held" : ""}" data-id="${esc(l.id)}" ${il ? `style="--imp:${Math.max(iv, 4)}%" title="${il}: without it the deck scores ${imp.get(c.k)} lower"` : ""}>
-      <img class="th" loading="lazy" alt="" src="${thumb(l)}">
+      <span class="lw"><img class="th" loading="lazy" alt="" src="${thumb(l)}">${cardLens(l.id, thumb(l), l.name, "sm")}</span>
       <b class="lq">${l.n}</b>
       <span class="lnm" ${c ? 'data-ln="zoom"' : ""}>${esc(l.name)}
         <small>${il ? `<b class="il">${il}</b> · ` : ""}${pr ? `${pr[1]} ${pr[2]}` : "rotated — not legal"}${cost ? ` · ${cost}` : ""}</small>
@@ -2352,7 +2371,8 @@ function renderPanel() {
   };
   deckview.querySelector(".dk").innerHTML = `
     <input class="dk-name" value="${esc(d.name)}" aria-label="Deck name" maxlength="60">
-    <div class="dk-tot"><span><b>${t.total}</b> / ${DECK_MAX} cards</span>${scoreRing(p?.score, "sm")}</div>
+    <div class="dk-tot"><span class="${t.total > DECK_MAX ? "over" : ""}"><b>${t.total}</b> / ${DECK_MAX} cards</span>
+      <span class="${probs.length ? "nr" : "rd"}">${probs.length ? "⚠ Not ready to play" : "✓ Ready to play"}</span>${scoreRing(p?.score, "sm")}</div>
     ${(() => { const o = deckOwnership(d); return `<div class="ownsum">
       <button class="pill sm ${d.built ? "on" : ""}" data-dk="built" title="Built decks hold their copies before other decks">📦 ${d.built ? "Built" : "Mark as built"}</button>
       <span>${!o.need ? "" : !o.missing && !o.elsewhere ? `<span class="ok">✓ you own every card</span>`
@@ -2373,7 +2393,7 @@ function renderPanel() {
     <div><button class="pill sm" data-dk="export">⧉ Copy list</button></div>`;
   const bar = deckview.querySelector(".ed-bar");
   bar.querySelector(".eb-name").textContent = d.name;
-  bar.querySelector(".eb-tally").innerHTML = `<b>${t.total}</b>/${DECK_MAX} · ` + Object.keys(RANGE)
+  bar.querySelector(".eb-tally").innerHTML = `<b class="${t.total > DECK_MAX ? "over" : ""}">${t.total}</b>/${DECK_MAX} · ` + Object.keys(RANGE)
     .map(k => `<span class="${ok(k) ? "ok" : "warn"}">${t[k]} ${k[0]}</span>`).join(" · ")
     + (p ? ` · <b>${p.score.total} ${p.score.tier}</b>` : "");
   bar.querySelectorAll("[data-show]").forEach(b => {
@@ -2444,7 +2464,7 @@ function renderInsights() {
 
     <h3>Trainers worth a look</h3>
     <div class="useful">${usefulTrainers(d, cards).map(x => `<div class="uf">
-        <img loading="lazy" alt="" src="${imgOf(x.c.p[0])}">
+        <span class="lw"><img loading="lazy" alt="" src="${imgOf(x.c.p[0])}">${cardLens(x.c.p[0][0], imgOf(x.c.p[0]), x.c.n, "sm")}</span>
         <div><b>${esc(x.c.n)}</b> <small class="sub">${x.pop ? `in ${x.pop}% of meta lists` : "made for your type"}</small>
           <div class="uft">${x.tags.map(t => `<span class="${x.fills.includes(t) ? "gap" : ""}" ${x.fills.includes(t) ? 'title="Your deck has little or none of this"' : ""}>${esc(t)}</span>`).join("")}</div></div>
         <button class="pill sm" data-useful="${x.c.k}">＋ Add</button></div>`).join("") || `<p class="sub">Nothing obvious missing.</p>`}</div>
@@ -2527,7 +2547,7 @@ function renderTest() {
   if (!hand) newHand();
   const fs = ENG.roles(expand(open.cards), open.roles), key = new Set(fs.filter(f => f.role !== "S").map(f => f.root));
   const prized = hand.prizes.filter(l => key.has(cardOf(l)?.root));
-  const tile = l => `<img loading="lazy" alt="${esc(l.name)}" title="${esc(l.name)}" src="${thumb(l)}">`;
+  const tile = l => `<span class="lw"><img loading="lazy" alt="${esc(l.name)}" title="${esc(l.name)}" src="${thumb(l)}">${cardLens(l.id, thumb(l), l.name)}</span>`;
   el.innerHTML = `
     <div class="th-tools">
       <button class="pill sm on" data-th="new">🔄 New hand</button>
@@ -2547,7 +2567,7 @@ function deckChanged(c) {               // after any change: autosave, then refr
   else if (tile) {
     tile.outerHTML = nameTile(g);
     const vl = deckview.querySelector(`.vlist[data-g="${g}"]`);
-    if (vl) vl.outerHTML = variations(g, "deck");
+    if (vl) vl.outerHTML = versionList(g, "deck");
   }
   hand = null;
   renderPanel();
@@ -2572,14 +2592,14 @@ function removeCard(id) {
   deckChanged(c);
 }
 
-// ---- 🔍 a card up close: big image, its prints, its text, − / + ----
-function openZoom(c, id) {
-  zoomCard = c; zoomPrint = id || lineOf(c)?.id || c.p[0][0];
+// ---- 🔍 a card up close: big image, its prints, its text, − / + in the open deck (or, outside one, what you own) ----
+function openZoom(c, id, deck = open) {
+  zoomCard = c; zoomDeck = deck; zoomPrint = id || (deck && lineOf(c)?.id) || c.p[0][0];
   dlg.hidden = false; renderZoom();
 }
 
 function renderZoom() {
-  const c = zoomCard, p = PRINT.get(zoomPrint)[1], q = inDeck(c), why = blocked(open, c);
+  const c = zoomCard, p = PRINT.get(zoomPrint)[1], q = zoomDeck ? inDeck(c) : 0, why = zoomDeck ? blocked(zoomDeck, c) : "";
   const f = ENG.fx(expandCard(c)), does = [f.draw && `draws ${f.draw}`, f.drawTo && `draws to ${f.drawTo}`,
     f.search.length && `searches ${f.search.map(s => `${s.n} ${s.kind}`).join(", ")}`, f.candy && "Rare Candy",
     f.accel && `attaches ${f.accel} Energy`, f.gust && "gusts", f.sw && "switches", f.recover && "recovers"].filter(Boolean);
@@ -2595,12 +2615,13 @@ function renderZoom() {
         <div class="zm-prints">${c.p.map(x => `<button class="chip ${x[0] === zoomPrint ? "on" : ""}"
           data-z="print" data-id="${x[0]}">${x[1]} ${x[2]}${x[4] != null ? ` · ${money(x[4])}` : ""}</button>`).join("")}</div>
         ${does.length ? `<div class="sub">Read as: ${does.join(" · ")}</div>` : ""}
-        <div class="lbl">In this deck</div>
+        ${zoomDeck ? `<div class="lbl">In this deck</div>
         <div class="zm-q">
           <button class="pill" data-z="dec" ${q ? "" : "disabled"}>−</button><b>${q}</b>
           <button class="pill" data-z="inc" ${why ? "disabled" : ""}>+</button>
         </div>
-        ${why ? `<div class="sub">${why}</div>` : ""}
+        ${why ? `<div class="sub">${why}</div>` : ""}` : `<div class="lbl">You own</div>
+        <div class="sub">${isBasicE(c) ? "Basic Energy always counts as owned" : `${stock[zoomPrint] || 0} of this print · ${ownedOf(c)} in all`}</div>`}
       </div>
     </div>`;
 }
@@ -2608,6 +2629,7 @@ function renderZoom() {
 // picking another print moves the deck's copies of this card onto that art
 function choosePrint(c, id) {
   zoomPrint = id;
+  if (!zoomDeck) return renderZoom();
   const ls = open.cards.filter(l => cardOf(l) === c);
   if (!ls.length) return renderZoom();
   const n = sum(ls), cover = ls.some(l => l.id === open.cover);
@@ -2857,12 +2879,26 @@ deckview.addEventListener("keydown", e => {
   renderInsights(); deckview.querySelector("#tag-in")?.focus();
 });
 
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-lens], [data-zid]");
+  if (!b) return;
+  e.stopPropagation(); e.preventDefault();
+  if (b.dataset.zid) return openZoom(PRINT.get(b.dataset.zid)[0], b.dataset.zid, open && b.closest(".ed") ? open : null);
+  const img = b.dataset.lens;
+  zoomCard = null; dlg.hidden = false;
+  dlgBox.innerHTML = `<div class="m-head"><div><h2>${esc(b.dataset.name)}</h2><div class="sub">${esc(b.dataset.sub)}</div></div>
+      <button class="x" data-z="close">✕</button></div>
+    <div class="zm-body"><img class="zm-img" alt="" src="${esc(bigImg(img))}"></div>`;
+  dlgBox.querySelector(".zm-img").onerror = function () { this.onerror = null; this.src = img };
+}, true);
+
 dlg.addEventListener("click", e => {
   const z = e.target.closest("[data-z]");
   if (e.target === dlg || z?.dataset.z === "close") return dlg.hidden = true;
   if (z?.dataset.z === "import") return doImport();
   if (!z || !zoomCard) return;
-  if (z.dataset.z === "print") choosePrint(zoomCard, z.dataset.id);
+  if (z.dataset.z === "print") return choosePrint(zoomCard, z.dataset.id);
+  if (!zoomDeck) return;
   if (z.dataset.z === "inc") addCard(zoomCard, lineOf(zoomCard)?.id || zoomPrint);
   if (z.dataset.z === "dec") removeCard(lineOf(zoomCard)?.id);
 });
@@ -2872,7 +2908,7 @@ function binderTile(g) {
   const [name, cs] = NAMES[g], own = cs.reduce((s, c) => s + ownedOf(c), 0), prints = cs.reduce((s, c) => s + c.p.length, 0);
   const c0 = cs.find(ownedOf) || cs[0], pr = c0.p.find(x => stock[x[0]]) || c0.p[0];
   return `<div class="pk ${own ? "in" : "unowned"}" data-g="${g}">
-    <img loading="lazy" alt="" src="${imgOf(pr)}">
+    <img loading="lazy" alt="" src="${imgOf(pr)}">${cardLens(pr[0], imgOf(pr), name)}
     ${own ? `<span class="qty">×${own}</span>` : ""}
     <div class="pn">${name}</div>
     ${prints === 1 ? `<span class="vq tile"><button data-own="-1" data-id="${pr[0]}">−</button><b>${own}</b><button data-own="1" data-id="${pr[0]}">+</button></span>`
@@ -2911,7 +2947,7 @@ function renderBinder() {
 function renderBinderGrid() {
   const shown = shownNames(bpick);
   binderview.querySelector(".bgrid").innerHTML = shown.length
-    ? shown.map(([, g]) => binderTile(g) + (listOpen?.view === "mine" && listOpen.g === g ? variations(g, "mine") : "")).join("")
+    ? shown.map(([, g]) => binderTile(g) + (listOpen?.view === "mine" && listOpen.g === g ? versionList(g, "mine") : "")).join("")
     : `<p class="empty">${bpick.own ? "You haven't added any cards that match." : "No legal cards match these filters."}</p>`;
 }
 function setOwned(id, delta) {
@@ -2921,7 +2957,7 @@ function setOwned(id, delta) {
   const g = NAME_OF.get(PRINT.get(id)[0].k), tile = binderview.querySelector(`.pk[data-g="${g}"]`);
   if (tile) tile.outerHTML = binderTile(g);
   const vl = binderview.querySelector(`.vlist[data-g="${g}"]`);
-  if (vl) vl.outerHTML = variations(g, "mine");
+  if (vl) vl.outerHTML = versionList(g, "mine");
   const val = binderview.querySelector(".bval");
   if (val) val.textContent = binderValue();
 }
@@ -3027,7 +3063,7 @@ function renderPriceList() {
               name: (a, b) => a.name.localeCompare(b.name) || val(b) - val(a),
               from: (a, b) => order.indexOf(a.from) - order.indexOf(b.from) || val(b) - val(a) }[vpick.sort]);
   const row = r => `<div class="pv-row" data-i="${PV.indexOf(r)}">
-      ${r.img ? `<img loading="lazy" alt="" src="${smallImg(r.img)}">` : `<span class="pv-noimg"></span>`}
+      ${r.img ? `<span class="lw"><img loading="lazy" alt="" src="${smallImg(r.img)}"><i class="zm sm" title="Show card">🔍</i></span>` : `<span class="pv-noimg"></span>`}
       <div class="pv-n"><b>${esc(r.name)}</b><span>${esc(r.where)} · ${FROM[r.from]}</span></div>
       <span class="pv-q">${r.n > 1 ? `×${r.n}` : ""}</span>
       <span class="pv-p ${r.each == null ? "none" : ""}">${r.each != null ? money(r.each, r.sym) : "no price"}${r.n > 1 && r.each != null ? `<small>${money(r.each * r.n, r.sym)}</small>` : ""}</span>
