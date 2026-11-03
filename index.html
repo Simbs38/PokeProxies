@@ -835,6 +835,7 @@ Object.keys(favs).forEach(k => k.split(":")[0] in COLLECTIONS || delete favs[k])
 const save = (sync = true) => {
   store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen); store.set("decks", decks);
   store.set("stock", stock); ALLOC = null;
+  if (sync) store.set("dirty", Date.now());   // when the Sheet last fell behind; 0 once a save lands
   if (sync && typeof push === "function") push();
 };
 
@@ -3291,7 +3292,7 @@ async function pull() {
   try {
     const d = await (await fetch(`${cfg.url}?v=4&idToken=${encodeURIComponent(cfg.tok)}`)).json();
     if (!d.ok) {
-      if (/sign in/i.test(d.error || "")) { cfg.tok = ""; store.set("syncTok", ""); applyLock() }
+      if (/sign in/i.test(d.error || "")) return expired();
       throw new Error(/reload/.test(d.error || "") ? "update the Apps Script first" : d.error || "rejected");
     }
     // an older script would hand back no My Cards (or no decks), wiping this device's on apply ->
@@ -3299,22 +3300,25 @@ async function pull() {
     if (d.v !== 4) throw new Error("update the Apps Script first");
     cfg.ready = true;
     // whichever side was written last wins — plain and predictable for one person, two devices.
+    // A change this device couldn't save yet counts as written when it was made, so it goes up now
+    // rather than waiting for the next edit. No "dirty" at all = an older site, which could drop
+    // saves without a word: send everything once to be sure.
     // No tabs yet = first run on the new script: the old state JSON comes along once to fill them.
-    const remote = d.tabs ? fromTabs(d) : d.legacy;
-    if (remote && (d.updated || 0) > store.get("updated", 0)) {
+    const remote = d.tabs ? fromTabs(d) : d.legacy, dirty = store.get("dirty", null);
+    if (remote && (d.updated || 0) > Math.max(store.get("updated", 0), dirty || 0)) {
       applyState(remote);
       store.set("updated", d.updated);
-    }
-    if (!d.tabs || store.get("updated", 0) > (d.updated || 0)) push(0);
+      store.set("dirty", 0);
+    } else if (!d.tabs || dirty !== 0 || store.get("updated", 0) > (d.updated || 0)) push(0);
     status("☁ Synced", true);
   } catch (e) { status("☁ " + e.message) }
 }
 
 function push(wait = 900) {
-  if (!cfg.url || !cfg.tok || !cfg.ready) return;
+  if (!cfg.url || !cfg.tok || !cfg.ready) return;   // the change stays "dirty": the next pull sends it
   clearTimeout(timer);
   timer = setTimeout(async () => {
-    const updated = Date.now();
+    const updated = Date.now(), sent = store.get("dirty", null);
     status("☁ Saving…");
     try {
       // text/plain keeps it a simple request: no CORS preflight, which Apps Script cannot answer
@@ -3324,8 +3328,9 @@ function push(wait = 900) {
       })).json();
       if (!d.ok) throw new Error(d.error || "rejected");
       store.set("updated", updated);
+      if (store.get("dirty", null) === sent) store.set("dirty", 0);   // an edit made mid-save still waits
       status("☁ Synced", true);
-    } catch (e) { status("☁ " + e.message) }
+    } catch (e) { /sign in/i.test(e.message) ? expired() : status("☁ " + e.message) }
   }, wait);
 }
 
@@ -3439,6 +3444,17 @@ async function onGoogle(res) {
   document.getElementById("l-msg").textContent = sync.textContent.replace("☁ ", "");
   applyLock();
   if (sync.classList.contains("on")) login.hidden = true;
+}
+
+// The token ran out (~1h) and the Sheet refused a load or save: ask again. One Tap signs a returning
+// user straight back in, else the dialog's button does; changes made meanwhile stay "dirty" and the
+// pull after sign-in sends them.
+function expired() {
+  cfg.tok = ""; cfg.ready = false; store.set("syncTok", "");
+  status("☁ Sign in");
+  applyLock();
+  if (store.get("dirty", 0)) document.getElementById("l-msg").textContent = "Sign in again to save your latest changes";
+  window.google?.accounts?.id?.prompt();
 }
 
 // Signed out: hide the app and leave the dialog up as the landing page. Cosmetic only — the
