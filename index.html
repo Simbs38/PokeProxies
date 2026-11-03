@@ -281,6 +281,10 @@
   .run { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px }
   .run a { margin-left: auto; color: var(--acc) }
   .refresh-msg { margin: 0 0 14px }
+  .tok-help { max-width: 760px; margin: -6px 0 16px; padding-left: 20px; line-height: 1.6 }
+  .tok-help a { color: var(--acc); font-weight: 700 }
+  .tok-help code { padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,.08) }
+  .live-p { margin-top: 10px; line-height: 1.8 }
 
   /* ---- My Cards and ownership ---- */
   body.binderpage :is(#banner, #list, footer), body:not(.binderpage) #binderview { display: none }
@@ -990,7 +994,7 @@ function render() {
   document.body.classList.toggle("tradepage", cur === "trade");
   if (cur === "mycards") return renderBinder();
   if (cur === "trade") return renderTrade();
-  if (cur === "prices") { renderPrices(); if (!runs) loadRuns(); return }
+  if (cur === "prices") return renderPrices();
   if (cur === "decks") return renderDecks();
   if (cur === "data") { renderData(); if (!runs) loadRuns(); return }
   stats();
@@ -3350,6 +3354,114 @@ tradeview.addEventListener("input", e => {
   }, 150);
 });
 
+// ---- Live prices: Cardmarket € and TCGplayer $ straight from TCGdex, a free public API (no key, no
+// sign-in), for every card you own or play. Kept on this device and laid over the site's own prices
+// until a data refresh brings newer ones; a card that refresh left unpriced keeps its live price.
+const TCGDEX = "https://api.tcgdex.net/v2/en";
+const TDX_SET = { "Scarlet & Violet Energies": "sve", "Scarlet & Violet Black Star Promos": "svp",
+                  "Scarlet & Violet Promos": "svp", "30th Celebration: Classic Collection": "30th-c" };   // where the names differ
+let live = store.get("live", null);                // {t, p: {card id: [€, $]}}
+const ANNIV_ID = new Map(COLLECTIONS.anniv.items.map(it => [it.id, it]));
+const baked = () => Date.parse((CARDS.fetched || "").replace(" ", "T") + "Z") || 0;   // the Action runs on UTC
+const euro = v => v != null ? [v, money(v), "cardmarket trend"] : null;
+function applyLive() {
+  if (!live?.p) return;
+  const newer = live.t > baked();
+  for (const [id, [eur, usd]] of Object.entries(live.p)) {
+    const p = PRINT.get(id)?.[1], it = ANNIV_ID.get(id);
+    if (p && (newer || p[4] == null && p[5] == null)) { if (eur != null) p[4] = eur; if (usd != null) p[5] = usd }
+    if (it && eur != null && (newer || it.price?.[0] == null)) it.price = euro(eur);
+  }
+}
+applyLive();
+
+let pricing = null, priceMsg = "";                 // pricing: {done, of} while a refresh runs
+const tdx = async path => { const r = await fetch(TCGDEX + path); if (!r.ok) throw new Error(`TCGdex ${r.status}`); return r.json() };
+const tdxRetry = async (path, tries = 3) => {
+  for (let i = 0; ; i++) try { return await tdx(path) } catch (e) { if (i >= tries - 1) throw e; await new Promise(r => setTimeout(r, 800 * (i + 1))) }
+};
+// what to price: My Cards, the Trade binder, the 30th cards marked owned, and every card a deck plays
+function priceWant() {
+  const ids = new Set([...Object.keys(stock), ...Object.keys(trade), ...decks.flatMap(d => d.cards.map(l => l.id)),
+                       ...COLLECTIONS.anniv.items.filter(it => have.has(it.id)).map(it => it.id)]);
+  const want = [];                                 // [id, set name, number, card name]
+  for (const id of ids) {
+    const [c, p] = PRINT.get(id) || [], it = ANNIV_ID.get(id);
+    if (p) want.push([id, CARDS.sets[p[1]] || p[1], p[2], c.n]);
+    else if (it) want.push([id, it.set, it.number, it.name]);
+  }
+  return want;
+}
+// our card -> its TCGdex id: same set (by name), then same number and name; renumbered reprints (the
+// Classic Collection keeps its vintage numbers) go by name, twins in order — as fetch_data.py does
+async function tdxIds(want) {
+  const sid = new Map((await tdxRetry("/sets")).filter(s => !/^(?:[A-Z]\d|P-[A-Z])/.test(s.id)).map(s => [s.name, s.id]));
+  const norm = t => String(t).toLowerCase().replace(/[^a-z0-9]/g, ""), nnum = n => String(n).replace(/^0+(?=.)/, "");
+  const bySet = new Map(), ids = new Map();
+  for (const w of want) {
+    const s = TDX_SET[w[1]] || sid.get(w[1]);
+    if (s) bySet.set(s, [...bySet.get(s) || [], w]);
+  }
+  await Promise.all([...bySet].map(async ([s, mine]) => {
+    const theirs = [...(await tdxRetry("/sets/" + encodeURIComponent(s)).catch(() => ({}))).cards || []];
+    const same = (m, c) => nnum(c.localId) === nnum(m[2]);
+    const rules = [(m, c) => same(m, c) && norm(c.name) === norm(m[3])];
+    if (mine.filter(m => theirs.some(c => rules[0](m, c))).length * 2 < mine.length)
+      rules.push((m, c) => norm(c.name) === norm(m[3]), (m, c) => norm(m[3]).startsWith(norm(c.name)));
+    else rules.push(same);                         // same set, same number: only the name is spelt differently
+    for (const rule of rules)
+      for (const m of mine.filter(m => !ids.has(m[0]))) {
+        const i = theirs.findIndex(c => rule(m, c));
+        if (i >= 0) { ids.set(m[0], theirs[i].id); theirs.splice(i, 1) }
+      }
+  }));
+  return ids;
+}
+const firstPos = vs => { const v = vs.find(v => v > 0); return v != null ? Math.round(v * 100) / 100 : null };
+async function refreshPrices() {
+  if (pricing) return;
+  pricing = { done: 0, of: 0 }; priceMsg = "Finding your cards on TCGdex…"; showPricing();
+  try {
+    const want = priceWant(), ids = await tdxIds(want), queue = [...ids], got = {};
+    pricing.of = queue.length; showPricing();
+    const worker = async () => {
+      for (let x; (x = queue.shift()); ) {
+        try {
+          const pr = (await tdxRetry("/cards/" + encodeURIComponent(x[1]), 2)).pricing || {}, cm = pr.cardmarket || {}, tp = pr.tcgplayer || {};
+          const eur = firstPos([cm.trend, cm.avg30, cm.avg, cm["trend-holo"], cm["avg30-holo"], cm["avg-holo"]]);
+          const usd = firstPos(["normal", "holofoil", "reverse-holofoil", ...Object.keys(tp)].map(k => tp[k]?.marketPrice ?? tp[k]?.midPrice));
+          if (eur != null || usd != null) got[x[0]] = [eur, usd];
+        } catch {}                                 // one card failing keeps its old price
+        pricing.done++;
+        if (pricing.done % 10 === 0) showPricing();
+      }
+    };
+    await Promise.all(Array.from({ length: 8 }, worker));
+    const n = Object.keys(got).length;
+    if (!n) throw new Error("TCGdex sent no prices back — try again in a minute");
+    // a card missing from this round keeps the price it got last time
+    live = { t: Date.now(), p: { ...live?.p, ...got } };
+    store.set("live", live);
+    applyLive();
+    priceMsg = `✓ ${n} prices updated from Cardmarket just now${want.length - n ? ` · ${want.length - n} without a price on TCGdex` : ""}.`;
+  } catch (e) { priceMsg = "Couldn't refresh prices: " + e.message }
+  pricing = null;
+  render();
+}
+const showPricing = () => {
+  if (pricing?.of) priceMsg = `Fetching prices… ${pricing.done} of ${pricing.of}`;
+  if (cur === "data") return renderData();
+  if (cur !== "prices") return;
+  renderPriceRun();
+  const btn = priceview.querySelector('[data-pv="refresh"]');
+  if (btn) { btn.disabled = !!pricing; btn.textContent = pricing ? "⏳ Refreshing…" : "🔄 Refresh prices" }
+};
+const liveAt = () => {                             // the live refresh's local time, while it beats the site's own prices
+  if (!(live?.t > baked())) return null;
+  const d = new Date(live.t), z = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+};
+
 // ---- Prices: what everything you own is worth — My Cards, plus one of each 30th Celebration card marked owned ----
 const FROM = { mycards: "My Cards", trade: "Trade binder", anniv: "30th Celebration" };
 const SORTBY = { price: "Price ↓", cheap: "Price ↑", name: "Name", from: "Collection" };
@@ -3391,8 +3503,8 @@ function renderPrices() {
   priceview.innerHTML = `
     <div class="dk-head"><div><h1>Prices</h1>
       <div class="sub">What your cards are worth: My Cards, your Trade binder, plus one of each 30th Celebration card you've marked owned ·
-        Cardmarket trend (TCGplayer $ where Cardmarket has none) · prices from ${esc(CARDS.fetched || "—")} ${freshness(CARDS.fetched)}</div></div>
-      <button class="pill on" data-pv="refresh" ${cfg.ready ? "" : "disabled title=\"Sign in first\""}>🔄 Refresh prices</button></div>
+        Cardmarket trend (TCGplayer $ where Cardmarket has none) · prices from ${esc(liveAt() || CARDS.fetched || "—")} ${freshness(liveAt() || CARDS.fetched)}</div></div>
+      <button class="pill on" data-pv="refresh" ${pricing ? "disabled" : ""}>${pricing ? "⏳ Refreshing…" : "🔄 Refresh prices"}</button></div>
     <div class="pv-run"></div>
     <div class="pv-sum">${tile("all", "Total", PV)}${Object.entries(FROM).map(([k, t]) => tile(k, t, PV.filter(r => r.from === k))).join("")}</div>
     <div class="pk-tools">
@@ -3403,11 +3515,10 @@ function renderPrices() {
     <div class="pv-list"></div>`;
   renderPriceList(); renderPriceRun();
 }
-// the latest refresh, and once its data is live, a Reload that brings it in
+// how the live refresh is going, or how it went
 function renderPriceRun() {
   const box = priceview.querySelector(".pv-run");
-  if (box) box.innerHTML = (published ? `<p class="pv-new">✨ New prices are live. <button class="pill on sm" data-pv="reload">Reload</button></p>` : "")
-    + (refreshMsg ? `<p class="sub">${esc(refreshMsg)}</p>` : "") + (runs?.length ? runLine(runs[0]) : "");
+  if (box) box.innerHTML = priceMsg ? `<p class="sub">${esc(priceMsg)}</p>` : "";
 }
 function renderPriceList() {
   const q = vpick.q, val = r => r.each ?? -1, order = Object.keys(FROM);
@@ -3439,8 +3550,7 @@ function renderPriceList() {
 }
 priceview.addEventListener("click", e => {
   const act = e.target.closest("[data-pv]")?.dataset.pv;
-  if (act === "refresh") return refreshData();
-  if (act === "reload") return location.reload();
+  if (act === "refresh") return refreshPrices();
   const f = e.target.closest("[data-from]");
   if (f) {
     vpick.from = f.dataset.from;
@@ -3716,12 +3826,12 @@ function push(wait = 900) {
 // holds the only token allowed to. The run list is public, read straight from GitHub.
 const RUNS = "https://api.github.com/repos/Simbs38/PokeProxies/actions/workflows/refresh-data.yml/runs?per_page=6";
 let runs = null, runsT, refreshMsg = "", published = false;
-const showRuns = () => cur === "data" ? renderData() : cur === "prices" ? renderPriceRun() : null;
+const showRuns = () => cur === "data" && renderData();
 async function loadRuns() {
   try { runs = (await (await fetch(RUNS)).json()).workflow_runs || [] } catch { runs = [] }
   const last = runs[0], ended = last?.status === "completed" ? Date.parse(last.updated_at) : 0;
   if (ended && last.conclusion === "success" && !published) published = await isPublished();
-  if (cur !== "data" && cur !== "prices") return;
+  if (cur !== "data") return;
   showRuns();
   clearTimeout(runsT);
   // follow a run in progress, then the Pages build after it (a few minutes) until the new data is live
@@ -3746,18 +3856,38 @@ const runLine = r => {
     <span>${new Date(r.created_at).toLocaleString()} · ${r.event === "schedule" ? "weekly" : "manual"}${mins ? ` · ${mins} min` : ""}</span>
     <a href="${r.html_url}" target="_blank" rel="noopener">log ↗</a></div>`;
 };
+// ms the Google ID token has left, read from the token itself (0 when there is none)
+const tokLeft = () => { try { return JSON.parse(atob(cfg.tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).exp * 1e3 - Date.now() } catch { return 0 } };
+let refreshAfterSignIn = false, needToken = false;
+function signInThenRefresh() {                     // the token ran out (~1h): sign in, then onGoogle starts it
+  refreshAfterSignIn = true;
+  refreshMsg = "Your Google sign-in ran out — sign in again and the refresh starts by itself.";
+  showRuns(); expired();
+}
 async function refreshData() {
-  refreshMsg = "Starting a refresh…"; published = false; showRuns();
+  if (tokLeft() < 6e4) return signInThenRefresh();
+  refreshMsg = "Starting a refresh…"; published = false; needToken = false; showRuns();
   try {
     // no sync version on purpose: an older script answers "reload" instead of reading it as a save
     const d = await (await fetch(cfg.url, { method: "POST", headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ idToken: cfg.tok, action: "refresh" }) })).json();
+    if (!d.ok && /sign in/i.test(d.error || "")) return signInThenRefresh();
+    needToken = !d.ok && /GITHUB_TOKEN/.test(d.error || "");
     refreshMsg = d.ok ? "Started: all prices, new cards and the meta. It takes about 10–15 minutes, then the site republishes itself and a Reload button shows up here."
+      : needToken ? "Refresh data needs a one-time GitHub token in your Apps Script:"
       : /reload/.test(d.error || "") ? "Your Apps Script is the previous version — paste the new one and deploy it first."
+      : /GitHub said 401/.test(d.error || "") ? "GitHub refused the token in your Apps Script (expired or revoked?) — make a new one as below and replace GITHUB_TOKEN."
       : "Couldn't start: " + d.error;
+    needToken ||= /GitHub said 40[134]/.test(d.error || "");
   } catch (e) { refreshMsg = "Couldn't start: " + e.message }
   showRuns(); setTimeout(loadRuns, 5000);
 }
+// the token lives only in the Apps Script's Script Properties, never in this public repo
+const TOKEN_HELP = `<ol class="sub tok-help">
+  <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Make a fine-grained GitHub token ↗</a>:
+    Repository access → <b>Only select repositories → PokeProxies</b>; Permissions → Repository → <b>Actions: Read and write</b>. Copy it.</li>
+  <li>Apps Script → <b>Project Settings ⚙ → Script Properties → Add script property</b>: <code>GITHUB_TOKEN</code> = the token. No redeploy needed.</li>
+  <li>Press Refresh data now again. Prices never need this: 🔄 Refresh prices fetches them live.</li></ol>`;
 function renderData() {
   const age = freshness, run = runLine, prints = CARDS.cards.reduce((s, c) => s + c.p.length, 0);
   // how much of each list has a price: [priced, all]
@@ -3772,7 +3902,7 @@ function renderData() {
       <button class="pill on" data-data="refresh" ${cfg.ready ? "" : "disabled title=\"Sign in first\""}>🔄 Refresh data now</button>
     </div>
     ${published ? `<p class="pv-new refresh-msg">✨ New data is live. <button class="pill on sm" data-data="reload">Reload</button></p>` : ""}
-    ${refreshMsg ? `<p class="sub refresh-msg">${esc(refreshMsg)}</p>` : ""}
+    ${refreshMsg ? `<p class="sub refresh-msg">${esc(refreshMsg)}</p>${needToken ? TOKEN_HELP : ""}` : ""}
     <div class="data-grid">
       <div class="dcard"><h3>Cards &amp; sets</h3>
         <div class="big"><b>${CARDS.cards.length.toLocaleString()}</b> Standard-legal cards · ${prints.toLocaleString()} prints ·
@@ -3782,7 +3912,9 @@ function renderData() {
       <div class="dcard"><h3>Prices</h3>
         <div class="big">${pp.map(([t, [a, b]]) => `<b>${Math.round(100 * a / (b || 1))}%</b> of ${t} priced <span class="sub">(${a.toLocaleString()} of ${b.toLocaleString()})</span>`).join("<br>")}</div>
         <div class="sub">Cardmarket trend € and TCGplayer market $ from pokemontcg.io; for sets it has no price for yet
-          (the newest ones, the 30th Celebration), Cardmarket's from TCGdex. Every refresh re-fetches them all · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}</div>
+          (the newest ones, the 30th Celebration), Cardmarket's from TCGdex. Every refresh re-fetches them all · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}
+        <div class="sub live-p">${liveAt() ? `Live prices for your cards on this device: ${esc(liveAt())} ${age(liveAt())}<br>` : ""}${priceMsg ? esc(priceMsg) + "<br>" : ""}
+          <button class="pill sm" data-data="prices" ${pricing ? "disabled" : ""}>${pricing ? "⏳ Refreshing…" : "🔄 Refresh prices now"}</button> straight from Cardmarket, no sign-in, a few seconds</div></div>
       <div class="dcard"><h3>Meta</h3>
         <div class="big"><b>${META.decks.length}</b> archetypes · ${(META.events || 0).toLocaleString()} events ·
           ${(META.players || 0).toLocaleString()} players · ${(META.mu || []).length.toLocaleString()} real matchups</div>
@@ -3800,6 +3932,7 @@ function renderData() {
 dataview.addEventListener("click", e => {
   const act = e.target.closest("[data-data]")?.dataset.data;
   if (act === "refresh") refreshData();
+  if (act === "prices") refreshPrices();
   if (act === "reload") location.reload();
 });
 
@@ -3818,6 +3951,7 @@ async function onGoogle(res) {
   cfg.tok = res.credential;
   store.set("syncTok", cfg.tok);
   await pull();
+  if (refreshAfterSignIn) { refreshAfterSignIn = false; refreshData() }
   document.getElementById("l-msg").textContent = sync.textContent.replace("☁ ", "");
   applyLock();
   if (sync.classList.contains("on")) login.hidden = true;

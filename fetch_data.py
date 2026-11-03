@@ -116,10 +116,31 @@ _tcgdex = {}
 
 
 def tcgdex(path):
-    """One TCGdex call, remembered: the 30th set is asked for by both the collection and the legal cards."""
-    if path not in _tcgdex:
-        _tcgdex[path] = get(f"{TCGDEX}{path}", tries=3, fatal=False)
+    """One TCGdex call, remembered: the 30th set is asked for by both the collection and the legal cards.
+    A failure is not remembered, so the next ask tries again (one cached 500 once cost every 30th price)."""
+    if _tcgdex.get(path) is None:
+        _tcgdex[path] = get(f"{TCGDEX}{path}", tries=5, fatal=False)
     return _tcgdex[path]
+
+
+# What the last run's data.js / cards.js held, by card id: what a card keeps when this run finds no
+# price, so a flaky API never blanks prices that were there. Filled at the start of main().
+OLD = {}                                                  # data.js: card id -> [value, label, source]
+OLD_PRINT = {}                                            # cards.js: print id -> [€, $]
+
+
+def old_prices():
+    d, c = previous_js("data.js") or {}, previous_js("cards.js") or {}
+    OLD.update({x["id"]: x["price"] for cs in (d.get("tcg") or {}).values() for x in cs})
+    OLD.update({x["id"]: x["price"] for col in (d.get("collections") or {}).values()
+                for x in col.get("items", []) if x.get("price")})
+    OLD_PRINT.update({p[0]: p[4:6] for g in c.get("cards", []) for p in g["p"]})
+
+
+def keep_old(item):
+    """An item still without a price takes the last run's."""
+    if item["price"][0] is None and (OLD.get(item["id"]) or [None])[0] is not None:
+        item["price"] = OLD[item["id"]]
 
 
 def tcgdex_eur(want):
@@ -228,6 +249,7 @@ def anniv_master_set():
     for it in items:
         if it["id"] in eur:
             it["price"] = [eur[it["id"]], f"€{eur[it['id']]:,.2f}", "cardmarket trend"]
+        keep_old(it)
     return {"name": ANNIV_LABEL, "kind": "cards", "items": items}
 
 
@@ -399,6 +421,8 @@ def legal_cards():
         for p in g["p"]:
             if p[4] is None and p[0] in eur:
                 p[4] = eur[p[0]]
+            if p[4] is None and p[5] is None and p[0] in OLD_PRINT:   # nothing this run: the last run's € and $
+                p[4], p[5] = OLD_PRINT[p[0]]
 
     order = {"P": 0, "T": 1, "E": 2}
     cards = sorted(groups.values(), key=lambda g: (
@@ -430,6 +454,7 @@ def previous():
 
 
 def main():
+    old_prices()                                          # read before this run overwrites the files
     print("· PokeAPI form ids …")
     api = {r["name"]: int(r["url"].rstrip("/").split("/")[-1])
            for r in get(POKEAPI)["results"]}
@@ -502,6 +527,7 @@ def main():
         for c in cs:
             if c["id"] in eur:
                 c["price"] = [eur[c["id"]], f"€{eur[c['id']]:,.2f}", "cardmarket trend"]
+            keep_old(c)
     out = {"fetched": time.strftime("%Y-%m-%d %H:%M"), "collections": collections, "tcg": tcg}
     path = os.path.join(HERE, "data.js")
     with open(path, "w", encoding="utf-8") as f:

@@ -128,6 +128,11 @@ demand through the Apps Script. That button needs a token the script keeps:
 
 The Action commits to `main`, so pull before editing locally (`git pull`).
 
+**Prices alone need none of this.** The **Prices** page's **🔄 Refresh prices** (also on the Data page)
+asks [TCGdex](https://tcgdex.dev), a free public API, straight from the browser: fresh Cardmarket €
+and TCGplayer $ for every card you own or play, in a few seconds, with no sign-in and no token. They
+stay on that device and sit over the site's own prices until the next data refresh brings newer ones.
+
 ---
 
 ## 4. Cloudflare Access (optional — make the site private)
