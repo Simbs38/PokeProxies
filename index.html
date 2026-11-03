@@ -290,7 +290,8 @@
     background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 12px }
   .pk.unowned img, .vi.unowned img { filter: grayscale(.75) brightness(.7) }
   .pk .ownb {
-    position: absolute; left: 5px; bottom: 26px; padding: 0 7px; border-radius: 99px; font-size: 10px; font-weight: 700;
+    /* on the bottom edge of the art, whatever sits under it (a name, a List button, a stepper) */
+    position: absolute; left: 5px; top: calc(100cqw * 342 / 245 - 22px); padding: 0 7px; border-radius: 99px; font-size: 10px; font-weight: 700;
     color: #0c1a10; background: #4ade80;
   }
   .pk .vl { width: 100%; margin-top: 4px; padding: 3px 0; border-radius: 8px; border: 1px solid var(--line);
@@ -342,9 +343,8 @@
   #tradeview { --hh: 64px; padding: 22px 22px 90px }
   #tradeview .sub { font-size: 13px; color: var(--dim) }
   .tr-mode { width: max-content; max-width: 100%; margin: 4px 0 14px; overflow-x: auto }
-  #tr-q, #tp-q { flex: 1 1 240px; padding: 10px 13px; font: 400 14px Outfit, sans-serif; color: var(--fg);
-    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 12px }
-  #tp-q { width: 100% }
+  #tr-q { flex: 1 1 240px }
+  .tr-mode button, .list-tools .seg button { flex: 0 0 auto; padding: 7px 15px }
   .tr-h { margin: 18px 0 4px; font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em }
   .tr-x { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px }
   .tr-x .pill { margin-left: auto }
@@ -401,7 +401,7 @@
   .deck .dw.own { color: var(--dim) }
   .chip.own.on { background: #4ade80; border-color: #4ade80 }
   .deck.tobuy { border-style: dashed; border-color: #fbbf2466 }
-  .deck.tobuy .cart { display: grid; place-items: center; width: 92px; aspect-ratio: 245/342; font-size: 40px;
+  .deck .cart { display: grid; place-items: center; width: 92px; aspect-ratio: 245/342; font-size: 40px;
     border-radius: 7px; background: rgba(251,191,36,.1) }
   .cmp.buy td:first-child { width: 40px; font-weight: 700 }
   #deckview { --hh: 64px; padding: 22px }
@@ -439,7 +439,7 @@
   .eb-pane { display: none }
   .pk-tools { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px }
   .pk-cat { max-width: 420px }
-  :is(#pk-q, #pv-q, .dk-name, .dk-notes, #imp-name, #imp-text, #exp-text) {
+  :is(#pk-q, #pv-q, #tr-q, #tp-q, .dk-name, .dk-notes, #imp-name, #imp-text, #exp-text) {
     width: 100%; padding: 10px 13px; font: 400 14px Outfit, sans-serif; color: var(--fg);
     background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 12px;
   }
@@ -453,7 +453,7 @@
   .chip i { width: 9px; height: 9px; border-radius: 50% }
   .chip.on { color: #16181f; background: var(--acc); border-color: var(--acc) }
   .pk-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)) }
-  .pk { position: relative; cursor: pointer; user-select: none; transition: transform .15s }
+  .pk { position: relative; container-type: inline-size; cursor: pointer; user-select: none; transition: transform .15s }
   .pk:hover { transform: translateY(-3px) }
   .pk img { width: 100%; aspect-ratio: 245/342; object-fit: cover; border-radius: 7px; display: block; background: #0006 }
   .pk.in img { box-shadow: 0 0 0 2px var(--acc), 0 0 16px -4px var(--acc) }
@@ -730,7 +730,8 @@
     .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none }
     .chip { flex: 0 0 auto }
     .deck .dimg { flex-basis: 70px }
-    .deck .dimg img, .deck.tobuy .cart { width: 70px }
+    .deck .dimg img, .deck .cart { width: 70px }
+    .deck .dimg .zm { width: 22px; height: 22px; font-size: 10px }
     #binderview, #priceview { padding: 12px }
     #tradeview { padding: 12px 12px 120px }
     .tr-bar { padding: 8px 12px }
@@ -975,6 +976,12 @@ function stats() {
 
 function render() {
   document.querySelectorAll("nav .pill").forEach(b => b.classList.toggle("on", b.dataset.c === cur));
+  // on a phone the nav scrolls sideways: keep the open page's pill in sight
+  const navEl = document.querySelector("nav"), onPill = navEl.querySelector(".pill.on");
+  if (onPill && navEl.scrollWidth > navEl.clientWidth) {
+    const l = onPill.offsetLeft - navEl.offsetLeft, r = l + onPill.offsetWidth;
+    if (l < navEl.scrollLeft || r > navEl.scrollLeft + navEl.clientWidth) navEl.scrollTo({ left: l - 12, behavior: "smooth" });
+  }
   document.body.classList.toggle("overview", cur === "all");
   document.body.classList.toggle("decking", cur === "decks");
   document.body.classList.toggle("datapage", cur === "data");
@@ -1957,7 +1964,8 @@ function known(slot, cards, roles = {}) {
   }
   return DONE.get(key);
 }
-const deckProfile = d => known("d:" + d.name, expand(d.cards), d.roles);
+// an empty deck has nothing to simulate: no score until it has cards
+const deckProfile = d => d.cards.length ? known("d:" + d.name, expand(d.cards), d.roles) : undefined;
 const IMP = new Map();                    // profile key -> Map(card k -> total score lost without it)
 function importanceOf(d) {
   const p = deckProfile(d);
@@ -1991,7 +1999,7 @@ const impLevel = (drop, c, floors) => {
   return [v, IMP_LEVELS.find(([min]) => v >= min)[1]];
 };
 const scoreRing = (s, cls = "") => `<div class="sring ${cls} sr-${s ? s.tier : "x"}" style="--p:${s ? s.total : 0}"
-  title="Total score — Consistency 35%, Speed grow 25%, Power 25%, Speed deck 15%"><span>${s ? s.total : "…"}<small>${s ? "TIER " + s.tier : ""}</small></span></div>`;
+  title="Total score — Consistency 35%, Speed grow 25%, Power 25%, Speed deck 15%"><span>${s ? s.total : s === null ? "—" : "…"}<small>${s ? "TIER " + s.tier : ""}</small></span></div>`;
 const metaProfile = i => known("m:" + i, metaCards[i]);
 function refresh() {                      // results arrived: redraw what shows them, never under the cursor
   clearTimeout(redrawT);
@@ -2227,10 +2235,10 @@ function renderDecks() {
 }
 
 const bars = s => Object.entries(FACTOR).map(([k, label]) => `
-  <div class="fb"><span>${label}</span><i><b style="width:${s ? s[k] : 0}%"></b></i><em>${s ? s[k] : "…"}</em></div>`).join("");
+  <div class="fb"><span>${label}</span><i><b style="width:${s ? s[k] : 0}%"></b></i><em>${s ? s[k] : s === null ? "—" : "…"}</em></div>`).join("");
 
 function renderDeckList() {
-  const rows = decks.map((d, i) => ({ d, i, s: deckProfile(d)?.score, t: tally(d) }));
+  const rows = decks.map((d, i) => ({ d, i, s: d.cards.length ? deckProfile(d)?.score : null, t: tally(d) }));   // null: nothing to score
   const tags = [...new Set(decks.flatMap(d => d.tags))].sort();
   if (deckTag && !tags.includes(deckTag)) deckTag = "";
   const by = { created: null, total: r => -(r.s?.total ?? -1), C: r => -(r.s?.C ?? -1), P: r => -(r.s?.P ?? -1),
@@ -2256,12 +2264,12 @@ function renderDeckList() {
       const probs = issues(t), cov = coverOf(d), cards = expand(d.cards), arch = archetype(cards);
       const tips = d.cards.length ? tipsOf(d, cards, deckProfile(d)).length : 0;
       return `<article class="deck" data-i="${i}">
-        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">${cardLens(cov.id, thumb(cov), cov.name)}` : ""}</div>
+        <div class="dimg">${cov ? `<img loading="lazy" alt="" src="${thumb(cov)}">${cardLens(cov.id, thumb(cov), cov.name)}` : `<span class="cart" title="No Pokémon yet">🃏</span>`}</div>
         <div class="dbody">
           <div class="dhead"><div class="dn">${esc(d.name)}${d.built ? ` <span class="built" title="Holds its cards first">📦 Built</span>` : ""}</div>${scoreRing(s)}</div>
           <div class="ds"><b class="${t.total > DECK_MAX ? "over" : ""}">${t.total}</b>/${DECK_MAX} · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy</div>
           ${arch ? `<div class="ds">≈ ${esc(arch.m.name)} · ${perc(arch.sim)} match</div>` : ""}
-          ${probs.length ? `<div class="dw">⚠ Not ready to play · ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more)` : ""}</div>`
+          ${probs.length ? `<div class="dw">⚠ Not ready to play · ${esc(probs[0])}${probs.length > 1 ? ` (+${probs.length - 1} more issue${probs.length > 2 ? "s" : ""})` : ""}</div>`
                          : `<div class="dok">✓ Ready to play</div>`}
           ${(() => { const o = deckOwnership(d); return o.missing || o.elsewhere ? `<div class="dw own">${[o.missing && `<span class="bad">✗ ${o.missing} missing</span>`,
               o.elsewhere && `<span class="held">⇄ ${o.elsewhere} in other decks</span>`].filter(Boolean).join(" · ")}</div>` : o.need ? `<div class="dok">✓ You own every card</div>` : "" })()}
@@ -2496,7 +2504,7 @@ function renderPanel() {
   deckview.querySelector(".dk").innerHTML = `
     <input class="dk-name" value="${esc(d.name)}" aria-label="Deck name" maxlength="60">
     <div class="dk-tot"><span class="${t.total > DECK_MAX ? "over" : ""}"><b>${t.total}</b> / ${DECK_MAX} cards</span>
-      <span class="${probs.length ? "nr" : "rd"}">${probs.length ? "⚠ Not ready to play" : "✓ Ready to play"}</span>${scoreRing(p?.score, "sm")}</div>
+      <span class="${probs.length ? "nr" : "rd"}">${probs.length ? "⚠ Not ready to play" : "✓ Ready to play"}</span>${scoreRing(d.cards.length ? p?.score : null, "sm")}</div>
     ${(() => { const o = deckOwnership(d); return `<div class="ownsum">
       <button class="pill sm ${d.built ? "on" : ""}" data-dk="built" title="Built decks hold their copies before other decks">📦 ${d.built ? "Built" : "Mark as built"}</button>
       <span>${!o.need ? "" : !o.missing && !o.elsewhere ? `<span class="ok">✓ you own every card</span>`
@@ -3343,18 +3351,19 @@ tradeview.addEventListener("input", e => {
 });
 
 // ---- Prices: what everything you own is worth — My Cards, plus one of each 30th Celebration card marked owned ----
-const FROM = { mycards: "My Cards", anniv: "30th Celebration" };
+const FROM = { mycards: "My Cards", trade: "Trade binder", anniv: "30th Celebration" };
 const SORTBY = { price: "Price ↓", cheap: "Price ↑", name: "Name", from: "Collection" };
 const vpick = { q: "", sort: "price", from: "all" };
 let PV = [];
 function valued() {
   const rows = [];
-  for (const [id, n] of Object.entries(stock)) {
-    if (!n) continue;
-    const [c, p] = PRINT.get(id) || [];
-    rows.push({ from: "mycards", name: c ? c.n : id, where: p ? `${CARDS.sets[p[1]] || p[1]} ${p[2]}` : "rotated out",
-                img: p && imgOf(p), n, eur: p?.[4] ?? null, usd: p?.[5] ?? null });
-  }
+  for (const [from, box] of [["mycards", stock], ["trade", trade]])
+    for (const [id, n] of Object.entries(box)) {
+      if (!n) continue;
+      const [c, p] = PRINT.get(id) || [];
+      rows.push({ from, name: c ? c.n : id, where: p ? `${CARDS.sets[p[1]] || p[1]} ${p[2]}` : "rotated out",
+                  img: p && imgOf(p), n, eur: p?.[4] ?? null, usd: p?.[5] ?? null });
+    }
   for (const it of COLLECTIONS.anniv.items) {
     if (!have.has(it.id)) continue;
     // a Standard-legal print carries both currencies; the rest (Classic Collection) only their own price
@@ -3381,7 +3390,7 @@ function renderPrices() {
   };
   priceview.innerHTML = `
     <div class="dk-head"><div><h1>Prices</h1>
-      <div class="sub">What your cards are worth: My Cards, plus one of each 30th Celebration card you've marked owned ·
+      <div class="sub">What your cards are worth: My Cards, your Trade binder, plus one of each 30th Celebration card you've marked owned ·
         Cardmarket trend (TCGplayer $ where Cardmarket has none) · prices from ${esc(CARDS.fetched || "—")} ${freshness(CARDS.fetched)}</div></div>
       <button class="pill on" data-pv="refresh" ${cfg.ready ? "" : "disabled title=\"Sign in first\""}>🔄 Refresh prices</button></div>
     <div class="pv-run"></div>
