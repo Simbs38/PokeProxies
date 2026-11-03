@@ -265,7 +265,7 @@
   body.datapage :is(#banner, #list, footer), body:not(.datapage) #dataview { display: none }
   #dataview { padding: 22px }
   #dataview .sub { font-size: 13px; color: var(--dim) }
-  .data-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) }
+  .data-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)) }
   .dcard { padding: 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card) }
   .dcard h3 { margin: 0 0 8px; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em }
   .dcard .big { font-size: 15px; line-height: 1.5 }
@@ -285,6 +285,13 @@
   .tok-help a { color: var(--acc); font-weight: 700 }
   .tok-help code { padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,.08) }
   .live-p { margin-top: 10px; line-height: 1.8 }
+  .newsets { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line) }
+  .newsets h4 { margin: 0 0 8px; font-size: 13px }
+  .newsets .sub { margin: 6px 0 0 }
+  .ns-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 6px 0 }
+  .ns-row > span { display: flex; flex-direction: column; min-width: 0 }
+  .ns-row .sub { margin: 0 }
+  .linkish { padding: 0; border: 0; background: none; color: var(--acc); font: inherit; cursor: pointer }
 
   /* ---- My Cards and ownership ---- */
   body.binderpage :is(#banner, #list, footer), body:not(.binderpage) #binderview { display: none }
@@ -413,7 +420,7 @@
   .dk-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px }
   .dk-head > div { margin-right: auto }
   .dk-head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em }
-  .dk-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) }
+  .dk-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)) }
   .deck {
     display: flex; gap: 14px; padding: 12px; cursor: pointer; transition: .18s;
     border: 1px solid var(--line); border-radius: var(--r); background: var(--card);
@@ -1755,6 +1762,30 @@ const run = (fn, ...args) => worker
 // ---- deckbuilder: decks of Standard-legal cards (cards.js), each synced to its own Sheet tab ----
 const CARDS = window.CARDS || { cards: [], sets: {}, legal: [] };
 const META = window.META || { decks: [] };
+// Sets added from the Data page (New sets) on this device, until a data refresh bakes them into cards.js
+let EXTRA = store.get("extraSets", null);          // {sets: {code: {id, name, date, n}}, cards: [cards as in cards.js]}
+const cardKey = c => c.c !== "P" ? c.c + c.n      // the fetcher's rule: Pokémon by name, HP, attacks, abilities; the rest by name
+  : JSON.stringify([c.n, c.hp, (c.atk || []).map(a => [a[0], a[2]]), (c.ab || []).map(a => a[0])]);
+const ORDER = { P: 0, T: 1, E: 2 };
+const cardOrder = (a, b) => ORDER[a.c] - ORDER[b.c] || (a.dex ?? 9999) - (b.dex ?? 9999)
+  || (a.c === "E" && !a.sub.includes("Basic")) - (b.c === "E" && !b.sub.includes("Basic")) || (a.n < b.n ? -1 : a.n > b.n ? 1 : 0);
+(function mergeExtra() {
+  if (!EXTRA?.sets) return;
+  const baked = new Set(Object.values(CARDS.sets));
+  for (const [code, s] of Object.entries(EXTRA.sets)) if (baked.has(s.name)) delete EXTRA.sets[code];   // in cards.js now
+  EXTRA.cards = EXTRA.cards.map(c => ({ ...c, p: c.p.filter(p => p[1] in EXTRA.sets) })).filter(c => c.p.length);
+  if (!Object.keys(EXTRA.sets).length) { EXTRA = null; return store.set("extraSets", null) }
+  store.set("extraSets", EXTRA);
+  const byKey = new Map(CARDS.cards.map(c => [cardKey(c), c]));
+  for (const x of EXTRA.cards) {
+    const same = byKey.get(cardKey(x));
+    if (same) { same.p.unshift(...x.p); continue }   // a reprint: newest print first, as the fetcher does
+    const c = { ...x, p: [...x.p] }, at = CARDS.cards.findIndex(o => cardOrder(c, o) < 0);
+    CARDS.cards.splice(at < 0 ? CARDS.cards.length : at, 0, c);
+    byKey.set(cardKey(c), c);
+  }
+  for (const [code, s] of Object.entries(EXTRA.sets)) CARDS.sets[code] = s.name;
+})();
 const PRINT = new Map();                  // print id -> [card, print]; a print is [id, set code, number, img, €, $]
 const BY_CODE = new Map();                // "PAF 7" -> print id, for pasted deck lists
 const NAMED = new Map();                  // card name -> its first card
@@ -3888,6 +3919,98 @@ const TOKEN_HELP = `<ol class="sub tok-help">
     Repository access → <b>Only select repositories → PokeProxies</b>; Permissions → Repository → <b>Actions: Read and write</b>. Copy it.</li>
   <li>Apps Script → <b>Project Settings ⚙ → Script Properties → Add script property</b>: <code>GITHUB_TOKEN</code> = the token. No redeploy needed.</li>
   <li>Press Refresh data now again. Prices never need this: 🔄 Refresh prices fetches them live.</li></ol>`;
+// ---- New sets: one that pokemontcg.io lists and the site doesn't have yet, added on this device in a
+// few seconds (no token, no sign-in) and kept until a data refresh bakes it in for every device ----
+const PTCG = "https://api.pokemontcg.io/v2";
+const PTCG_FIELDS = "id,name,supertype,subtypes,types,hp,number,set,images,nationalPokedexNumbers,attacks,abilities,"
+  + "rules,weaknesses,resistances,retreatCost,evolvesFrom,cardmarket,tcgplayer";
+let fresh, freshErr = "", adding = null, checking = false;   // fresh: sets to offer once checked; adding: {name, done, of}
+const getJSON = async (url, tries = 4) => {        // pokemontcg.io throws the odd 500/502: retry, slower each time
+  for (let i = 0; ; i++) {
+    try { const r = await fetch(url); if (r.ok) return await r.json(); throw new Error(`${new URL(url).host} said ${r.status}`) }
+    catch (e) { if (i >= tries - 1) throw e; await new Promise(r => setTimeout(r, 1000 * (i + 1))) }
+  }
+};
+const legalQ = id => `set.id:${id} (${(CARDS.legal || []).map(m => "regulationMark:" + m).join(" OR ")})`;
+const ptcgCards = (q, extra = "") => `${PTCG}/cards?q=${encodeURIComponent(q)}${extra}`;
+async function findSets() {
+  if (checking) return;
+  checking = true; fresh = undefined; freshErr = ""; showRuns();
+  try {
+    const known = new Set(Object.values(CARDS.sets));
+    const sets = (await getJSON(`${PTCG}/sets?orderBy=-releaseDate&pageSize=12&select=id,name,ptcgoCode,releaseDate`)).data
+      .filter(s => !known.has(s.name));
+    // only sets with Standard-legal cards: the Classic Collection reprints and older sets never show
+    fresh = (await Promise.all(sets.map(async s =>
+      ({ ...s, n: (await getJSON(ptcgCards(legalQ(s.id), "&pageSize=1&select=id"))).totalCount })))).filter(s => s.n);
+  } catch (e) { freshErr = e.message; fresh = [] }
+  checking = false; showRuns();
+}
+// a pokemontcg.io card in cards.js's shape, as fetch_data.py writes it
+const cents = v => v ? Math.round(v * 100) / 100 : null;
+function asCardsJs(c, code) {
+  const L = ENG.TL, hp = parseInt(c.hp), types = ls => (ls || []).map(w => L[w.type] || "").join("") || undefined;
+  const cm = c.cardmarket?.prices || {}, tp = Object.values(c.tcgplayer?.prices || {});
+  const img = c.images?.small === `https://images.pokemontcg.io/${c.set.id}/${c.number}.png` ? "" : c.images?.small || "";
+  return JSON.parse(JSON.stringify({        // drops what's undefined, as the fetcher drops None
+    n: c.name, c: c.supertype[0], sub: c.subtypes || [], t: c.types || [], hp: hp > 0 ? hp : undefined,
+    dex: c.nationalPokedexNumbers?.[0], ef: c.evolvesFrom,
+    atk: c.attacks?.length ? c.attacks.map(a => [a.name, (a.cost || []).map(e => L[e] || "C").join(""), a.damage || "", a.text || ""]) : undefined,
+    ab: c.abilities?.length ? c.abilities.map(a => [a.name, a.text || ""]) : undefined,
+    rt: (c.rules || []).join(" ") || undefined, wk: types(c.weaknesses), rs: types(c.resistances),
+    rc: c.supertype[0] === "P" ? (c.retreatCost || []).length : undefined,
+    p: [[c.id, code, c.number, img, cents(cm.trendPrice || cm.averageSellPrice || cm.avg30),
+         cents(tp.map(p => p.market || p.mid).find(Boolean))]],
+  }));
+}
+async function addSet(id) {
+  const s = fresh?.find(x => x.id === id);
+  if (!s || adding) return;
+  adding = { name: s.name, done: 0, of: s.n }; showRuns();
+  try {
+    const raw = [];
+    for (let page = 1; raw.length < s.n; page++) {
+      const r = await getJSON(ptcgCards(legalQ(s.id), `&pageSize=250&page=${page}&select=${PTCG_FIELDS}`));
+      if (!r.data.length) break;
+      raw.push(...r.data); adding.done = raw.length; showRuns();
+    }
+    const code = s.ptcgoCode || s.id.toUpperCase(), groups = new Map();
+    for (const c of raw) {                         // one entry per distinct card, its prints inside
+      const x = asCardsJs(c, code), k = cardKey(x);
+      if (groups.has(k)) groups.get(k).p.push(...x.p); else groups.set(k, x);
+    }
+    const ex = EXTRA || { sets: {}, cards: [] };
+    ex.sets[code] = { id: s.id, name: s.name, date: s.releaseDate, n: raw.length };
+    ex.cards.push(...groups.values());
+    store.set("extraSets", ex);
+    adding.done = -1; showRuns();                  // "added": the card list is rebuilt on load
+    location.reload();
+  } catch (e) { adding = null; freshErr = `Couldn't add ${s.name}: ${e.message}`; showRuns() }
+}
+function removeSet(code) {
+  if (!EXTRA?.sets[code]) return;
+  delete EXTRA.sets[code];
+  EXTRA.cards = EXTRA.cards.map(c => ({ ...c, p: c.p.filter(p => p[1] !== code) })).filter(c => c.p.length);
+  store.set("extraSets", Object.keys(EXTRA.sets).length ? EXTRA : null);
+  location.reload();
+}
+function newSetsHTML() {
+  if (fresh === undefined && !checking && !adding) setTimeout(findSets);   // first look: once per visit
+  const mine = Object.entries(EXTRA?.sets || {}).map(([code, s]) => `<div class="ns-row"><span><b>${esc(s.name)}</b>
+      <span class="sub">${s.n} cards · added on this device</span></span>
+      <button class="pill sm" data-ns="remove" data-code="${esc(code)}" title="Take it off this device">✕</button></div>`).join("");
+  const offer = adding ? `<p class="sub">${adding.done < 0 ? `✓ ${esc(adding.name)} added — loading it…` : `Adding ${esc(adding.name)}… ${adding.done} of ${adding.of} cards`}</p>`
+    : fresh === undefined ? `<p class="sub">Looking for new sets on pokemontcg.io…</p>`
+    : (fresh.map(s => `<div class="ns-row"><span><b>${esc(s.name)}</b>
+        <span class="sub">${s.n} Standard cards · out ${esc(s.releaseDate)}</span></span>
+        <button class="pill on sm" data-ns="add" data-id="${esc(s.id)}">＋ Add</button></div>`).join("")
+       || `<p class="sub">No new sets yet. One shows up here as soon as pokemontcg.io lists it, usually around its release day.</p>`)
+      + (freshErr ? `<p class="sub bad">${esc(freshErr)}</p>` : "");
+  return `<div class="newsets"><h4>New sets</h4>${mine}${offer}
+    <p class="sub">Adding a set puts its cards in the deckbuilder and My Cards on this device right away; the next data
+      refresh (Mondays, or Refresh data now) adds it for every device. <button class="linkish" data-ns="check">Check again</button></p></div>`;
+}
+
 function renderData() {
   const age = freshness, run = runLine, prints = CARDS.cards.reduce((s, c) => s + c.p.length, 0);
   // how much of each list has a price: [priced, all]
@@ -3908,7 +4031,8 @@ function renderData() {
         <div class="big"><b>${CARDS.cards.length.toLocaleString()}</b> Standard-legal cards · ${prints.toLocaleString()} prints ·
           ${Object.keys(CARDS.sets).length} sets · regulation marks ${(CARDS.legal || []).join(", ")}</div>
         <div class="sub">From pokemontcg.io · fetched ${esc(CARDS.fetched || "—")}</div>${age(CARDS.fetched)}
-        <div class="sets">${Object.values(CARDS.sets).sort().map(n => `<span>${esc(n)}</span>`).join("")}</div></div>
+        <div class="sets">${Object.values(CARDS.sets).sort().map(n => `<span>${esc(n)}</span>`).join("")}</div>
+        ${newSetsHTML()}</div>
       <div class="dcard"><h3>Prices</h3>
         <div class="big">${pp.map(([t, [a, b]]) => `<b>${Math.round(100 * a / (b || 1))}%</b> of ${t} priced <span class="sub">(${a.toLocaleString()} of ${b.toLocaleString()})</span>`).join("<br>")}</div>
         <div class="sub">Cardmarket trend € and TCGplayer market $ from pokemontcg.io; for sets it has no price for yet
@@ -3933,6 +4057,10 @@ dataview.addEventListener("click", e => {
   const act = e.target.closest("[data-data]")?.dataset.data;
   if (act === "refresh") refreshData();
   if (act === "prices") refreshPrices();
+  const ns = e.target.closest("[data-ns]")?.dataset;
+  if (ns?.ns === "check") findSets();
+  if (ns?.ns === "add") addSet(ns.id);
+  if (ns?.ns === "remove") removeSet(ns.code);
   if (act === "reload") location.reload();
 });
 

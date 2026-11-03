@@ -133,6 +133,12 @@ asks [TCGdex](https://tcgdex.dev), a free public API, straight from the browser:
 and TCGplayer $ for every card you own or play, in a few seconds, with no sign-in and no token. They
 stay on that device and sit over the site's own prices until the next data refresh brings newer ones.
 
+**A new set, the day it's out.** The Data page's **New sets** box asks pokemontcg.io for sets it lists
+with Standard-legal cards that the site doesn't have yet. **＋ Add** fetches the set's cards straight
+into that device (no sign-in, no token): they show up in the deckbuilder and My Cards at once. The
+next data refresh bakes the set into `cards.js` for every device, and each device then drops its own
+copy. A set shows up there only once pokemontcg.io lists it, usually around its release day.
+
 ---
 
 ## 4. Cloudflare Access (optional — make the site private)
