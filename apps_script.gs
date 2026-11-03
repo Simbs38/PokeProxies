@@ -2,8 +2,8 @@
  * Pokédex Proxies — collection store on a Google Sheet.
  *
  * Readable tabs hold the collection, one row per Pokémon form / per card: "Gen 1" and
- * "30th Celebration"; "My Cards", one row per legal print you own; and one "Deck · <name>" tab per
- * deck. Only the website writes them;
+ * "30th Celebration"; "My Cards", one row per legal print you own; "Trade" and "Traded", the cards
+ * set aside to trade and what went out; and one "Deck · <name>" tab per deck. Only the website writes them;
  * every save rewrites all of them. The old "state"
  * tab (one JSON blob) is handed to the site once to fill them, then left alone as a rollback
  * point. See DEPLOY.md.
@@ -22,6 +22,8 @@ const TABS = {
   gen1:  { name: 'Gen 1',            head: ['Pokémon', 'Owned', 'Card IDs', 'Favourite'] },
   anniv: { name: '30th Celebration', head: ['Pokémon', 'Owned', 'Card ID', 'Number', 'Rarity', 'Section'] },
   cards: { name: 'My Cards',         head: ['Card', 'Set', 'Number', 'Card ID', 'Qty', 'Category', 'Price'] },
+  trade: { name: 'Trade',            head: ['Card', 'Set', 'Number', 'Card ID', 'Qty', 'Category', 'Price'] },
+  traded: { name: 'Traded',          head: ['Date', 'Card', 'Set', 'Number', 'Card ID', 'Qty', 'From', 'Price'] },
 };
 const SITE = ['3', '4'];           // site versions that understand these tabs; anything older is told to reload
 const DECK = 'Deck · ';            // every tab named like this belongs to the site: one per deck
@@ -153,8 +155,9 @@ function doGet(e) {
     const old = legacyGet_(ss);
     return json_({ ok: true, v: 4, tabs: null, decks: [], legacy: old.state, updated: old.updated });
   }
+  // a tab not made yet comes back as null, so the site keeps what it has rather than reading it as empty
   const tabs = {};
-  for (const k in TABS) tabs[k] = rows_(ss.getSheetByName(TABS[k].name));
+  for (const k in TABS) { const s = ss.getSheetByName(TABS[k].name); tabs[k] = s ? rows_(s) : null }
   const decks = deckTabs_(ss).map(s => ({ name: s.getName().slice(DECK.length), rows: s.getDataRange().getDisplayValues() }));
   const old = ss.getSheetByName(OLD_DECKS);
   return json_({ ok: true, v: 4, tabs, decks, oldDecks: old ? rows_(old) : null,

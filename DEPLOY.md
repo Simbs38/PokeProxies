@@ -35,6 +35,8 @@ editing alone changes nothing that is served.
 | `Gen 1` | Pokémon · Owned · Card IDs (one per line) · Favourite — plus a last `Unsorted` row for owned cards that match no Pokémon |
 | `30th Celebration` | Pokémon · Owned · Card ID · Number · Rarity · Section |
 | `My Cards` | Card · Set · Number · Card ID · Qty · Category · Price — one row per legal print you own |
+| `Trade` | Same columns as `My Cards` — the cards in your Trade binder, kept apart from My Cards |
+| `Traded` | Date · Card · Set · Number · Card ID · Qty · From · Price — one row per card traded out; a trade's rows share its date, and Price is what it was worth then |
 | `Deck · <name>` (one per deck) | Qty · Card · Card ID · Category · Role · Cover — and on the right the deck's scores, archetype, price, tags, notes, role overrides, Built, copies moved into it, then its saved versions |
 
 They are for reading: the next save from any device rewrites them, so hand edits do not stick.

@@ -250,7 +250,7 @@
     border: 1px solid var(--line); border-radius: 12px;
   }
   /* ---- signed-out gate: the sync dialog becomes the whole page ---- */
-  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview, body.locked > #dataview, body.locked > #binderview, body.locked > #priceview,
+  body.locked > header, body.locked > #banner, body.locked > #list, body.locked > #deckview, body.locked > #dataview, body.locked > #binderview, body.locked > #tradeview, body.locked > #priceview,
   body.locked > footer { display: none }
   body.locked #login { background: none; backdrop-filter: none }
   #login .brand { display: none; font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-bottom: 10px }
@@ -309,6 +309,53 @@
   .vq b { min-width: 18px; font-size: 14px; color: var(--fg) }
   .vq.tile { margin-top: 4px }
   .ln .own { color: var(--dim) }
+
+  /* ---- cards one per row, or one per tile: To buy and Trade ---- */
+  .clist { display: flex; flex-direction: column }
+  .cr { display: grid; grid-template-columns: 40px 34px minmax(0, 1fr) auto 92px auto; gap: 10px; align-items: center;
+    padding: 6px 4px; border-bottom: 1px solid var(--line) }
+  .cr.sel { background: #ffe06612 }
+  .cr img { display: block; width: 40px; aspect-ratio: 245/342; object-fit: cover; border-radius: 4px; background: #0004 }
+  .cr-q { font-weight: 800 }
+  .cr-n { display: flex; flex-direction: column; min-width: 0 }
+  .cr-n b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .cr-n small, .cr-t { font-size: 11px; color: var(--dim) }
+  .cr .warn, .pk .warn { color: #fbbf24 }
+  .cr-t { white-space: nowrap }
+  .ty i { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border-radius: 50% }
+  .cr-p { text-align: right; font-weight: 700; font-size: 13px }
+  .cr-p small { display: block; font-weight: 400; font-size: 11px; color: var(--dim) }
+  .cr-sel { display: flex; gap: 6px; align-items: center }
+  .cr-sel > small { color: var(--dim) }
+  .cgrid .ct-p { font-size: 11px; color: var(--dim); text-align: center }
+  .cgrid .pk.sel img { outline: 2px solid var(--acc); outline-offset: 1px }
+  .cgrid .pk .warn { display: block; font-size: 10px; text-align: center }
+  .vq button:disabled { opacity: .35; cursor: default }
+  .list-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px }
+  .list-tools .seg, .tr-mode { max-width: 100%; overflow-x: auto; scrollbar-width: none }
+  .list-tools .seg button, .tr-mode button { white-space: nowrap }
+  .cr-n .cr-ty { display: none }
+  #dlg-box .list-tools { padding: 0 20px }
+
+  /* ---- Trade: a binder of cards set aside to trade, priced as you pick ---- */
+  body.tradepage :is(#banner, #list, footer), body:not(.tradepage) #tradeview { display: none }
+  #tradeview { --hh: 64px; padding: 22px 22px 90px }
+  #tradeview .sub { font-size: 13px; color: var(--dim) }
+  .tr-mode { width: max-content; max-width: 100%; margin: 4px 0 14px; overflow-x: auto }
+  #tr-q, #tp-q { flex: 1 1 240px; padding: 10px 13px; font: 400 14px Outfit, sans-serif; color: var(--fg);
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 12px }
+  #tp-q { width: 100% }
+  .tr-h { margin: 18px 0 4px; font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em }
+  .tr-x { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px }
+  .tr-x .pill { margin-left: auto }
+  .tr-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 10px 22px; background: #0d0f16ee; border-top: 1px solid var(--line); backdrop-filter: blur(8px) }
+  .tr-bar:empty { display: none }
+  .tr-sum { margin-right: auto; font-size: 14px }
+  .tr-log { margin-bottom: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card) }
+  .tr-lh { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 4px; font-size: 13px; color: var(--dim) }
+  .tr-lh b { color: var(--fg) }
+  .tr-lh .pill { margin-left: auto }
 
   /* ---- Prices: everything owned, card by card ---- */
   body.pricepage :is(#banner, #list, footer), body:not(.pricepage) #priceview { display: none }
@@ -685,6 +732,14 @@
     .deck .dimg { flex-basis: 70px }
     .deck .dimg img, .deck.tobuy .cart { width: 70px }
     #binderview, #priceview { padding: 12px }
+    #tradeview { padding: 12px 12px 120px }
+    .tr-bar { padding: 8px 12px }
+    .cr { grid-template-columns: 34px 26px minmax(0, 1fr) 70px; gap: 8px }
+    .cr img { width: 34px }
+    .cr-t { display: none }
+    .cr-n .cr-ty { display: block }
+    .cr-n b { white-space: normal }
+    .cr-sel { grid-column: 3 / -1; justify-content: flex-end }
     .pv-sum { grid-template-columns: 1fr 1fr; gap: 8px }
     .pv-c:first-child { grid-column: 1 / -1 }
     .pv-row { grid-template-columns: 34px minmax(0, 1fr) auto 72px; gap: 8px; padding: 6px 4px }
@@ -736,6 +791,7 @@
     <button class="pill" data-c="all">All</button>
     <button class="pill" data-c="decks">Decks</button>
     <button class="pill" data-c="mycards">My Cards</button>
+    <button class="pill" data-c="trade">Trade</button>
     <button class="pill" data-c="prices">Prices</button>
     <button class="pill" data-c="data">Data</button>
   </nav>
@@ -764,6 +820,7 @@
 <section id="deckview"></section>
 <section id="dataview"></section>
 <section id="binderview"></section>
+<section id="tradeview"></section>
 <section id="priceview"></section>
 
 <div id="dlg" hidden><div class="box" id="dlg-box"></div></div>
@@ -830,11 +887,13 @@ const favs  = store.get("favs", {});             // "collection:index" -> {id, i
 const seen  = store.get("seen", {});             // this device only: species -> {total, have}, badge fallback
 const decks = store.get("decks", []);            // [{name, notes, cover, cards: [{id, n, name, cat}], built, holds}]
 const stock = store.get("stock", {});            // My Cards: print id -> copies you own
+const trade = store.get("trade", {});            // Trade binder, apart from My Cards: print id -> copies set aside to trade
+const traded = store.get("traded", []);          // what went out: [{t, items: [{id, n, from: "trade" | "mine", each, sym}]}]
 let ALLOC = null;                                // who holds which owned copies; rebuilt after any change
 Object.keys(favs).forEach(k => k.split(":")[0] in COLLECTIONS || delete favs[k]);   // Gen 2/3 leftovers
 const save = (sync = true) => {
   store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen); store.set("decks", decks);
-  store.set("stock", stock); ALLOC = null;
+  store.set("stock", stock); store.set("trade", trade); store.set("traded", traded); ALLOC = null;
   if (sync) store.set("dirty", Date.now());   // when the Sheet last fell behind; 0 once a save lands
   if (sync && typeof push === "function") push();
 };
@@ -852,7 +911,7 @@ function applyPrefs() {
 }
 
 const HASH = location.hash.slice(1);
-let cur = ["all", "decks", "data", "mycards", "prices"].includes(HASH) || HASH in COLLECTIONS ? HASH : "gen1";
+let cur = ["all", "decks", "data", "mycards", "trade", "prices"].includes(HASH) || HASH in COLLECTIONS ? HASH : "gen1";
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 const count = k => kindOf(k) === "cards"
   ? COLLECTIONS[k].items.filter(p => have.has(p.id)).length
@@ -921,7 +980,9 @@ function render() {
   document.body.classList.toggle("datapage", cur === "data");
   document.body.classList.toggle("binderpage", cur === "mycards");
   document.body.classList.toggle("pricepage", cur === "prices");
+  document.body.classList.toggle("tradepage", cur === "trade");
   if (cur === "mycards") return renderBinder();
+  if (cur === "trade") return renderTrade();
   if (cur === "prices") { renderPrices(); if (!runs) loadRuns(); return }
   if (cur === "decks") return renderDecks();
   if (cur === "data") { renderData(); if (!runs) loadRuns(); return }
@@ -2227,16 +2288,74 @@ function renderDeckList() {
     })()}</div>`;
 }
 
+// ---- cards as a list or a grid, for To buy and Trade: x = {c, p (print), n, each, sym} ----
+const STAGES = ["Basic", "Stage 1", "Stage 2"];
+const priceOf = p => p?.[4] != null ? { each: p[4], sym: "€" } : p?.[5] != null ? { each: p[5], sym: "$" } : { each: null, sym: "€" };
+// its kind within Pokémon / Trainer / Energy: "Stage 1 Mega ex", "Item · ACE SPEC", "Special"…
+const kindIn = c => c.c === "P" ? [STAGES.find(s => c.sub.includes(s)), c.sub.includes("MEGA") ? "Mega ex" : c.sub.includes("ex") && "ex"].filter(Boolean).join(" ")
+  : c.c === "T" ? c.sub.filter(s => s !== "ACE SPEC").join(" ") + (c.sub.includes("ACE SPEC") ? " · ACE SPEC" : "")
+  : c.sub.includes("Special") ? "Special" : "Basic";
+const typeTag = c => c.t?.length ? c.t.map(t => `<span class="ty"><i style="background:${TYPES[t] || "#888"}"></i>${t}</span>`).join(" ") : "—";
+const lineCost = x => x.each == null ? null : x.each * x.n;
+const CAT_AT = { P: 0, T: 1, E: 2 };
+const SORT_CARDS = { cost: "Cost ↓", cheap: "Cost ↑", name: "Name", cat: "Category", type: "Type" };
+const byCost = (a, b) => (lineCost(b) ?? -1) - (lineCost(a) ?? -1);
+const SORTERS = {
+  cost: byCost,
+  cheap: (a, b) => (lineCost(a) ?? Infinity) - (lineCost(b) ?? Infinity),
+  name: (a, b) => a.c.n.localeCompare(b.c.n) || byCost(a, b),
+  cat: (a, b) => CAT_AT[a.c.c] - CAT_AT[b.c.c] || kindIn(a.c).localeCompare(kindIn(b.c)) || byCost(a, b),
+  type: (a, b) => (a.c.t?.[0] || "~").localeCompare(b.c.t?.[0] || "~") || CAT_AT[a.c.c] - CAT_AT[b.c.c] || byCost(a, b),
+};
+const listTools = (sort, view, attr) => `<div class="list-tools">
+    <div class="seg">${Object.entries(SORT_CARDS).map(([v, t]) => `<button data-${attr}sort="${v}" class="${sort === v ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div class="seg">${[["list", "☰ List"], ["grid", "▦ Grid"]].map(([v, t]) => `<button data-${attr}view="${v}" class="${view === v ? "on" : ""}">${t}</button>`).join("")}</div>
+  </div>`;
+// o: right = controls at the end, note = a line under the name, cls = extra classes
+function cardRow(x, o = {}) {
+  const img = imgOf(x.p), cost = lineCost(x);
+  return `<div class="cr ${o.cls || ""}" data-id="${esc(x.p[0])}">
+    <span class="lw"><img loading="lazy" alt="" src="${img}">${cardLens(x.p[0], img, x.c.n, "sm")}</span>
+    <b class="cr-q">${x.n}×</b>
+    <span class="cr-n"><b>${esc(x.c.n)}</b><small>${x.p[1] ? `${x.p[1]} ${x.p[2]} · ` : ""}${CAT[x.c.c] || ""}${kindIn(x.c) ? " · " + esc(kindIn(x.c)) : ""}</small>
+      ${x.c.t?.length ? `<small class="cr-ty">${typeTag(x.c)}</small>` : ""}
+      ${o.note ? `<small class="warn">${o.note}</small>` : ""}</span>
+    <span class="cr-t">${typeTag(x.c)}</span>
+    <span class="cr-p">${cost != null ? money(cost, x.sym) : "—"}${x.n > 1 && cost != null ? `<small>${money(x.each, x.sym)} each</small>` : ""}</span>
+    ${o.right || ""}
+  </div>`;
+}
+function cardTile(x, o = {}) {
+  const img = imgOf(x.p), cost = lineCost(x);
+  return `<div class="pk ${o.cls || ""}" data-id="${esc(x.p[0])}">
+    <img loading="lazy" alt="" src="${img}">${cardLens(x.p[0], img, x.c.n)}
+    <span class="qty">×${x.n}</span>
+    <div class="pn">${esc(x.c.n)}</div>
+    <div class="ct-p">${cost != null ? money(cost, x.sym) : "no price"}</div>
+    ${o.note ? `<small class="warn">${o.note}</small>` : ""}
+    ${o.right || ""}
+  </div>`;
+}
+const cardsHTML = (xs, view, opt = () => ({})) => view === "grid"
+  ? `<div class="pk-grid cgrid">${xs.map(x => cardTile(x, opt(x))).join("")}</div>`
+  : `<div class="clist">${xs.map(x => cardRow(x, opt(x))).join("")}</div>`;
+
+const buyPick = { sort: store.get("buySort", "cost"), view: store.get("buyView", "list") };
 function openToBuy() {
-  const buy = toBuy(), text = buy.map(x => `${x.n} ${x.c.n} ${x.p[1]} ${x.p[2]}`).join("\n");
+  const buy = toBuy().sort(SORTERS[buyPick.sort] || byCost), text = buy.map(x => `${x.n} ${x.c.n} ${x.p[1]} ${x.p[2]}`).join("\n");
   zoomCard = null; dlg.hidden = false;
   dlgBox.innerHTML = `<div class="m-head"><div><h2>🛒 To buy</h2>
       <div class="sub">Everything needed to have all ${decks.length} decks built at once, minus what you own · cheapest Cardmarket print
         (TCGplayer $ where Cardmarket has none) · ≈ ${buyTotal(buy)}</div></div>
       <button class="x" data-z="close">✕</button></div>
-    <div class="imp"><table class="cmp buy">${buy.map(x => `<tr><td>${x.n}×</td><td>${esc(x.c.n)}</td><td class="sub">${x.p[1]} ${x.p[2]}</td>
-        <td>${x.each != null ? money(x.each * x.n, x.sym) : "—"}</td></tr>`).join("")}</table>
+    ${listTools(buyPick.sort, buyPick.view, "b")}
+    <div class="imp">${cardsHTML(buy, buyPick.view)}
       <button class="pill on" data-z="copybuy">⧉ Copy as list</button></div>`;
+  dlgBox.querySelectorAll("[data-bsort], [data-bview]").forEach(b => b.onclick = () => {
+    if (b.dataset.bsort) store.set("buySort", buyPick.sort = b.dataset.bsort);
+    else store.set("buyView", buyPick.view = b.dataset.bview);
+    openToBuy();
+  });
   dlgBox.querySelector('[data-z="copybuy"]').onclick = async () => {
     try { await navigator.clipboard.writeText(text); say("List copied") } catch { say("Couldn't copy — select the table instead") }
   };
@@ -2327,12 +2446,16 @@ function versionList(g, view) {
     <div class="vhead"><b>${name}</b> · ${cs.length > 1 ? `${cs.length} versions, ` : ""}${cs.reduce((s, c) => s + c.p.length, 0)} prints
       <button class="pill sm" data-act="close">Close</button></div>
     <div class="vitems">${cs.map(c => c.p.map(pr => {
-      const n = stock[pr[0]] || 0, inD = view === "deck" ? sum(open.cards, l => l.id === pr[0]) : 0;
-      return `<div class="vi ${view === "deck" && !n && !ownedOf(c) && !isBasicE(c) ? "unowned" : ""}" data-id="${pr[0]}">
+      // the count on the art: copies in the deck, in the Trade binder, or picked for this trade from My Cards
+      const n = stock[pr[0]] || 0, inD = view === "deck" ? sum(open.cards, l => l.id === pr[0])
+        : view === "trade" ? trade[pr[0]] || 0 : view === "extra" ? selOf("mine", pr[0]) : 0;
+      return `<div class="vi ${(view === "deck" && !n && !ownedOf(c) && !isBasicE(c)) || (view === "extra" && !n) ? "unowned" : ""}" data-id="${pr[0]}">
         <img loading="lazy" alt="" src="${imgOf(pr)}">${cardLens(pr[0], imgOf(pr), c.n)}
         ${inD ? `<span class="qty">×${inD}</span>` : ""}
         <small>${pr[1]} ${pr[2]}${cs.length > 1 ? `<br>${esc(versionOf(c))}` : ""}${pr[4] != null ? ` · ${money(pr[4])}` : ""}</small>
         ${view === "mine" ? `<span class="vq"><button data-own="-1">−</button><b>${n}</b><button data-own="1">+</button></span>`
+          : view === "trade" ? `<span class="vq"><button data-tr1="-1" data-id="${pr[0]}">−</button><b>${inD}</b><button data-tr1="1" data-id="${pr[0]}">+</button></span>`
+          : view === "extra" ? (n ? stepper("mine", pr[0], inD, n) : `<span class="vq"><small>not in My Cards</small></span>`)
           : `<span class="vq">${n ? `<b class="ok">${n} owned</b>` : ""}<button class="pill sm" data-act="add">＋ Add</button></span>`}
       </div>`;
     }).join("")).join("")}</div></div>`;
@@ -2997,6 +3120,228 @@ binderview.addEventListener("input", e => {
   btyping = setTimeout(() => { bpick.q = e.target.value.trim().toLowerCase(); renderBinderGrid() }, 150);
 });
 
+// ---- Trade: a binder of cards set aside to trade, apart from My Cards. Pick copies to put a trade together
+// and see what it's worth; Trade out takes them out of the binder (or My Cards, for extras) into the Traded log ----
+const tpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false };   // Add cards
+const xpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: true };    // extras: My Cards only
+const tlook = { mode: "binder", q: "", sort: store.get("tradeSort", "cost"), view: store.get("tradeView", "list") };
+const tsel = new Map();                          // "trade:<id>" / "mine:<id>" -> copies in the trade being put together
+const selOf = (from, id) => tsel.get(from + ":" + id) || 0;
+const stepper = (from, id, n, max, cls = "") => `<span class="vq ${cls}"><button data-sel="-1" data-from="${from}" data-id="${esc(id)}" ${n ? "" : "disabled"}>−</button>
+  <b>${n}</b><button data-sel="1" data-from="${from}" data-id="${esc(id)}" ${n >= max ? "disabled" : ""}>+</button></span>`;
+const asCard = (id, n, from) => { const [c, p] = PRINT.get(id) || []; return c && { c, p, n, from, ...priceOf(p) } };
+const tradeRows = () => Object.entries(trade).filter(([, n]) => n > 0).map(([id, n]) => asCard(id, n, "trade")).filter(Boolean);
+// never more than the copies still there (My Cards can change on its own page)
+const selRows = () => [...tsel].map(([k, n]) => { const i = k.indexOf(":"), from = k.slice(0, i), id = k.slice(i + 1);
+  return asCard(id, Math.min(n, (from === "mine" ? stock : trade)[id] || 0), from) }).filter(x => x?.n);
+const nCards = xs => xs.reduce((s, x) => s + x.n, 0);
+// a card your decks still lack (a Trade binder copy could fill it), or copies a deck holds (an extra from My Cards)
+function tradeWarn(c, from, n) {
+  if (isBasicE(c)) return "";
+  const A = allocation();
+  if (from === "mine") {
+    const held = A.got.reduce((s, m) => s + (m.get(c.k) || 0), 0);
+    return n > ownedOf(c) - held ? `⚠ in ${decks.filter((d, i) => A.got[i].get(c.k)).map(d => esc(d.name)).join(", ")}` : "";
+  }
+  const short = A.need.reduce((s, m) => s + (m.get(c.k) || 0), 0) - ownedOf(c);
+  return short > 0 ? `⚠ your decks are ${short} short of this` : "";
+}
+
+function renderTrade() {
+  tradeview.style.setProperty("--hh", head.offsetHeight + "px");
+  const modes = { binder: "Binder", add: "＋ Add cards", traded: `Traded${traded.length ? ` (${traded.length})` : ""}` };
+  tradeview.innerHTML = `
+    <div class="dk-head"><div><h1>Trade</h1><div class="sub tr-sub"></div></div></div>
+    <div class="seg tr-mode">${Object.entries(modes).map(([v, t]) => `<button data-tm="${v}" class="${tlook.mode === v || (v === "binder" && tlook.mode === "extra") ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div class="tr-body"></div><div class="tr-bar"></div>`;
+  ({ binder: renderTradeBinder, add: renderTradePick, extra: renderTradePick, traded: renderTraded })[tlook.mode]();
+  tradeHead(); renderTradeBar();
+}
+function tradeHead() {
+  const rows = tradeRows(), n = nCards(rows);
+  tradeview.querySelector(".tr-sub").innerHTML = (n ? `${n} card${n > 1 ? "s" : ""} in your Trade binder · worth ≈ ${buyTotal(rows)}`
+    : "Your Trade binder is empty — open ＋ Add cards and put in what you'd trade")
+    + (cfg.ready && !cfg.tradeTabs ? ` · <span class="bad">saved on this device only until the Apps Script is updated (DEPLOY.md)</span>` : "");
+}
+// the trade being put together, priced, with Trade out
+function renderTradeBar() {
+  const bar = tradeview.querySelector(".tr-bar"), sel = selRows(), n = nCards(sel);
+  if (tlook.mode === "add" || tlook.mode === "traded") return bar.innerHTML = "";
+  bar.innerHTML = `<div class="tr-sum">${n ? `This trade: <b>${n}</b> card${n > 1 ? "s" : ""} · ≈ <b>${buyTotal(sel)}</b>` : "Tap + on cards to put a trade together"}</div>
+    ${tlook.mode === "extra" ? "" : `<button class="pill sm" data-tr="extra" title="A card from My Cards that isn't in your Trade binder">＋ Add extra card</button>`}
+    ${n ? `<button class="pill sm" data-tr="clear">Clear</button><button class="pill sm on" data-tr="out">⇄ Trade out</button>` : ""}`;
+}
+
+function renderTradeBinder() {
+  tradeview.querySelector(".tr-body").innerHTML = `
+    <div class="list-tools"><input id="tr-q" type="search" placeholder="Search your Trade binder…" autocomplete="off" value="${esc(tlook.q)}"></div>
+    ${listTools(tlook.sort, tlook.view, "t")}<div class="tr-list"></div>`;
+  renderTradeList();
+}
+function renderTradeList() {
+  const q = tlook.q, hit = x => !q || `${x.c.n} ${x.p[1]} ${x.p[2]} ${CARDS.sets[x.p[1]] || ""}`.toLowerCase().includes(q);
+  const rows = tradeRows().filter(hit).sort(SORTERS[tlook.sort] || byCost);
+  const extras = selRows().filter(x => x.from === "mine").sort(SORTERS[tlook.sort] || byCost);
+  const opt = x => {
+    const s = x.from === "mine" ? x.n : selOf("trade", x.p[0]), max = x.from === "mine" ? stock[x.p[0]] || 0 : x.n;
+    const ctl = stepper(x.from, x.p[0], s, max, tlook.view === "grid" ? "tile" : "");
+    return { cls: s ? "sel" : "", note: tradeWarn(x.c, x.from, s), right: tlook.view === "grid" ? ctl : `<span class="cr-sel"><small>in trade</small>${ctl}</span>` };
+  };
+  tradeview.querySelector(".tr-list").innerHTML =
+    (extras.length ? `<h3 class="tr-h">Extra from My Cards · ${nCards(extras)}</h3>${cardsHTML(extras, tlook.view, opt)}` : "")
+    + (rows.length ? `${extras.length ? `<h3 class="tr-h">Trade binder · ${nCards(rows)}</h3>` : ""}${cardsHTML(rows, tlook.view, opt)}`
+      : `<p class="empty">${Object.keys(trade).length ? `No cards match “${esc(q)}”.` : "No cards to trade yet — use ＋ Add cards."}</p>`);
+}
+
+// the pickers: ＋ Add cards fills the Trade binder from every legal card; ＋ Add extra card picks from My Cards
+function renderTradePick() {
+  const x = tlook.mode === "extra", st = x ? xpick : tpick;
+  if (x) xpick.own = true;
+  tradeview.querySelector(".tr-body").innerHTML = `
+    ${x ? `<div class="tr-x"><div><b>Add an extra card from My Cards</b><div class="sub">Copies picked here join this trade and leave My Cards when you trade out</div></div>
+      <button class="pill sm on" data-tm="binder">Done</button></div>` : ""}
+    <div class="pk-tools">
+      <input id="tp-q" type="search" placeholder="Search names and card text…" autocomplete="off" value="${esc(st.q)}">
+      <div class="seg pk-cat">${Object.entries({ all: "All", ...CAT }).map(([v, t]) => `<button data-cat="${v}" class="${st.cat === v ? "on" : ""}">${t}</button>`).join("")}</div>
+      <div class="chips">${chipsHTML(st).replace(/<button class="chip own[^]*?<\/button>/, x ? "" : "$&")}</div>
+    </div>
+    <div class="pk-grid tgrid"></div>`;
+  renderTradePickGrid();
+}
+function renderTradePickGrid() {
+  const x = tlook.mode === "extra", view = x ? "extra" : "trade", shown = shownNames(x ? xpick : tpick);
+  tradeview.querySelector(".tgrid").innerHTML = shown.length
+    ? shown.map(([, g]) => (x ? extraTile : tradeTile)(g) + (listOpen?.view === view && listOpen.g === g ? versionList(g, view) : "")).join("")
+    : `<p class="empty">${x ? "No cards in My Cards match these filters." : "No legal cards match these filters."}</p>`;
+}
+const listBtn = (g, view, label) => `<button class="vl" data-act="list">${listOpen?.view === view && listOpen.g === g ? "▴ Close" : `▾ ${label}`}</button>`;
+function tradeTile(g) {
+  const [name, cs] = NAMES[g], ps = cs.flatMap(c => c.p), n = ps.reduce((s, p) => s + (trade[p[0]] || 0), 0);
+  const pr = ps.find(p => trade[p[0]]) || ps.find(p => stock[p[0]]) || ps[0], own = cs.reduce((s, c) => s + ownedOf(c), 0);
+  return `<div class="pk ${n ? "in" : ""}" data-g="${g}">
+    <img loading="lazy" alt="" src="${imgOf(pr)}">${cardLens(pr[0], imgOf(pr), name)}
+    ${n ? `<span class="qty">×${n}</span>` : ""}
+    ${own ? `<span class="ownb" title="Copies in My Cards">${own} in My Cards</span>` : ""}
+    <div class="pn">${name}</div>
+    ${ps.length === 1 ? `<span class="vq tile"><button data-tr1="-1" data-id="${pr[0]}" ${n ? "" : "disabled"}>−</button><b>${n}</b><button data-tr1="1" data-id="${pr[0]}">+</button></span>`
+      : listBtn(g, "trade", cs.length > 1 ? `${cs.length} versions` : `${ps.length} arts`)}
+  </div>`;
+}
+function extraTile(g) {
+  const [name, cs] = NAMES[g], mine = cs.flatMap(c => c.p).filter(p => stock[p[0]]), pr = mine[0] || cs[0].p[0];
+  const n = mine.reduce((s, p) => s + selOf("mine", p[0]), 0), own = mine.reduce((s, p) => s + stock[p[0]], 0);
+  return `<div class="pk ${n ? "in" : ""}" data-g="${g}">
+    <img loading="lazy" alt="" src="${imgOf(pr)}">${cardLens(pr[0], imgOf(pr), name)}
+    ${n ? `<span class="qty">×${n}</span>` : ""}
+    <span class="ownb">${own} owned</span>
+    <div class="pn">${name}</div>
+    ${mine.length === 1 ? stepper("mine", pr[0], n, own, "tile") : listBtn(g, "extra", `${mine.length} owned arts`)}
+  </div>`;
+}
+
+function renderTraded() {
+  tradeview.querySelector(".tr-body").innerHTML = traded.length ? traded.map((e, i) => [e, i]).reverse().map(([e, i]) => {
+    const xs = e.items.map(x => { const [c, p] = PRINT.get(x.id) || [];
+      return { c: c || { n: x.id, c: "T", t: [], sub: [] }, p: p || [x.id, "", "", CARD_IMG(x.id)], n: x.n, each: x.each, sym: x.sym || "€", from: x.from } });
+    return `<div class="tr-log"><div class="tr-lh"><b>${new Date(e.t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</b>
+        · ${nCards(xs)} card${nCards(xs) > 1 ? "s" : ""} · ≈ ${buyTotal(xs)}
+        <button class="pill sm" data-undo="${i}" title="Put these cards back where they came from">↶ Undo</button></div>
+      ${cardsHTML(xs, "list", x => ({ note: x.from === "mine" ? "from My Cards" : "" }))}</div>`;
+  }).join("") : `<p class="empty">Nothing traded out yet. Pick cards in the Binder, then ⇄ Trade out.</p>`;
+}
+
+function setTrade(id, d) {
+  const n = Math.max(0, (trade[id] || 0) + d);
+  if (n) trade[id] = n; else delete trade[id];
+  if (selOf("trade", id) > n) n ? tsel.set("trade:" + id, n) : tsel.delete("trade:" + id);
+  save(); renderTradePickGrid(); tradeHead();
+}
+function setSel(from, id, d) {
+  const max = (from === "mine" ? stock : trade)[id] || 0, n = Math.min(max, Math.max(0, selOf(from, id) + d));
+  if (n) tsel.set(from + ":" + id, n); else tsel.delete(from + ":" + id);
+  tlook.mode === "binder" ? renderTradeList() : renderTradePickGrid();
+  renderTradeBar();
+}
+function confirmTradeOut() {
+  const sel = selRows(), n = nCards(sel), warns = sel.map(x => { const w = tradeWarn(x.c, x.from, x.n); return w && `${x.n}× ${esc(x.c.n)}: ${w}` }).filter(Boolean);
+  zoomCard = null; dlg.hidden = false;
+  dlgBox.innerHTML = `<div class="m-head"><div><h2>⇄ Trade out ${n} card${n > 1 ? "s" : ""}?</h2>
+      <div class="sub">≈ ${buyTotal(sel)} · they leave your Trade binder${sel.some(x => x.from === "mine") ? " and My Cards" : ""} · Traded keeps a record you can undo</div></div>
+      <button class="x" data-z="close">✕</button></div>
+    <div class="imp">${warns.length ? `<ul class="iss">${warns.map(w => `<li>${w}</li>`).join("")}</ul>` : ""}
+      ${cardsHTML(sel, "list", x => ({ note: x.from === "mine" ? "from My Cards" : "" }))}
+      <button class="pill on" data-z="tradeout">⇄ Trade out</button></div>`;
+  dlgBox.querySelector('[data-z="tradeout"]').onclick = () => {
+    for (const x of sel) {
+      const box = x.from === "mine" ? stock : trade, left = (box[x.p[0]] || 0) - x.n;
+      if (left > 0) box[x.p[0]] = left; else delete box[x.p[0]];
+    }
+    traded.push({ t: Date.now(), items: sel.map(x => ({ id: x.p[0], n: x.n, from: x.from, each: x.each, sym: x.sym })) });
+    tsel.clear(); save(); dlg.hidden = true; say(`Traded out ${n} card${n > 1 ? "s" : ""}`); renderTrade();
+  };
+}
+function undoTrade(i) {
+  const e = traded[i]; if (!e) return;
+  e.items.forEach(x => { const box = x.from === "mine" ? stock : trade; box[x.id] = (box[x.id] || 0) + x.n });
+  traded.splice(i, 1); save(); say("Trade undone — the cards are back"); renderTrade();
+}
+
+tradeview.addEventListener("click", e => {
+  const m = e.target.closest("[data-tm]");
+  if (m) { tlook.mode = m.dataset.tm; listOpen = null; return renderTrade() }
+  const sel = e.target.closest("[data-sel]");
+  if (sel) return setSel(sel.dataset.from, sel.dataset.id, +sel.dataset.sel);
+  const t1 = e.target.closest("[data-tr1]");
+  if (t1) return setTrade(t1.dataset.id, +t1.dataset.tr1);
+  const act = e.target.closest("[data-tr]")?.dataset.tr;
+  if (act === "extra") { tlook.mode = "extra"; listOpen = null; return renderTrade() }
+  if (act === "clear") { tsel.clear(); return renderTrade() }
+  if (act === "out") return confirmTradeOut();
+  const u = e.target.closest("[data-undo]");
+  if (u) return undoTrade(+u.dataset.undo);
+  const s = e.target.closest("[data-tsort], [data-tview]");
+  if (s) {
+    if (s.dataset.tsort) store.set("tradeSort", tlook.sort = s.dataset.tsort);
+    else store.set("tradeView", tlook.view = s.dataset.tview);
+    return renderTradeBinder();
+  }
+  // the pickers: filters, and a name's versions opened under its tile
+  if (!tradeview.querySelector(".tgrid")) return;
+  const st = tlook.mode === "extra" ? xpick : tpick, view = tlook.mode === "extra" ? "extra" : "trade";
+  if (e.target.closest('.vlist [data-act="close"]')) { listOpen = null; return renderTradePickGrid() }
+  if (e.target.closest(".vi")) return;
+  const cat = e.target.closest("[data-cat]")?.dataset.cat;
+  if (cat) {
+    st.cat = cat;
+    if (cat !== "all" && cat !== "P") { st.types.clear(); st.stages.clear(); st.ex = false }
+    if (cat !== "T") st.kinds.clear();
+    return renderTradePick();
+  }
+  const chip = e.target.closest("[data-chip]");
+  if (chip) {
+    const g = chip.dataset.chip, v = chip.dataset.v;
+    if (g === "ex" || g === "own") st[g] = !st[g];
+    else st[g].has(v) ? st[g].delete(v) : st[g].add(v);
+    chip.classList.toggle("on"); return renderTradePickGrid();
+  }
+  const pk = e.target.closest(".tgrid .pk");
+  if (pk && pk.querySelector(".vl")) {
+    const g = +pk.dataset.g;
+    listOpen = listOpen?.view === view && listOpen.g === g ? null : { view, g };
+    renderTradePickGrid();
+  }
+});
+let ttyping;
+tradeview.addEventListener("input", e => {
+  if (e.target.id !== "tr-q" && e.target.id !== "tp-q") return;
+  clearTimeout(ttyping);
+  ttyping = setTimeout(() => {
+    const q = e.target.value.trim().toLowerCase();
+    if (e.target.id === "tr-q") { tlook.q = q; renderTradeList() }
+    else { (tlook.mode === "extra" ? xpick : tpick).q = q; renderTradePickGrid() }
+  }, 150);
+});
+
 // ---- Prices: what everything you own is worth — My Cards, plus one of each 30th Celebration card marked owned ----
 const FROM = { mycards: "My Cards", anniv: "30th Celebration" };
 const SORTBY = { price: "Price ↓", cheap: "Price ↑", name: "Name", from: "Collection" };
@@ -3117,7 +3462,7 @@ priceview.addEventListener("input", e => {
 
 // ---- backup / restore what only you know: cards owned, favourites, decks ----
 backup.onclick = () => {
-  const blob = new Blob([JSON.stringify({ have: [...have], favs, decks, stock }, null, 1)],
+  const blob = new Blob([JSON.stringify({ have: [...have], favs, decks, stock, trade, traded }, null, 1)],
                         { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -3194,13 +3539,21 @@ function tabsOut() {
   const byId = new Map(Object.values(DEX.tcg).flat().map(c => [c.id, c]));
   const rest = [...have].filter(id => !placed.has(id));
   gen1.push([UNSORTED, "", rest.map(id => label(byId.get(id)) || id).join("\n"), ""]);
-  // My Cards: one row per print you own (a rotated print keeps its row, so nothing is lost)
-  const cards = Object.entries(stock).filter(([, n]) => n > 0).map(([id, n]) => {
+  // My Cards and the Trade binder: one row per print (a rotated print keeps its row, so nothing is lost)
+  const printRow = (id, n) => {
     const hit = PRINT.get(id), c = hit?.[0], pr = hit?.[1];
     return [c ? c.n : id, pr ? CARDS.sets[pr[1]] || pr[1] : "", pr ? pr[2] : "", id, String(n), c ? CAT[c.c] : "",
             pr?.[4] != null ? money(pr[4]) : pr?.[5] != null ? money(pr[5], "$") : ""];
-  }).sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]));
-  return { tabs: { gen1, anniv, cards }, decks: decks.map(deckSheet) };
+  };
+  const rowsOf = box => Object.entries(box).filter(([, n]) => n > 0).map(([id, n]) => printRow(id, n))
+    .sort((a, b) => a[0].localeCompare(b[0]) || a[3].localeCompare(b[3]));
+  // Traded: one row per card, the rows of one trade sharing its date; the price is what it was worth then
+  const tradedRows = traded.flatMap(e => e.items.map(x => {
+    const r = printRow(x.id, x.n);
+    return [new Date(e.t).toISOString().slice(0, 19), r[0], r[1], r[2], x.id, String(x.n), x.from === "mine" ? "My Cards" : "Trade",
+            x.each != null ? money(x.each, x.sym || "€") : ""];
+  }));
+  return { tabs: { gen1, anniv, cards: rowsOf(stock), trade: rowsOf(trade), traded: tradedRows }, decks: decks.map(deckSheet) };
 }
 
 // One tab per deck: its cards in A–F; on the right (H–I) the deck's facts, then its versions.
@@ -3254,6 +3607,18 @@ function fromTabs(r) {
   for (const [, own, id] of t.anniv || []) if (own) d.have.push(id);
   d.stock = {};
   for (const [, , , id, n] of t.cards || []) if (id && +n) d.stock[id] = +n;
+  // no Trade tabs at all (an older Apps Script, or none saved yet) = keep this device's
+  if (t.trade) { d.trade = {}; for (const [, , , id, n] of t.trade) if (id && +n) d.trade[id] = +n }
+  if (t.traded) {
+    const by = new Map();
+    for (const [when, , , , id, n, from, price] of t.traded) {
+      if (!id || !+n) continue;
+      if (!by.has(when)) by.set(when, { t: Date.parse(when + "Z") || 0, items: [] });
+      const m = String(price || "").match(/^([€$])([\d,.]+)/);
+      by.get(when).items.push({ id, n: +n, from: from === "My Cards" ? "mine" : "trade", each: m ? +m[2].replace(/,/g, "") : null, sym: m ? m[1] : "€" });
+    }
+    d.traded = [...by.values()].sort((a, b) => a.t - b.t);
+  }
   if (r.decks.length) d.decks = r.decks.map(x => deckFromSheet(x.name, x.rows)).sort((a, b) => a.order - b.order);
   else {                                 // the earlier single Decks tab, read once before the switch
     const byDeck = new Map();
@@ -3276,6 +3641,8 @@ function applyState(d) {
   Object.keys(favs).forEach(k => delete favs[k]);
   Object.entries(d.favs || {}).forEach(([k, v]) => { if (k.split(":")[0] in COLLECTIONS) favs[k] = v });
   if (d.stock) { Object.keys(stock).forEach(k => delete stock[k]); Object.assign(stock, d.stock) }
+  if (d.trade) { Object.keys(trade).forEach(k => delete trade[k]); Object.assign(trade, d.trade) }
+  if (d.traded) traded.splice(0, traded.length, ...d.traded);
   if (d.decks) {                 // the old state JSON and older backups carry none: keep this device's
     decks.splice(0, decks.length, ...d.decks);
     decks.forEach(x => { x.tags ||= []; x.roles ||= {}; x.versions ||= []; x.holds ||= {}; x.built = !!x.built });
@@ -3299,6 +3666,7 @@ async function pull() {
     // never sync with one
     if (d.v !== 4) throw new Error("update the Apps Script first");
     cfg.ready = true;
+    cfg.tradeTabs = !!d.tabs && "trade" in d.tabs;   // an Apps Script from before the Trade tabs drops them on save
     // whichever side was written last wins — plain and predictable for one person, two devices.
     // A change this device couldn't save yet counts as written when it was made, so it goes up now
     // rather than waiting for the next edit. No "dirty" at all = an older site, which could drop
