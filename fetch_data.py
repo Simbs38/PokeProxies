@@ -155,6 +155,8 @@ def tcgdex_eur(want):
         by_set.setdefault(TCGDEX_SETS.get(st, st), []).append((k, number, name))
     for st, mine in by_set.items():
         theirs = list((sid.get(st) and tcgdex(f"/sets/{sid[st]}") or {}).get("cards") or [])
+        if not theirs:                                    # say why, or a silent 0 hides it (as on GitHub's runners)
+            print(f"    ! TCGdex: no cards for {st!r} ({'no such set among ' + str(len(sid)) if st not in sid else 'empty answer'})")
         same = lambda m, c: nnum(c["localId"]) == nnum(m[1])
         rules = [lambda m, c: same(m, c) and norm(c["name"]) == norm(m[2])]
         if sum(any(rules[0](m, c) for c in theirs) for m in mine) * 2 < len(mine):
@@ -178,7 +180,8 @@ def tcgdex_eur(want):
         return item[0], round(v, 2) if v else None
     with ThreadPoolExecutor(6) as pool:
         found = {k: v for k, v in pool.map(one, ids.items()) if v}
-    print(f"  TCGdex: € for {len(found)} of {len(want)} cards pokemontcg.io had no € for")
+    print(f"  TCGdex: € for {len(found)} of {len(want)} cards pokemontcg.io had no € for"
+          f" ({len(ids)} found there, {len(ids) - len(found)} of those unpriced)")
     return found
 
 
