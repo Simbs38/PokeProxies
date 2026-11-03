@@ -14,15 +14,10 @@
 
 ## 🎒 What's inside
 
-| | |
-|---|---|
-| 📖 **Gen 1 & 30th Celebration** | Checklists for every original Pokémon form and the full 30th Celebration master set, with card art, rarities and favourite prints. |
-| 🗂️ **My Cards** | A binder of every Standard-legal print you own, searchable by name, set, type or kind. |
-| 🃏 **Decks** | A deckbuilder that simulates your list against the real meta: scores (Consistency, Speed, Power), matchups, an archetype guess, swap tips, and a "To buy" list sorted by cost. |
-| 🔁 **Trade binder** | Cards set aside to trade. Pick a group, see its price, throw in extras from My Cards, then **Trade out** with a full history and undo. |
-| 💶 **Prices** | What everything is worth. **🔄 Refresh prices** pulls live Cardmarket prices right in your browser: no sign-in, no token. |
-| 📊 **Data** | How fresh the cards, prices and meta are, plus a button that re-fetches all of it on GitHub. |
-| ☁️ **Sync** | Optional: sign in with Google and your collection lives in your own Google Sheet, readable tab by tab. |
+- 📖 **Collections**: checklists to tick off, with card art, rarities and favourite prints.
+- 🗂️ **My Cards**: a binder of every card you own, searchable by name, set, type or kind.
+- 🃏 **Deck builds**: build decks from your cards, see how they hold up against the meta, and what's left to buy.
+- 💶 **Prices**: what everything is worth, refreshed live from Cardmarket.
 
 ## 🧪 Where the data comes from
 
@@ -35,12 +30,26 @@ A GitHub Action (`.github/workflows/refresh-data.yml`) re-runs `fetch_data.py` e
 
 ## 🏃 Run it yourself
 
+**1. The data and the site**
+
 ```bash
 python3 fetch_data.py          # refresh cards.js, data.js and meta.js (a few minutes)
 python3 -m http.server 8765    # then open http://localhost:8765
 ```
 
-Or just open `index.html`: everything it needs is in the folder.
+**2. Your Google Sheet** 📊
+
+The site opens behind a Google sign-in and keeps your collection in a Google Sheet of your own, so set one up:
+
+1. Make a new Google Sheet → **Extensions → Apps Script**, and paste in all of `apps_script.gs`.
+2. **Project Settings ⚙ → Script Properties**: add `ALLOWED` = your Google address (comma-separate a few to share).
+3. In [Google Cloud](https://console.cloud.google.com), create an **OAuth client ID** (Web application). Add your site's origin and `http://localhost:8765` as **Authorised JavaScript origins**, and add yourself as a test user.
+4. Put that client ID in `CLIENT_ID`, in both `index.html` and `apps_script.gs`.
+5. Back in Apps Script: **Deploy → New deployment → Web app**, execute as **Me**, access **Anyone**. Copy the `/exec` URL into `SYNC_URL` in `index.html`.
+6. Open the site, sign in with Google, and your Sheet fills up with tabs: collections, My Cards, Trade, and one tab per deck. ✨
+
+Optional: add a `GITHUB_TOKEN` script property to make the Data page's **Refresh data** button work.
+The step-by-step version, with GitHub Pages hosting, is in [DEPLOY.md](DEPLOY.md).
 
 ## 🔒 Secrets stay secret
 
@@ -50,8 +59,6 @@ This repo is public, so it holds **no secrets**: only card data, artwork links a
 - 📧 Who may sync is an `ALLOWED` script property too, so no email address lands here.
 - 🪪 The Google client ID in `index.html` is public by design; every request is re-checked by the Apps Script.
 - 🎒 Your collection only ever lives in your Google Sheet and your browser's local storage.
-
-Full setup (Sheet, Google sign-in, Pages, the token) is in [DEPLOY.md](DEPLOY.md).
 
 ## 💛 Fan project
 
