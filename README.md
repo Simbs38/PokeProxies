@@ -18,7 +18,7 @@
 - 🗂️ **My Cards**: a binder of every card you own, searchable by name, set, type or kind.
 - 🃏 **Deck builds**: build decks from your cards, see how they hold up against the meta, and what's left to buy.
 - 💶 **Prices**: what everything is worth, refreshed live from Cardmarket.
-- 🤝 **Trade page**: signed out, the site is a read-only page of the cards you're looking for and the ones you'd trade. Send the link to anyone; **Log in** to edit, **Log out** to see it as they do.
+- 🤝 **Trade page**: signed out, the site is a read-only page of the cards you're looking for and the ones you'd trade. Send the link to anyone, or a link to just one list (only your deck cards, only your collections); **Log in** to edit, **Log out** to see it as they do.
 
 ## 🧪 Where the data comes from
 

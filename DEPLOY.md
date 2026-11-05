@@ -45,7 +45,10 @@ They are for reading: the next save from any device rewrites them, so hand edits
 **The public landing page.** Signed out, the site shows a read-only page with two tabs, *Looking for*
 and *For trade*, so you can send the link to anyone. It reads the `Looking for` and `Trade` tabs, and
 only those, with no sign-in (`?public=1` on the `/exec` URL); every other tab still needs your Google
-token. `…/#lookingfor` and `…/#fortrade` open a tab directly. After updating to this version of
+token. `…/#lookingfor` and `…/#fortrade` open a tab directly, and a link to one list shows only that
+list, with no tabs or filters: `…/#lookingfor-decks`, `…/#lookingfor-collections` (30th + Gen 1),
+`…/#lookingfor-30th`, `…/#lookingfor-gen1`. **🔗 Copy link** copies whatever is on screen, so pick a
+filter first to share just that list. After updating to this version of
 `apps_script.gs` and re-deploying, sign in once: the site fills the `Looking for` tab on that first load.
 Renaming or deleting a deck renames or removes its tab. The earlier single `Decks` tab is read once
 and then removed.

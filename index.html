@@ -270,6 +270,8 @@
   .lp-any { font-size: 11px; font-weight: 700; color: var(--acc) }
   .lp-tag { font-size: 11px; color: var(--dim); white-space: nowrap }
   .lp-foot { margin-top: 18px; font-size: 12px; color: var(--dim) }
+  .lp-all { margin-top: 18px; font-weight: 700 }
+  .lp-one .lp-tag { display: none }
   body.overview #list, body.overview footer { display: none }
   body:not(.overview) #banner { grid-template-columns: 1fr }
 
@@ -4141,7 +4143,7 @@ function expired() {
 function applyLock() {
   const was = document.body.classList.contains("locked");
   document.body.classList.toggle("locked", !cfg.tok);
-  if (!cfg.tok && !was) { renderLanding(); loadLanding() }
+  if (!cfg.tok && !was) { lpFromHash(); renderLanding(); loadLanding() }
   if (cfg.tok && was) render();                     // the app was drawn while hidden: lay it out again
 }
 
@@ -4172,9 +4174,25 @@ document.getElementById("l-out").onclick = logOut;
 // site's own card data by id, so they get art and today's prices. The last copy is kept per device so
 // the page draws at once; a fresh one follows.
 const LP_TABS = { want: ["🔎 Looking for", "lookingfor"], have: ["⇄ For trade", "fortrade"] };
+// the Looking for filters: [chip, lists it covers, and for a link of its own (…/#lookingfor-decks) its heading and line]
+const LP_GROUPS = {
+  all: ["All", Object.values(WANT)],
+  decks: ["Decks", [WANT.decks], "Cards I need for my decks", "Any print will do."],
+  collections: ["Collections", [WANT.anniv, WANT.gen1], "Cards missing from my collections", "The 30th Celebration set, and a card of every Gen 1 Pokémon."],
+  "30th": ["30th Celebration", [WANT.anniv], "Missing from my 30th Celebration set", ""],
+  gen1: ["Gen 1", [WANT.gen1], "Gen 1 Pokémon I still need", "Any card of these Pokémon will do."],
+};
 const LP_SORT = { name: "Name", set: "Set", price: "Price ↓" };
-const lp = { tab: location.hash === "#fortrade" ? "have" : "want", q: "", grp: "all", sort: "name",
+const lp = { tab: "want", lock: "", q: "", grp: "all", sort: "name",
              view: store.get("lpView", "grid"), data: store.get("pub", null), err: "", loading: false };
+// #fortrade, #lookingfor, or #lookingfor-<filter>: a filtered link shows that one list and nothing else
+function lpFromHash() {
+  const h = location.hash.slice(1), g = (h.match(/^lookingfor-(.+)$/) || [])[1];
+  lp.tab = h === "fortrade" ? "have" : "want";
+  lp.lock = g && g !== "all" && g in LP_GROUPS ? g : "";
+  lp.grp = lp.lock || "all";
+}
+lpFromHash();
 const GEN1_BY = new Map(COLLECTIONS.gen1.items.map(p => [p.name, p]));
 const priceIn = t => { const m = String(t || "").match(/^([€$])([\d,.]+)/); return m ? { each: +m[2].replace(/,/g, ""), sym: m[1] } : { each: null, sym: "€" } };
 
@@ -4215,17 +4233,19 @@ function lpCard(x) {
 const lpList = xs => lp.view === "grid" ? `<div class="pk-grid cgrid">${xs.map(lpCard).join("")}</div>` : `<div class="clist">${xs.map(lpCard).join("")}</div>`;
 
 function renderLanding() {
-  const want = lpItems("want"), has = lpItems("have"), cnt = xs => xs.reduce((s, x) => s + x.n, 0);
+  const want = lpItems("want"), has = lpItems("have"), cnt = xs => xs.reduce((s, x) => s + x.n, 0), L = LP_GROUPS[lp.lock];
   landing.innerHTML = `
-    <div class="lp-hero"><div><h1>Trade with me</h1>
-      <p>The cards I'm hunting for, and the ones I can trade away. Got one I'm missing, or want one of mine? Let's trade.</p></div>
-      <button class="pill sm" data-lp="share">🔗 Copy link</button></div>
-    <div class="seg lp-tabs">${Object.entries(LP_TABS).map(([k, [t]]) =>
-      `<button data-lpt="${k}" class="${lp.tab === k ? "on" : ""}">${t}${lp.data ? ` · ${cnt(k === "want" ? want : has)}` : ""}</button>`).join("")}</div>
+    <div class="lp-hero"><div>${L ? `<h1>${L[2]}</h1><p>${L[3] ? L[3] + " " : ""}Got one? Let's trade.</p>`
+      : `<h1>Trade with me</h1>
+      <p>The cards I'm hunting for, and the ones I can trade away. Got one I'm missing, or want one of mine? Let's trade.</p>`}</div>
+      <button class="pill sm" data-lp="share" title="Copies a link to what's on screen: pick a filter first to share only that list">🔗 Copy link</button></div>
+    ${L ? "" : `<div class="seg lp-tabs">${Object.entries(LP_TABS).map(([k, [t]]) =>
+      `<button data-lpt="${k}" class="${lp.tab === k ? "on" : ""}">${t}${lp.data ? ` · ${cnt(k === "want" ? want : has)}` : ""}</button>`).join("")}</div>`}
     <div class="lp-tools"><input id="lp-q" type="search" placeholder="Search by card or set…" autocomplete="off" value="${esc(lp.q)}">
       <div class="seg">${Object.entries(LP_SORT).map(([v, t]) => `<button data-lps="${v}" class="${lp.sort === v ? "on" : ""}">${t}</button>`).join("")}</div>
       <div class="seg">${[["grid", "▦ Grid"], ["list", "☰ List"]].map(([v, t]) => `<button data-lpv="${v}" class="${lp.view === v ? "on" : ""}">${t}</button>`).join("")}</div></div>
     <div class="lp-body"></div>
+    ${L ? `<button class="linkish lp-all" data-lp="all">See all my lists →</button>` : ""}
     <div class="lp-foot"></div>`;
   renderLandingList();
 }
@@ -4236,12 +4256,18 @@ function renderLandingList() {
   const all = lpItems(lp.tab), xs = all.filter(hit).sort(LP_SORTERS[lp.sort]);
   let html;
   if (lp.tab === "want") {
-    const groups = Object.values(WANT).map(g => [g, xs.filter(x => x.grp === g)]).filter(([g]) => all.some(x => x.grp === g));
-    if (lp.grp !== "all" && !groups.some(([g]) => g === lp.grp)) lp.grp = "all";
-    html = (groups.length > 1 ? `<div class="chips">${[["all", "All"], ...groups.map(([g]) => [g, g])].map(([v, t]) =>
-        `<button class="chip ${lp.grp === v ? "on" : ""}" data-lpg="${esc(v)}">${t}</button>`).join("")}</div>` : "")
-      + groups.filter(([g, gx]) => gx.length && (lp.grp === "all" || lp.grp === g)).map(([g, gx]) =>
-        `<h3 class="tr-h">${g === WANT.decks ? "For my decks" : g} · ${gx.reduce((s, x) => s + x.n, 0)}</h3>${lpList(gx)}`).join("");
+    // the lists with cards at all; a filter chip shows only when it would narrow things down
+    // (Collections only when both collections have cards, or it would just repeat the one that does)
+    const lists = Object.values(WANT).filter(g => all.some(x => x.grp === g));
+    const chips = Object.entries(LP_GROUPS).filter(([k, [, gs]]) => k === "all"
+      || (k === "collections" ? gs.every(g => lists.includes(g)) : gs.some(g => lists.includes(g))));
+    if (!lp.lock && !chips.some(([k]) => k === lp.grp)) lp.grp = "all";
+    const parts = lists.filter(g => LP_GROUPS[lp.grp][1].includes(g)).map(g => [g, xs.filter(x => x.grp === g)]).filter(([, gx]) => gx.length);
+    html = (!lp.lock && lists.length > 1 ? `<div class="chips">${chips.map(([k, [t]]) =>
+        `<button class="chip ${lp.grp === k ? "on" : ""}" data-lpg="${k}">${t}</button>`).join("")}</div>` : "")
+      + parts.map(([g, gx]) => (lp.lock && parts.length < 2 ? ""
+        : `<h3 class="tr-h">${g === WANT.decks ? "For my decks" : g} · ${gx.reduce((s, x) => s + x.n, 0)}</h3>`) + lpList(gx)).join("");
+    body.classList.toggle("lp-one", parts.length < 2);    // one list on screen: its name on every row says nothing
   } else html = xs.length ? lpList(xs) : "";
   body.innerHTML = html || `<p class="empty">${q ? `Nothing matches “${esc(lp.q)}”.`
     : lp.tab === "want" ? "Nothing on the list right now — every card is in. 🎉" : "Nothing up for trade right now."}</p>`;
@@ -4268,11 +4294,15 @@ landing.addEventListener("click", e => {
   if (d.lps) { lp.sort = d.lps; return renderLanding() }
   if (d.lpv) { store.set("lpView", lp.view = d.lpv); return renderLanding() }
   if (d.lpg) { lp.grp = d.lpg; return renderLandingList() }
-  if (d.lp === "share") {
-    const url = location.origin + location.pathname + "#" + LP_TABS[lp.tab][1];
-    navigator.clipboard.writeText(url).then(() => say("Link copied"), () => say(url));
+  if (d.lp === "share") {           // what's on screen: a filter picked = a link that shows only that list
+    const one = lp.tab === "want" && lp.grp !== "all";
+    const url = location.origin + location.pathname + "#" + (one ? "lookingfor-" + lp.grp : LP_TABS[lp.tab][1]);
+    navigator.clipboard.writeText(url).then(() => say(`Link copied — ${one ? `shows only ${LP_GROUPS[lp.grp][0]}` : LP_TABS[lp.tab][0].slice(2)}`), () => say(url));
   }
+  if (d.lp === "all") { lp.lock = ""; lp.grp = "all"; history.replaceState(null, "", "#lookingfor"); renderLanding(); scrollTo({ top: 0 }) }
 });
+// a link edited or pasted into this same tab: no reload, so read it again
+addEventListener("hashchange", () => { if (document.body.classList.contains("locked")) { lpFromHash(); renderLanding() } });
 landing.addEventListener("input", e => { if (e.target.id === "lp-q") { lp.q = e.target.value.trim(); renderLandingList() } });
 
 addEventListener("load", drawGsi);
