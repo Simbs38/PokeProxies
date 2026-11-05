@@ -898,7 +898,7 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202611031943"></script>
+<script src="data.js?v=202611051234"></script>
 <script src="cards.js?v=202611031943"></script>
 <script src="meta.js?v=202611031940"></script>
 <script>
@@ -3864,7 +3864,9 @@ async function pull() {
       store.set("updated", d.updated);
       store.set("dirty", 0);
     } else if (!d.tabs || dirty !== 0 || store.get("updated", 0) > (d.updated || 0)) push(0);
-    if (cfg.pubTabs && !d.tabs.wants) push(0);       // just updated the script: fill the landing page's list once
+    // the landing page's list is worked out, not typed: after a data refresh (new prices, a card
+    // dropped from a collection) the Sheet's copy is stale with no edit to send it, so send it now
+    if (cfg.pubTabs && JSON.stringify(d.tabs.wants) !== JSON.stringify(wantRows())) push(0);
     status("☁ Synced", true);
   } catch (e) { status("☁ " + e.message) }
 }

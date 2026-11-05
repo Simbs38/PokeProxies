@@ -211,14 +211,15 @@ def num(card):
 def anniv_master_set():
     """Mirrors the ETB book's own checklist layout: All cards, then Secret Illustrations
     (both from the main me55 set, split at its printed total), then the Classic Collection
-    insert, then Promo cards, then the bonus Mew R/G/B trio -- each its own section, each
-    kept in the book's own order rather than one flat alphanumeric sort."""
+    insert, then Promo cards -- each its own section, each kept in the book's own order rather
+    than one flat alphanumeric sort. The bonus Mew R/G/B trio is left out on purpose: not
+    something to collect (thousands of euros each)."""
     main = set_cards("me55")
     classic = set_cards("me55c")
     printed = next((c.get("set", {}).get("printedTotal") for c in main), 128) or 128
 
-    mews = sorted([c for c in main if c.get("number") in ("R", "G", "B")],
-                  key=lambda c: "RGB".index(c["number"]))
+    # set apart first, or their non-numeric numbers would sort them into Secret Illustrations
+    mews = [c for c in main if c.get("number") in ("R", "G", "B")]
     regular = sorted([c for c in main if c not in mews and num(c) <= printed], key=num)
     secret = sorted([c for c in main if c not in mews and num(c) > printed], key=num)
     # Classic Collection cards keep their original vintage numbers (a deliberate reprint
@@ -230,8 +231,7 @@ def anniv_master_set():
     promos = []  # not in the TCG API yet for this release -- ask for the checklist to fill this in
 
     sections = [("All", regular), ("Secret Illustrations", secret),
-                ("Classic Collection", classic), ("Promo Cards", promos),
-                ("Mew R/G/B", mews)]
+                ("Classic Collection", classic), ("Promo Cards", promos)]
 
     items, i = [], 0
     for section, cards in sections:
