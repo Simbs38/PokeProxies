@@ -55,6 +55,29 @@ function refresh_() {
     : { ok: false, error: 'GitHub said ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 140) };
 }
 
+// The site's 🔍 price check: one card's price by condition, language and grade, from PokemonPriceTracker
+// (free key, 100 credits a day: Script Properties → PPT_KEY). It wants the key in a header, which a browser
+// can't send it (its CORS preflight is refused), so the call goes through here; the key never leaves.
+const PPT = 'https://www.pokemonpricetracker.com/api/v2/cards';
+const PPT_ARGS = ['tcgPlayerId', 'language', 'search', 'set', 'includeHistory', 'includeEbay', 'days'];
+
+function price_(q) {
+  const key = PROPS.getProperty('PPT_KEY');
+  if (!key) return { ok: false, error: 'set PPT_KEY in Script Properties' };
+  q = q || {};
+  // credits are billed on the limit asked for, not the cards found: never more than a short list
+  const args = PPT_ARGS.filter(k => q[k] != null && q[k] !== '').map(k => k + '=' + encodeURIComponent(q[k]));
+  args.push('limit=' + Math.max(1, Math.min(6, Number(q.limit) || 1)));
+  const r = UrlFetchApp.fetch(PPT + '?' + args.join('&'), { headers: { Authorization: 'Bearer ' + key }, muteHttpExceptions: true });
+  const code = r.getResponseCode(), h = r.getHeaders();
+  let body;
+  try { body = JSON.parse(r.getContentText()) } catch (e) { body = {} }
+  if (code !== 200) return { ok: false, status: code, error: body.message || body.error || 'PokemonPriceTracker said ' + code };
+  const m = body.metadata || {};
+  return { ok: true, data: body.data, used: m.apiCallsConsumed ? m.apiCallsConsumed.total : null,
+           left: h['X-RateLimit-Daily-Remaining'] || h['x-ratelimit-daily-remaining'] || null };
+}
+
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -184,6 +207,7 @@ function doPost(e) {
   const err = guard_(body.idToken);
   if (err) return json_({ ok: false, error: err });
   if (body.action === 'refresh') return json_(refresh_());
+  if (body.action === 'price') return json_(price_(body.q));
 
   const ss = SpreadsheetApp.getActive();
   const lock = LockService.getScriptLock();          // two devices saving at once

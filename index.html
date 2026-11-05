@@ -549,6 +549,28 @@
   .zm-side .lbl { font-size: 11px; color: var(--dim); letter-spacing: .06em; text-transform: uppercase }
   .zm-prints { display: flex; gap: 6px; flex-wrap: wrap }
   .zm-q { display: flex; gap: 12px; align-items: center }
+  .pc { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line) }
+  .pc .lbl small { text-transform: none; letter-spacing: 0 }
+  .pc-row { display: flex; gap: 8px; align-items: baseline }
+  .pc-row > span { flex: 0 0 72px; font-size: 12px; color: var(--dim) }
+  .pc-row .chips { flex: 1; min-width: 0; gap: 5px; flex-wrap: wrap; overflow: visible }
+  .pc-out { display: flex; flex-direction: column; gap: 2px; min-height: 40px; justify-content: center }
+  .pc-out small, .pc-act small { font-size: 12px; color: var(--dim) }
+  .pc-eur { font-size: 26px; line-height: 1.1 }
+  .pc-act { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+  .pc-msg { color: #fbbf24 }
+  .pc-msg a { color: var(--acc) }
+  .pc-jq { display: flex; gap: 6px }
+  #pc-jpq { flex: 1; min-width: 0; padding: 7px 11px; font: 400 13px Outfit, sans-serif; color: var(--fg);
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px }
+  .pc-jl { display: grid; gap: 6px; max-height: 300px; overflow-y: auto }
+  .pc-jm { display: flex; gap: 10px; align-items: center; padding: 6px; text-align: left; cursor: pointer; color: var(--fg);
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px; font: inherit }
+  .pc-jm:hover { border-color: var(--acc) }
+  .pc-jm img { width: 40px; border-radius: 4px }
+  .pc-jm span { display: flex; flex-direction: column; gap: 1px }
+  .pc-jm small { font-size: 11px; color: var(--dim) }
+  .pc-link { padding: 0; border: 0; background: none; color: var(--acc); font: inherit; cursor: pointer; text-decoration: underline }
   .zm-q b { min-width: 24px; font-size: 22px; text-align: center }
   .pill:disabled { opacity: .35; cursor: default }
   .imp { display: flex; flex-direction: column; gap: 10px; padding: 0 20px 20px }
@@ -1052,7 +1074,7 @@ function render() {
     list.innerHTML = items.length ? items.map((p, n) => !shown(p) ? "" : `
       <article class="tcg ${have.has(p.id) ? "have" : ""}" data-cid="${p.id}" data-n="${n}">
         <span class="idx">#${String(p.i + 1).padStart(3, "0")}</span>
-        <span class="lw"><img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">${lens(p.img || CARD_IMG(p.id), p.name, `${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}`)}</span>
+        <span class="lw"><img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">${lens(p.img || CARD_IMG(p.id), p.name, `${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}`, "", { id: p.id, set: p.set, num: p.number })}</span>
         <div class="n">${p.name}</div>
         <div class="s">${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}</div>
         <div class="p">${p.price[1]}<small>${p.price[2]}</small></div>
@@ -1156,7 +1178,7 @@ function renderStrip(keepScroll) {
   document.getElementById("m-content").innerHTML = sorted.length
     ? `<div class="strip" id="strip">${sorted.map(c => `
         <div class="tcg ${have.has(c.id) ? "have" : ""} ${fav?.id === c.id ? "fav" : ""}" data-cid="${c.id}">
-          <span class="lw"><img loading="lazy" alt="${c.name}" src="${CARD_IMG(c.id)}">${lens(CARD_IMG(c.id), c.name, `${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}`)}</span>
+          <span class="lw"><img loading="lazy" alt="${c.name}" src="${CARD_IMG(c.id)}">${lens(CARD_IMG(c.id), c.name, `${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}`, "", { id: c.id, set: c.set, num: c.number })}</span>
           <div class="n">${c.name}</div>
           <div class="s">${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}</div>
           <div class="s">${c.series} · ${(c.date || "").slice(0, 4)}</div>
@@ -1859,10 +1881,15 @@ const coverOf = d => d.cards.find(l => l.id === d.cover)
   || d.cards.filter(l => l.cat === "Pokémon").sort((a, b) => b.n - a.n)[0];   // default: the most-run Pokémon
 const thumb = l => { const p = PRINT.get(l.id)?.[1]; return p ? imgOf(p) : CARD_IMG(l.id) };
 // 🔍 on a card image: a legal print opens the full card view; anything else (Gen 1, 30th, rotated) the image up close
-const lens = (img, name, sub = "", cls = "") =>
-  `<button class="zm ${cls}" data-lens="${esc(img)}" data-name="${esc(name)}" data-sub="${esc(sub)}" title="Show card">🔍</button>`;
-const cardLens = (id, img, name, cls = "") => PRINT.has(id)
-  ? `<button class="zm ${cls}" data-zid="${esc(id)}" title="Show card">🔍</button>` : lens(img, name, "", cls);
+// pc = the print it shows ({id, set name, number}), so the 🔍 can check what it goes for
+const lens = (img, name, sub = "", cls = "", pc = null) =>
+  `<button class="zm ${cls}" data-lens="${esc(img)}" data-name="${esc(name)}" data-sub="${esc(sub)}"${pc?.id
+    ? ` data-pid="${esc(pc.id)}" data-pset="${esc(pc.set || "")}" data-pnum="${esc(pc.num || "")}"` : ""} title="Show card">🔍</button>`;
+const cardLens = (id, img, name, cls = "") => {
+  if (PRINT.has(id)) return `<button class="zm ${cls}" data-zid="${esc(id)}" title="Show card">🔍</button>`;
+  const p = printOf(id)?.[1];
+  return lens(img, name, "", cls, { id, set: p?.[1], num: p?.[2] });
+};
 const textOf = c => c.tx ??= [c.n, ...(c.ab || []).flat(), ...(c.atk || []).flatMap(a => [a[0], a[3]]), c.rt || ""].join(" ").toLowerCase();
 decks.forEach(d => { d.tags ||= []; d.roles ||= {}; d.versions ||= []; d.holds ||= {}; d.built = !!d.built });
 
@@ -2825,6 +2852,7 @@ function renderZoom() {
         </div>
         ${why ? `<div class="sub">${why}</div>` : ""}` : `<div class="lbl">You own</div>
         <div class="sub">${isBasicE(c) ? "Basic Energy always counts as owned" : `${stock[zoomPrint] || 0} of this print · ${ownedOf(c)} in all`}</div>`}
+        ${pcPanel({ id: zoomPrint, name: c.n, set: CARDS.sets[p[1]] || p[1], num: p[2] })}
       </div>
     </div>`;
 }
@@ -3091,7 +3119,8 @@ document.addEventListener("click", e => {
   zoomCard = null; dlg.hidden = false;
   dlgBox.innerHTML = `<div class="m-head"><div><h2>${esc(b.dataset.name)}</h2><div class="sub">${esc(b.dataset.sub)}</div></div>
       <button class="x" data-z="close">✕</button></div>
-    <div class="zm-body"><img class="zm-img" alt="" src="${esc(bigImg(img))}"></div>`;
+    <div class="zm-body"><img class="zm-img" alt="" src="${esc(bigImg(img))}">${b.dataset.pid
+      ? `<div class="zm-side">${pcPanel({ id: b.dataset.pid, name: b.dataset.name, set: b.dataset.pset, num: b.dataset.pnum })}</div>` : ""}</div>`;
   dlgBox.querySelector(".zm-img").onerror = function () { this.onerror = null; this.src = img };
 }, true);
 
@@ -3360,7 +3389,7 @@ async function runOld(more) {
 function oldTile(c) {
   const p = c.p[0], id = p[0], n = trade[id] || 0, img = imgOf(p), where = [p[1], p[2], c.y].filter(Boolean).join(" · "), pr = priceOf(p);
   return `<div class="pk ${n ? "in" : ""}">
-    <img loading="lazy" alt="" src="${esc(img)}">${lens(img, c.n, where)}
+    <img loading="lazy" alt="" src="${esc(img)}">${lens(img, c.n, where, "", { id, set: p[1], num: p[2] })}
     ${n ? `<span class="qty">×${n}</span>` : ""}
     <div class="pn">${esc(c.n)}</div><div class="pset">${esc(where)}${pr.each != null ? `<br>${money(pr.each, pr.sym)}` : ""}</div>
     <span class="vq tile"><button data-tro="-1" data-id="${esc(id)}" ${n ? "" : "disabled"}>−</button><b>${n}</b><button data-tro="1" data-id="${esc(id)}">+</button></span>
@@ -3605,6 +3634,185 @@ const liveAt = () => {                             // the live refresh's local t
   const d = new Date(live.t), z = n => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
 };
+
+// ---- 🔍 Price check: one card by condition (NM…DMG), language (English, Japanese) and grade (raw, PSA…), from
+// PokemonPriceTracker: TCGplayer for raw, eBay sold for graded, both in $, shown in € at the ECB rate. A
+// consultation only: no price anywhere else changes. Nothing is asked until you press Check price, and an
+// answer is kept a day, so looking again costs nothing. The Apps Script holds the key (PPT_KEY) and makes
+// the call (the API refuses browsers), so it needs you signed in ----
+const CONDS = [["Near Mint", "NM"], ["Lightly Played", "LP"], ["Moderately Played", "MP"], ["Heavily Played", "HP"], ["Damaged", "DMG"]];
+const LANGS = { english: "English", japanese: "Japanese" };
+const GRADERS = ["psa", "cgc", "bgs", "sgc", "tag", "ace"];
+const pc = { lang: "english", grade: "raw", cond: "Near Mint", printing: "", busy: "", msg: "", jpq: "", left: null };   // the panel's picks; never saved
+let pcCard = null;                                 // the card in the open 🔍: {id, name, set, num}
+const pcIds = store.get("pcIds", {});              // our print id -> its TCGplayer product id; "jp:<id>" / "jpn:<id>" -> the Japanese print picked for it
+const pcCache = store.get("pcCache", {});          // "<lang>:<product id>:raw|graded" -> {t, d: the card as sent}; "jpq:<text>" -> {t, d: matches}
+const DAY = 864e5;
+for (const k in pcCache) if (Date.now() - pcCache[k].t > DAY) delete pcCache[k];
+const pcSave = () => {
+  Object.keys(pcCache).sort((a, b) => pcCache[b].t - pcCache[a].t).slice(60).forEach(k => delete pcCache[k]);
+  store.set("pcCache", pcCache); store.set("pcIds", pcIds);
+};
+const pcNorm = t => String(t || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
+const pcNum = n => String(n || "").split("/")[0].replace(/^0+(?=.)/, "").toLowerCase();
+const gradeName = g => g === "raw" ? "Raw" : g.replace(/^([a-z]+)(\d+)(?:_(\d))?$/, (_, co, n, h) => `${co.toUpperCase()} ${n}${h ? "." + h : ""}`);
+const gradeAt = g => { const m = g.match(/^([a-z]+)(\d+)(?:_(\d))?$/) || []; return [(GRADERS.indexOf(m[1]) + 1 || 9), -(+m[2] + (m[3] ? .5 : 0))] };
+const byGrade = (a, b) => { const x = gradeAt(a), y = gradeAt(b); return x[0] - y[0] || x[1] - y[1] };
+const agoT = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago` };
+
+async function usdEur() {                          // ECB rate, once a day
+  const fx = store.get("fx", null);
+  if (fx && Date.now() - fx.t < DAY) return fx;
+  try {
+    const d = await (await fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR")).json();
+    if (d?.rates?.EUR) { const x = { t: Date.now(), r: d.rates.EUR, d: d.date }; store.set("fx", x); return x }
+  } catch {}
+  return fx;
+}
+// our print -> its TCGplayer product id, found once on TCGdex (free, no key)
+async function tcgplayerId(card) {
+  if (pcIds[card.id]) return pcIds[card.id];
+  const ids = card.set ? await tdxIds([[card.id, card.set, card.num, card.name]]).catch(() => new Map()) : new Map();
+  for (const t of new Set([ids.get(card.id), card.id].filter(Boolean))) {
+    const c = await tdx("/cards/" + encodeURIComponent(t)).catch(() => null);
+    if (!c || (!ids.has(card.id) && pcNorm(c.name) !== pcNorm(card.name))) continue;   // a bare id guess must be the same card
+    const pid = Object.values(c.pricing?.tcgplayer || {}).find(v => v?.productId)?.productId;
+    if (pid) return pcIds[card.id] = String(pid);
+  }
+  return null;
+}
+async function pptAsk(q) {
+  const d = await (await fetch(cfg.url, { method: "POST", headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ idToken: cfg.tok, action: "price", q }) })).json();
+  if (d.left != null) pc.left = d.left;
+  if (d.ok) return d;
+  const err = d.error || "";
+  throw new Error(/sign in/i.test(err) ? "SIGNIN" : /PPT_KEY/.test(err) ? "PPTKEY" : /reload/.test(err) ? "OLDSCRIPT"
+    : d.status === 429 ? "Out of PokemonPriceTracker credits for today — they come back tomorrow."
+    : d.status === 401 ? "PokemonPriceTracker refused the key in PPT_KEY — check it in Script Properties." : err || "rejected");
+}
+const PC_HELP = {
+  PPTKEY: `Price checks need a free PokemonPriceTracker key in your Apps Script:<ol class="sub tok-help">
+    <li><a href="https://www.pokemonpricetracker.com/api" target="_blank" rel="noopener">Get a free API key ↗</a> (no card needed, 100 credits a day).</li>
+    <li>Apps Script → <b>Project Settings ⚙ → Script Properties → Add script property</b>: <code>PPT_KEY</code> = the key. No redeploy needed.</li></ol>`,
+  OLDSCRIPT: "Your Apps Script is the previous version — paste the new <code>apps_script.gs</code> and deploy it (DEPLOY.md), then add the key.",
+  SIGNIN: "Your Google sign-in ran out — sign in again, then press Check price.",
+};
+// one press, one answer: the price check, or (Japanese, none picked yet) the Japanese prints to pick from
+async function pcRun(job) {
+  if (!pcCard || pc.busy) return;
+  if (!cfg.url || !cfg.tok) { pc.msg = "Log in first: the check goes through your Apps Script."; return renderPC() }
+  if (tokLeft() < 6e4) { pc.msg = PC_HELP.SIGNIN; renderPC(); return expired() }
+  pc.msg = "";
+  try { await job(pcCard) }
+  catch (e) { pc.msg = PC_HELP[e.message] || "Couldn't check: " + esc(e.message); if (e.message === "SIGNIN") expired() }
+  pc.busy = ""; pcSave(); renderPC();
+}
+async function checkPrice(card) {
+  const graded = pc.grade !== "raw", jp = pc.lang === "japanese";
+  pc.busy = "Checking…"; renderPC();
+  const q = graded ? { includeEbay: "true" } : { includeHistory: "true", days: 3 };
+  let tid = jp ? pcIds["jp:" + card.id] : await tcgplayerId(card), d;
+  if (!tid && jp) return findJapanese(card);
+  if (tid) d = (await pptAsk({ ...q, language: pc.lang, tcgPlayerId: tid })).data;
+  else {                                           // TCGdex doesn't know it: by name and number, kept only if the number is right
+    d = (await pptAsk({ ...q, search: `${card.name} ${pcNum(card.num)}`, set: card.set })).data;
+    d = [].concat(d || [])[0];
+    if (!d || pcNum(d.cardNumber) !== pcNum(card.num)) throw new Error("PokemonPriceTracker has no card matching this one");
+    tid = pcIds[card.id] = String(d.tcgPlayerId);
+  }
+  d = [].concat(d || [])[0];
+  if (!d) throw new Error("PokemonPriceTracker has no prices for this card");
+  pcCache[`${pc.lang}:${tid}:${graded ? "graded" : "raw"}`] = { t: Date.now(), d };
+  await usdEur();
+}
+// Japanese prints are cards of their own (other sets, other numbers): find them by name, then pick one
+async function findJapanese(card) {
+  const q = (pc.jpq || card.name).trim(), k = "jpq:" + q.toLowerCase();
+  if (pcCache[k]) return;
+  pc.busy = "Finding Japanese prints…"; renderPC();
+  pcCache[k] = { t: Date.now(), d: [].concat((await pptAsk({ language: "japanese", search: q, limit: 6 })).data || []) };
+  await usdEur();
+}
+const pcTid = () => pc.lang === "japanese" ? pcIds["jp:" + pcCard.id] : pcIds[pcCard.id];
+const pcHit = kind => { const tid = pcTid(); return tid ? pcCache[`${pc.lang}:${tid}:${kind}`] : null };
+// what the picks come to, from the answer kept for them: {usd, how, none, t} or null (not checked yet)
+function pcResult() {
+  const graded = pc.grade !== "raw", hit = pcHit(graded ? "graded" : "raw");
+  if (!hit) return null;
+  const d = hit.d, out = { t: hit.t, usd: null };
+  if (!graded) {
+    const vs = d.priceHistory?.variants || {}, primary = d.prices?.primaryPrinting;
+    out.prints = Object.keys(vs).filter(v => Object.values(vs[v] || {}).some(c => c?.latestPrice != null));
+    const pr = out.prints.includes(pc.printing) ? pc.printing : out.prints.includes(primary) ? primary : out.prints[0] || primary;
+    out.printing = pr;
+    out.usd = vs[pr]?.[pc.cond]?.latestPrice ?? (pr === primary ? d.prices?.conditions?.[pc.cond]?.price : null) ?? null;
+    out.how = [pr, "TCGplayer market"].filter(Boolean).join(" · ");
+    out.none = `No ${pc.cond} price on TCGplayer for this card right now.`;
+  } else {
+    const x = d.ebay?.salesByGrade?.[pc.grade], odd = d.ebay?.smartPriceOutlierByGrade?.[pc.grade];
+    if (x?.count) {
+      out.usd = (!odd && x.smartMarketPrice?.price) || x.medianPrice || x.averagePrice || null;
+      out.how = `${x.count} sale${x.count === 1 ? "" : "s"} on eBay${x.lastSaleDate ? ` · last ${new Date(x.lastSaleDate).toLocaleDateString()}` : ""}${odd ? " · median (mixed sales)" : ""}`;
+    }
+    out.none = `No ${gradeName(pc.grade)} sales recorded for this card.`;
+  }
+  return out;
+}
+function pcHTML() {
+  const card = pcCard, jp = pc.lang === "japanese", graded = pc.grade !== "raw", fx = store.get("fx", null);
+  const chip = (k, v, label, title = "") => `<button class="chip ${pc[k] === v ? "on" : ""}" data-pc="${k}" data-v="${esc(v)}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
+  const eur = usd => fx ? money(usd * fx.r) : money(usd, "$");
+  const seen = Object.entries(pcHit("graded")?.d.ebay?.salesByGrade || {}).filter(([, x]) => x?.count).map(([g]) => g);
+  const grades = [...new Set(["psa10", "psa9", "psa8", ...seen])].sort(byGrade), r = pcResult();
+  const row = (label, chips) => `<div class="pc-row"><span>${label}</span><div class="chips">${chips}</div></div>`;
+  let body;
+  if (jp && !pcIds["jp:" + card.id]) {             // pick the Japanese print first
+    const q = (pc.jpq || card.name).trim(), list = pcCache["jpq:" + q.toLowerCase()]?.d;
+    body = `<div class="sub">Japanese prints are cards of their own, with other sets and numbers: find this one's first.</div>
+      <div class="pc-jq"><input id="pc-jpq" type="search" autocomplete="off" value="${esc(q)}">
+        <button class="pill sm on" data-pc="jpfind" ${pc.busy ? "disabled" : ""}>${pc.busy || "Find · 6 credits"}</button></div>
+      ${list ? list.length ? `<div class="pc-jl">${list.map(m => `<button class="pc-jm" data-pc="jppick" data-v="${esc(m.tcgPlayerId)}" data-label="${esc(`${m.name} · ${m.setName} #${m.cardNumber}`)}">
+          ${m.imageCdnUrl200 ? `<img loading="lazy" alt="" src="${esc(m.imageCdnUrl200)}">` : ""}<span><b>${esc(m.name)}</b><small>${esc(m.setName || "")} #${esc(m.cardNumber || "")}</small>
+          <small>${m.prices?.market != null ? `${eur(m.prices.market)} · ${money(m.prices.market, "$")}` : "no price"}</small></span></button>`).join("")}</div>
+        <div class="sub">Tap the one that matches to check it (2 credits).</div>`
+        : `<div class="sub">No Japanese card matches “${esc(q)}” — try another spelling, or its Japanese set.</div>` : ""}`;
+  } else {
+    const out = r ? r.usd != null ? `<b class="pc-eur">${eur(r.usd)}</b><small>${money(r.usd, "$")} · ${esc(r.how)} · checked ${agoT(r.t)}</small>`
+      : `<small>${r.none}</small>` : `<small>Not checked yet for these picks.</small>`;
+    body = `${!graded ? row("Condition", CONDS.map(([v, s]) => chip("cond", v, s, v)).join("")) : ""}
+      ${!graded && r?.prints?.length > 1 ? row("Printing", r.prints.map(v => `<button class="chip ${v === r.printing ? "on" : ""}" data-pc="printing" data-v="${esc(v)}">${esc(v)}</button>`).join("")) : ""}
+      ${jp ? `<div class="sub">Japanese print: ${esc(pcIds["jpn:" + card.id] || "")} <button class="pc-link" data-pc="jpchange">change</button></div>` : ""}
+      <div class="pc-out">${out}</div>
+      <div class="pc-act"><button class="pill sm on" data-pc="check" ${pc.busy ? "disabled" : ""}>${pc.busy || (r ? "↻ Check again" : "Check price")}</button>
+        <small>2 credits${pc.left != null ? ` · ${esc(pc.left)} left today` : ""}${fx ? ` · $1 = €${fx.r.toFixed(3)} (ECB ${esc(fx.d)})` : ""}</small></div>`;
+  }
+  return `<div class="lbl">Price check <small>· just a look, nothing else changes</small></div>
+    ${row("Language", Object.entries(LANGS).map(([v, t]) => chip("lang", v, t)).join(""))}
+    ${row("Grade", ["raw", ...grades].map(g => chip("grade", g, gradeName(g))).join(""))}
+    ${body}${pc.msg ? `<div class="sub pc-msg">${pc.msg}</div>` : ""}`;
+}
+// the 🔍 panel (signed in only: the public page has no Apps Script to ask)
+function pcPanel(card) {
+  if (document.body.classList.contains("locked")) return "";
+  if (pcCard?.id !== card.id) { pc.jpq = ""; pc.printing = "" }
+  pcCard = card; pc.msg = "";
+  return `<div class="pc">${pcHTML()}</div>`;
+}
+const renderPC = () => { const el = dlgBox.querySelector(".pc"); if (el && pcCard) el.innerHTML = pcHTML() };
+dlg.addEventListener("click", e => {
+  const b = e.target.closest("[data-pc]");
+  if (!b || !pcCard) return;
+  const k = b.dataset.pc, v = b.dataset.v;
+  if (k === "check") return pcRun(checkPrice);
+  if (k === "jpfind") { pc.jpq = dlgBox.querySelector("#pc-jpq")?.value.trim() || ""; return pcRun(findJapanese) }
+  if (k === "jppick") { pcIds["jp:" + pcCard.id] = v; pcIds["jpn:" + pcCard.id] = b.dataset.label; return pcRun(checkPrice) }
+  if (k === "jpchange") { delete pcIds["jp:" + pcCard.id]; delete pcIds["jpn:" + pcCard.id]; pcSave(); return renderPC() }
+  if (k in pc) { pc[k] = v; pc.msg = ""; renderPC() }
+});
+dlg.addEventListener("keydown", e => {
+  if (e.target.id === "pc-jpq" && e.key === "Enter") { pc.jpq = e.target.value.trim(); pcRun(findJapanese) }
+});
 
 // ---- Prices: what everything you own is worth — My Cards, plus one of each 30th Celebration card marked owned ----
 const FROM = { mycards: "My Cards", trade: "Trade binder", anniv: "30th Celebration" };

@@ -143,6 +143,22 @@ asks [TCGdex](https://tcgdex.dev), a free public API, straight from the browser:
 and TCGplayer $ for every card you own or play, in a few seconds, with no sign-in and no token. They
 stay on that device and sit over the site's own prices until the next data refresh brings newer ones.
 
+**🔍 Price check** (a consultation, nothing else on the site changes). In a card's 🔍, signed in, pick a
+language (English, Japanese), a grade (Raw, PSA 10/9/8, and any other grade that has sales) and, raw, a
+condition (NM, LP, MP, HP, DMG); **Check price** then asks [PokemonPriceTracker](https://www.pokemonpricetracker.com/api)
+for what that card goes for: TCGplayer for raw, eBay sold for graded. It's in $, shown in € at the day's ECB
+rate ([Frankfurter](https://frankfurter.dev)). Nothing is asked until you press it, and an answer is kept a day
+on that device, so switching conditions or grades, or opening the card again, costs nothing. A Japanese print
+is a card of its own, so the first check finds the Japanese prints by name for you to pick from. That API
+refuses browsers, so the call goes through the Apps Script, which keeps the key:
+
+1. [pokemonpricetracker.com/api](https://www.pokemonpricetracker.com/api) → free plan (no card) → copy the API key.
+   It gives 100 credits a day: a check costs 2, finding Japanese prints 6.
+2. Apps Script → **Project Settings → Script Properties → Add script property**: `PPT_KEY` = the key.
+   (It never reaches the public site.)
+3. This needs the current `apps_script.gs` (paste it, then **Deploy → Manage deployments → New version**).
+   The key itself needs no redeploy.
+
 **A new set, the day it's out.** The Data page's **New sets** box asks pokemontcg.io for sets it lists
 with Standard-legal cards that the site doesn't have yet. **＋ Add** fetches the set's cards straight
 into that device (no sign-in, no token): they show up in the deckbuilder and My Cards at once. The
@@ -193,6 +209,7 @@ directly.
 
 | Thing | Guard |
 |---|---|
+| PokemonPriceTracker key (`PPT_KEY`), GitHub token (`GITHUB_TOKEN`) | Script Properties — never sent to the site |
 | Site (card list, prices, PDF) | Nothing — public, unless you add Cloudflare Access |
 | Your Trade binder and Looking for list | Nothing — public on purpose, read-only (the landing page) |
 | The rest of your collection (cards owned, decks, favourites) | `ALLOWED` script property — Google sign-in |
