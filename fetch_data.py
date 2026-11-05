@@ -185,7 +185,7 @@ def tcgdex_eur(want):
     return found
 
 
-ANNIV_FIELDS = FIELDS + ",images"
+ANNIV_FIELDS = FIELDS + ",images,supertype"
 
 
 def set_cards(set_id):
@@ -244,6 +244,7 @@ def anniv_master_set():
                 "series": (c.get("set") or {}).get("series", ""),
                 "date": (c.get("set") or {}).get("releaseDate", ""),
                 "rarity": c.get("rarity") or "",
+                "c": (c.get("supertype") or "P")[0],    # P / T / E: the Trade binder files a non-legal one by it
                 "img": (c.get("images") or {}).get("large") or (c.get("images") or {}).get("small"),
                 "price": price(c),
             })

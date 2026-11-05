@@ -19,7 +19,7 @@
 - 🃏 **Deck builds**: build decks from your cards, see how they hold up against the meta, and what's left to buy.
 - 💶 **Prices**: what everything is worth, refreshed live from Cardmarket.
 - 🤝 **Trade page**: signed out, the site is a read-only page of the cards you're looking for and the ones you'd trade. Send the link to anyone, or a link to just one list (only your deck cards, only your collections); **Log in** to edit, **Log out** to see it as they do. Any card's 🔍 can check what it goes for by condition, language and PSA grade (signed in, on request, in €).
-The Trade binder also takes older cards: in **＋ Add cards**, switch to **🕰 Every card** to search every card ever printed (live, only while it's on).
+The Trade binder also takes older cards: in **＋ Add cards**, switch to **🕰 Every card** to search every card ever printed (live, only while it's on). The 30th Celebration's Classic Collection, not Standard-legal either, is right in the normal picker.
 
 ## 🧪 Where the data comes from
 
