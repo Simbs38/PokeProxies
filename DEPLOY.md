@@ -35,7 +35,7 @@ editing alone changes nothing that is served.
 | `Gen 1` | Pokémon · Owned · Card IDs (one per line) · Favourite — plus a last `Unsorted` row for owned cards that match no Pokémon |
 | `30th Celebration` | Pokémon · Owned · Card ID · Number · Rarity · Section |
 | `My Cards` | Card · Set · Number · Card ID · Qty · Category · Price — one row per legal print you own |
-| `Trade` | Same columns as `My Cards` — the cards in your Trade binder, kept apart from My Cards |
+| `Trade` | Same columns as `My Cards` — the cards in your Trade binder, kept apart from My Cards. Older prints (picked under **🕰 Every card**) are in here too, with the set's full name: their row is all another device needs to show them |
 | `Traded` | Date · Card · Set · Number · Card ID · Qty · From · Price — one row per card traded out; a trade's rows share its date, and Price is what it was worth then |
 | `Looking for` | Card · Set · Number · Card ID · Qty · For · Price — what the public landing page lists: the cards your decks still lack (For = `Decks`, any print will do), then the 30th Celebration cards and Gen 1 Pokémon you don't own yet |
 | `Deck · <name>` (one per deck) | Qty · Card · Card ID · Category · Role · Cover — and on the right the deck's scores, archetype, price, tags, notes, role overrides, Built, copies moved into it, then its saved versions |

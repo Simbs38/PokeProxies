@@ -374,6 +374,11 @@
   .tr-h { margin: 18px 0 4px; font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .06em }
   .tr-x { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px }
   .tr-x .pill { margin-left: auto }
+  .tr-src { width: max-content; max-width: 100% }
+  .tr-src button { flex: 0 0 auto; padding: 7px 15px; white-space: nowrap }
+  .pk .pset { font-size: 10px; color: var(--dim); text-align: center; line-height: 1.3; margin-top: 1px }
+  .tgrid .tr-h, .tr-more { grid-column: 1/-1; text-align: center }
+  .tgrid .tr-h { text-align: left; margin-top: 0 }
   .tr-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
     padding: 10px 22px; background: #0d0f16ee; border-top: 1px solid var(--line); backdrop-filter: blur(8px) }
   .tr-bar:empty { display: none }
@@ -925,11 +930,16 @@ const decks = store.get("decks", []);            // [{name, notes, cover, cards:
 const stock = store.get("stock", {});            // My Cards: print id -> copies you own
 const trade = store.get("trade", {});            // Trade binder, apart from My Cards: print id -> copies set aside to trade
 const traded = store.get("traded", []);          // what went out: [{t, items: [{id, n, from: "trade" | "mine", each, sym}]}]
+// older prints in the Trade binder, outside cards.js (searched on pokemontcg.io when asked, or rebuilt from a Sheet
+// row): print id -> {n, c, sub, t, y, old, p: [[id, set name, number, img, €, $]]}. Only Trade reads them
+const oldCards = store.get("oldCards", {});
 let ALLOC = null;                                // who holds which owned copies; rebuilt after any change
 Object.keys(favs).forEach(k => k.split(":")[0] in COLLECTIONS || delete favs[k]);   // Gen 2/3 leftovers
 const save = (sync = true) => {
   store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen); store.set("decks", decks);
   store.set("stock", stock); store.set("trade", trade); store.set("traded", traded); ALLOC = null;
+  for (const id in oldCards) if (!trade[id] && !traded.some(e => e.items.some(x => x.id === id))) delete oldCards[id];
+  store.set("oldCards", oldCards);
   if (sync) store.set("dirty", Date.now());   // when the Sheet last fell behind; 0 once a save lands
   if (sync && typeof push === "function") push();
 };
@@ -1818,6 +1828,8 @@ CARDS.cards.forEach((c, k) => {
   if (!NAMED.has(c.n)) NAMED.set(c.n, c);
   c.p.forEach(p => { PRINT.set(p[0], [c, p]); BY_CODE.set(`${p[1]} ${p[2]}`.toUpperCase(), p[0]) });
 });
+// any print the Trade binder can hold: a legal one, else an older one kept in oldCards (decks and My Cards never see those)
+const printOf = id => PRINT.get(id) || (oldCards[id] ? [oldCards[id], oldCards[id].p[0]] : undefined);
 CARDS.cards.forEach(c => {                // a Pokémon's line is named after its Basic
   if (c.c !== "P") return;
   let x = c;
@@ -3189,14 +3201,14 @@ binderview.addEventListener("input", e => {
 
 // ---- Trade: a binder of cards set aside to trade, apart from My Cards. Pick copies to put a trade together
 // and see what it's worth; Trade out takes them out of the binder (or My Cards, for extras) into the Traded log ----
-const tpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false };   // Add cards
+const tpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: false, old: false };   // Add cards; old: every card, off on each visit
 const xpick = { cat: "all", types: new Set(), stages: new Set(), kinds: new Set(), ex: false, q: "", own: true };    // extras: My Cards only
 const tlook = { mode: "binder", q: "", sort: store.get("tradeSort", "cost"), view: store.get("tradeView", "list") };
 const tsel = new Map();                          // "trade:<id>" / "mine:<id>" -> copies in the trade being put together
 const selOf = (from, id) => tsel.get(from + ":" + id) || 0;
 const stepper = (from, id, n, max, cls = "") => `<span class="vq ${cls}"><button data-sel="-1" data-from="${from}" data-id="${esc(id)}" ${n ? "" : "disabled"}>−</button>
   <b>${n}</b><button data-sel="1" data-from="${from}" data-id="${esc(id)}" ${n >= max ? "disabled" : ""}>+</button></span>`;
-const asCard = (id, n, from) => { const [c, p] = PRINT.get(id) || []; return c && { c, p, n, from, ...priceOf(p) } };
+const asCard = (id, n, from) => { const [c, p] = printOf(id) || []; return c && { c, p, n, from, ...priceOf(p) } };
 const tradeRows = () => Object.entries(trade).filter(([, n]) => n > 0).map(([id, n]) => asCard(id, n, "trade")).filter(Boolean);
 // never more than the copies still there (My Cards can change on its own page)
 const selRows = () => [...tsel].map(([k, n]) => { const i = k.indexOf(":"), from = k.slice(0, i), id = k.slice(i + 1);
@@ -3204,7 +3216,7 @@ const selRows = () => [...tsel].map(([k, n]) => { const i = k.indexOf(":"), from
 const nCards = xs => xs.reduce((s, x) => s + x.n, 0);
 // a card your decks still lack (a Trade binder copy could fill it), or copies a deck holds (an extra from My Cards)
 function tradeWarn(c, from, n) {
-  if (isBasicE(c)) return "";
+  if (c.old || isBasicE(c)) return "";
   const A = allocation();
   if (from === "mine") {
     const held = A.got.reduce((s, m) => s + (m.get(c.k) || 0), 0);
@@ -3263,20 +3275,27 @@ function renderTradeList() {
 
 // the pickers: ＋ Add cards fills the Trade binder from every legal card; ＋ Add extra card picks from My Cards
 function renderTradePick() {
-  const x = tlook.mode === "extra", st = x ? xpick : tpick;
+  const x = tlook.mode === "extra", st = x ? xpick : tpick, older = !x && tpick.old;
   if (x) xpick.own = true;
   tradeview.querySelector(".tr-body").innerHTML = `
     ${x ? `<div class="tr-x"><div><b>Add an extra card from My Cards</b><div class="sub">Copies picked here join this trade and leave My Cards when you trade out</div></div>
       <button class="pill sm on" data-tm="binder">Done</button></div>` : ""}
     <div class="pk-tools">
-      <input id="tp-q" type="search" placeholder="Search names and card text…" autocomplete="off" value="${esc(st.q)}">
+      ${x ? "" : `<div class="seg tr-src">${[["", "Standard-legal"], ["1", "🕰 Every card · older too"]].map(([v, t]) =>
+        `<button data-src="${v}" class="${older === !!v ? "on" : ""}">${t}</button>`).join("")}</div>`}
+      <input id="tp-q" type="search" autocomplete="off" ${older
+        ? `placeholder="A card name, then a set or number to narrow it…" value="${esc(oldSearch.q)}"`
+        : `placeholder="Search names and card text…" value="${esc(st.q)}"`}>
+      ${older ? `<div class="sub">Searched live on pokemontcg.io, only while this is on: every card ever printed, minus the
+        Standard-legal ones (those are under Standard-legal) · e.g. <i>charizard base</i>, <i>pikachu 58</i>, <i>dark gyarados</i></div>` : `
       <div class="seg pk-cat">${Object.entries({ all: "All", ...CAT }).map(([v, t]) => `<button data-cat="${v}" class="${st.cat === v ? "on" : ""}">${t}</button>`).join("")}</div>
-      <div class="chips">${chipsHTML(st).replace(/<button class="chip own[^]*?<\/button>/, x ? "" : "$&")}</div>
+      <div class="chips">${chipsHTML(st).replace(/<button class="chip own[^]*?<\/button>/, x ? "" : "$&")}</div>`}
     </div>
     <div class="pk-grid tgrid"></div>`;
   renderTradePickGrid();
 }
 function renderTradePickGrid() {
+  if (tlook.mode === "add" && tpick.old) return renderOldGrid();
   const x = tlook.mode === "extra", view = x ? "extra" : "trade", shown = shownNames(x ? xpick : tpick);
   tradeview.querySelector(".tgrid").innerHTML = shown.length
     ? shown.map(([, g]) => (x ? extraTile : tradeTile)(g) + (listOpen?.view === view && listOpen.g === g ? versionList(g, view) : "")).join("")
@@ -3307,9 +3326,61 @@ function extraTile(g) {
   </div>`;
 }
 
+// ---- older cards: any print ever made, searched on pokemontcg.io only while "Every card" is on, so the
+// site itself stays Standard-legal and as light as before. A card put in the binder is kept in oldCards ----
+const oldSearch = { q: "", hits: [], total: 0, seen: 0, page: 0, busy: false, err: "" };
+const OLD_FIELDS = "id,name,supertype,subtypes,types,number,set,images,cardmarket,tcgplayer", OLD_PAGE = 48;
+let oldN = 0;                                      // the latest search: an answer to an older one is dropped
+// "charizard base 4/102" -> every word in the name or the set's name, a number as the card's number
+const oldQ = t => (t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/\d+[a-z]?\/\d+|[a-z0-9]+/g) || [])
+  .filter(w => w.length > 1 || /\d/.test(w))
+  .map(w => /^\d+[a-z]?(\/\d+)?$/.test(w) ? `number:${w.split("/")[0]}` : `(name:*${w}* OR set.name:*${w}*)`).join(" ");
+const asOld = c => {
+  const cm = c.cardmarket?.prices || {}, tp = Object.values(c.tcgplayer?.prices || {});
+  return { n: c.name, c: c.supertype[0], sub: c.subtypes || [], t: c.types || [], y: (c.set.releaseDate || "").slice(0, 4), old: 1,
+           p: [[c.id, c.set.name, c.number, c.images?.small && c.images.small !== CARD_IMG(c.id) ? c.images.small : "",
+                cents(cm.trendPrice || cm.averageSellPrice || cm.avg30), cents(tp.map(p => p.market || p.mid).find(Boolean))]] };
+};
+async function runOld(more) {
+  const s = oldSearch, q = oldQ(s.q);
+  if (more && (s.busy || s.seen >= s.total)) return;
+  if (!more) Object.assign(s, { hits: [], total: 0, seen: 0, page: 0, err: "" });
+  const my = more ? oldN : ++oldN;
+  s.busy = !!q; renderOldGrid();
+  if (!q) return;
+  try {
+    const d = await getJSON(ptcgCards(q, `&orderBy=-set.releaseDate&pageSize=${OLD_PAGE}&page=${s.page + 1}&select=${OLD_FIELDS}`));
+    if (my !== oldN) return;
+    s.page++; s.total = d.totalCount || 0; s.seen += d.data.length;
+    s.hits.push(...d.data.filter(c => !PRINT.has(c.id)).map(asOld));
+  } catch (e) { if (my !== oldN) return; s.err = e.message }
+  s.busy = false;
+  if (cur === "trade" && tlook.mode === "add" && tpick.old) renderOldGrid();
+}
+function oldTile(c) {
+  const p = c.p[0], id = p[0], n = trade[id] || 0, img = imgOf(p), where = [p[1], p[2], c.y].filter(Boolean).join(" · "), pr = priceOf(p);
+  return `<div class="pk ${n ? "in" : ""}">
+    <img loading="lazy" alt="" src="${esc(img)}">${lens(img, c.n, where)}
+    ${n ? `<span class="qty">×${n}</span>` : ""}
+    <div class="pn">${esc(c.n)}</div><div class="pset">${esc(where)}${pr.each != null ? `<br>${money(pr.each, pr.sym)}` : ""}</div>
+    <span class="vq tile"><button data-tro="-1" data-id="${esc(id)}" ${n ? "" : "disabled"}>−</button><b>${n}</b><button data-tro="1" data-id="${esc(id)}">+</button></span>
+  </div>`;
+}
+function renderOldGrid() {
+  const s = oldSearch, g = tradeview.querySelector(".tgrid");
+  if (!g) return;
+  const mine = Object.values(oldCards).filter(c => trade[c.p[0][0]]);
+  const more = s.seen < s.total ? `<p class="tr-more"><button class="pill sm" data-old="more" ${s.busy ? "disabled" : ""}>${s.busy ? "Loading…" : `Show more · ${(s.total - s.seen).toLocaleString()} left`}</button></p>` : "";
+  g.innerHTML = s.err ? `<p class="empty">Couldn't search pokemontcg.io (${esc(s.err)}). <button class="pill sm" data-old="retry">Try again</button></p>`
+    : !oldQ(s.q) ? (mine.length ? `<h3 class="tr-h">Older cards in your Trade binder</h3>${mine.map(oldTile).join("")}` : "")
+      + `<p class="empty">Type a card name to search every card ever printed.</p>`
+    : !s.hits.length ? `<p class="empty">${s.busy ? "Searching pokemontcg.io…" : s.total ? `Only Standard-legal prints so far for “${esc(s.q)}” — they're under Standard-legal.` : `No card matches “${esc(s.q)}”.`}</p>${more}`
+    : s.hits.map(oldTile).join("") + more;
+}
+
 function renderTraded() {
   tradeview.querySelector(".tr-body").innerHTML = traded.length ? traded.map((e, i) => [e, i]).reverse().map(([e, i]) => {
-    const xs = e.items.map(x => { const [c, p] = PRINT.get(x.id) || [];
+    const xs = e.items.map(x => { const [c, p] = printOf(x.id) || [];
       return { c: c || { n: x.id, c: "T", t: [], sub: [] }, p: p || [x.id, "", "", CARD_IMG(x.id)], n: x.n, each: x.each, sym: x.sym || "€", from: x.from } });
     return `<div class="tr-log"><div class="tr-lh"><b>${new Date(e.t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</b>
         · ${nCards(xs)} card${nCards(xs) > 1 ? "s" : ""} · ≈ ${buyTotal(xs)}
@@ -3361,6 +3432,21 @@ tradeview.addEventListener("click", e => {
   if (sel) return setSel(sel.dataset.from, sel.dataset.id, +sel.dataset.sel);
   const t1 = e.target.closest("[data-tr1]");
   if (t1) return setTrade(t1.dataset.id, +t1.dataset.tr1);
+  const src = e.target.closest("[data-src]");
+  if (src) {
+    if (tpick.old === !!src.dataset.src) return;
+    tpick.old = !!src.dataset.src; listOpen = null;
+    if (tpick.old && !oldSearch.q && tpick.q) { oldSearch.q = tpick.q; renderTradePick(); return runOld() }
+    return renderTradePick();
+  }
+  const to = e.target.closest("[data-tro]");
+  if (to) {
+    const id = to.dataset.id;
+    oldCards[id] ||= oldSearch.hits.find(c => c.p[0][0] === id);
+    return oldCards[id] && setTrade(id, +to.dataset.tro);
+  }
+  const ob = e.target.closest("[data-old]")?.dataset.old;
+  if (ob) return runOld(ob === "more");
   const act = e.target.closest("[data-tr]")?.dataset.tr;
   if (act === "extra") { tlook.mode = "extra"; listOpen = null; return renderTrade() }
   if (act === "clear") { tsel.clear(); return renderTrade() }
@@ -3402,12 +3488,14 @@ tradeview.addEventListener("click", e => {
 let ttyping;
 tradeview.addEventListener("input", e => {
   if (e.target.id !== "tr-q" && e.target.id !== "tp-q") return;
+  const older = e.target.id === "tp-q" && tlook.mode === "add" && tpick.old;
   clearTimeout(ttyping);
-  ttyping = setTimeout(() => {
+  ttyping = setTimeout(() => {                     // older: one request per pause, not per letter
     const q = e.target.value.trim().toLowerCase();
-    if (e.target.id === "tr-q") { tlook.q = q; renderTradeList() }
+    if (older) { if (oldQ(q) !== oldQ(oldSearch.q) || oldSearch.err) { oldSearch.q = q; runOld() } else oldSearch.q = q }
+    else if (e.target.id === "tr-q") { tlook.q = q; renderTradeList() }
     else { (tlook.mode === "extra" ? xpick : tpick).q = q; renderTradePickGrid() }
-  }, 150);
+  }, older ? 500 : 150);
 });
 
 // ---- Live prices: Cardmarket € and TCGplayer $ straight from TCGdex, a free public API (no key, no
@@ -3424,7 +3512,7 @@ function applyLive() {
   if (!live?.p) return;
   const newer = live.t > baked();
   for (const [id, [eur, usd]] of Object.entries(live.p)) {
-    const p = PRINT.get(id)?.[1], it = ANNIV_ID.get(id);
+    const p = printOf(id)?.[1], it = ANNIV_ID.get(id);
     if (p && (newer || p[4] == null && p[5] == null)) { if (eur != null) p[4] = eur; if (usd != null) p[5] = usd }
     if (it && eur != null && (newer || it.price?.[0] == null)) it.price = euro(eur);
   }
@@ -3442,7 +3530,7 @@ function priceWant() {
                        ...COLLECTIONS.anniv.items.filter(it => have.has(it.id)).map(it => it.id)]);
   const want = [];                                 // [id, set name, number, card name]
   for (const id of ids) {
-    const [c, p] = PRINT.get(id) || [], it = ANNIV_ID.get(id);
+    const [c, p] = printOf(id) || [], it = ANNIV_ID.get(id);
     if (p) want.push([id, CARDS.sets[p[1]] || p[1], p[2], c.n]);
     else if (it) want.push([id, it.set, it.number, it.name]);
   }
@@ -3528,7 +3616,7 @@ function valued() {
   for (const [from, box] of [["mycards", stock], ["trade", trade]])
     for (const [id, n] of Object.entries(box)) {
       if (!n) continue;
-      const [c, p] = PRINT.get(id) || [];
+      const [c, p] = printOf(id) || [];
       rows.push({ from, name: c ? c.n : id, where: p ? `${CARDS.sets[p[1]] || p[1]} ${p[2]}` : "rotated out",
                   img: p && imgOf(p), n, eur: p?.[4] ?? null, usd: p?.[5] ?? null });
     }
@@ -3637,7 +3725,7 @@ priceview.addEventListener("input", e => {
 
 // ---- backup / restore what only you know: cards owned, favourites, decks ----
 backup.onclick = () => {
-  const blob = new Blob([JSON.stringify({ have: [...have], favs, decks, stock, trade, traded }, null, 1)],
+  const blob = new Blob([JSON.stringify({ have: [...have], favs, decks, stock, trade, traded, oldCards }, null, 1)],
                         { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -3716,7 +3804,7 @@ function tabsOut() {
   gen1.push([UNSORTED, "", rest.map(id => label(byId.get(id)) || id).join("\n"), ""]);
   // My Cards and the Trade binder: one row per print (a rotated print keeps its row, so nothing is lost)
   const printRow = (id, n) => {
-    const hit = PRINT.get(id), c = hit?.[0], pr = hit?.[1];
+    const hit = printOf(id), c = hit?.[0], pr = hit?.[1];
     return [c ? c.n : id, pr ? CARDS.sets[pr[1]] || pr[1] : "", pr ? pr[2] : "", id, String(n), c ? CAT[c.c] : "",
             pr?.[4] != null ? money(pr[4]) : pr?.[5] != null ? money(pr[5], "$") : ""];
   };
@@ -3794,6 +3882,16 @@ function fromTabs(r) {
   for (const [, , , id, n] of t.cards || []) if (id && +n) d.stock[id] = +n;
   // no Trade tabs at all (an older Apps Script, or none saved yet) = keep this device's
   if (t.trade) { d.trade = {}; for (const [, , , id, n] of t.trade) if (id && +n) d.trade[id] = +n }
+  // an older print (or one rotated out of cards.js) has its name, set and number in its row: enough to show it here
+  d.old = {};
+  const oldOf = (name, set, num, id, cat, price) => {
+    if (!id || PRINT.has(id) || d.old[id]) return;
+    const pr = priceIn(price);
+    d.old[id] = { n: name || id, c: LETTER[cat] || "P", sub: [], t: [], old: 1,
+                  p: [[id, set, num, "", pr.sym === "€" ? pr.each : null, pr.sym === "$" ? pr.each : null]] };
+  };
+  for (const [name, set, num, id, , cat, price] of t.trade || []) oldOf(name, set, num, id, cat, price);
+  for (const [, name, set, num, id, , , price] of t.traded || []) oldOf(name, set, num, id, "", price);
   if (t.traded) {
     const by = new Map();
     for (const [when, , , , id, n, from, price] of t.traded) {
@@ -3828,6 +3926,7 @@ function applyState(d) {
   if (d.stock) { Object.keys(stock).forEach(k => delete stock[k]); Object.assign(stock, d.stock) }
   if (d.trade) { Object.keys(trade).forEach(k => delete trade[k]); Object.assign(trade, d.trade) }
   if (d.traded) traded.splice(0, traded.length, ...d.traded);
+  for (const [id, c] of Object.entries(d.oldCards || d.old || {})) oldCards[id] ||= c;   // this device's copy knows more
   if (d.decks) {                 // the old state JSON and older backups carry none: keep this device's
     decks.splice(0, decks.length, ...d.decks);
     decks.forEach(x => { x.tags ||= []; x.roles ||= {}; x.versions ||= []; x.holds ||= {}; x.built = !!x.built });
@@ -4200,7 +4299,7 @@ const priceIn = t => { const m = String(t || "").match(/^([€$])([\d,.]+)/); re
 
 // a Sheet row [Card, Set, Number, Card ID, Qty, For|Category, Price] -> what a tile needs
 function lpItem(r, tab) {
-  const [name, set, num, id, n, grp, price] = r, hit = id && PRINT.get(id), an = id && ANNIV_ID.get(id);
+  const [name, set, num, id, n, grp, price] = r, hit = id && printOf(id), an = id && ANNIV_ID.get(id);
   const x = { id, n: +n || 1, grp: tab === "want" ? grp : "", name, set: [set, num].filter(Boolean).join(" "), ...priceIn(price) };
   if (hit) {
     const [c, p] = hit;
@@ -4211,7 +4310,7 @@ function lpItem(r, tab) {
   else if (grp === WANT.gen1 && tab === "want") {
     const p = GEN1_BY.get(name);
     Object.assign(x, { img: p ? ART(p.id) : "", alt: p ? ART(Number(p.dex)) : "", art: true, set: p ? `#${p.dex}` : "", any: "any card" });
-  } else x.img = id ? CARD_IMG(id) : "";
+  } else Object.assign(x, { img: id ? CARD_IMG(id) : "", kind: tab === "trade" ? grp : "" });   // an older print: its row says it all
   if (grp === WANT.decks) x.any = "any print";
   return x;
 }
