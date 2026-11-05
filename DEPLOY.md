@@ -37,9 +37,16 @@ editing alone changes nothing that is served.
 | `My Cards` | Card · Set · Number · Card ID · Qty · Category · Price — one row per legal print you own |
 | `Trade` | Same columns as `My Cards` — the cards in your Trade binder, kept apart from My Cards |
 | `Traded` | Date · Card · Set · Number · Card ID · Qty · From · Price — one row per card traded out; a trade's rows share its date, and Price is what it was worth then |
+| `Looking for` | Card · Set · Number · Card ID · Qty · For · Price — what the public landing page lists: the cards your decks still lack (For = `Decks`, any print will do), then the 30th Celebration cards and Gen 1 Pokémon you don't own yet |
 | `Deck · <name>` (one per deck) | Qty · Card · Card ID · Category · Role · Cover — and on the right the deck's scores, archetype, price, tags, notes, role overrides, Built, copies moved into it, then its saved versions |
 
 They are for reading: the next save from any device rewrites them, so hand edits do not stick.
+
+**The public landing page.** Signed out, the site shows a read-only page with two tabs, *Looking for*
+and *For trade*, so you can send the link to anyone. It reads the `Looking for` and `Trade` tabs, and
+only those, with no sign-in (`?public=1` on the `/exec` URL); every other tab still needs your Google
+token. `…/#lookingfor` and `…/#fortrade` open a tab directly. After updating to this version of
+`apps_script.gs` and re-deploying, sign in once: the site fills the `Looking for` tab on that first load.
 Renaming or deleting a deck renames or removes its tab. The earlier single `Decks` tab is read once
 and then removed.
 
@@ -184,7 +191,8 @@ directly.
 | Thing | Guard |
 |---|---|
 | Site (card list, prices, PDF) | Nothing — public, unless you add Cloudflare Access |
-| Your collection (cards owned / favourites) | `ALLOWED` script property — Google sign-in |
+| Your Trade binder and Looking for list | Nothing — public on purpose, read-only (the landing page) |
+| The rest of your collection (cards owned, decks, favourites) | `ALLOWED` script property — Google sign-in |
 | Sheet contents | Your Google account |
 
 The `/exec` URL on its own is useless now: every call must carry a Google ID token that the script

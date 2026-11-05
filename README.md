@@ -18,6 +18,7 @@
 - 🗂️ **My Cards**: a binder of every card you own, searchable by name, set, type or kind.
 - 🃏 **Deck builds**: build decks from your cards, see how they hold up against the meta, and what's left to buy.
 - 💶 **Prices**: what everything is worth, refreshed live from Cardmarket.
+- 🤝 **Trade page**: signed out, the site is a read-only page of the cards you're looking for and the ones you'd trade. Send the link to anyone; **Log in** to edit, **Log out** to see it as they do.
 
 ## 🧪 Where the data comes from
 
@@ -46,7 +47,7 @@ The site opens behind a Google sign-in and keeps your collection in a Google She
 3. In [Google Cloud](https://console.cloud.google.com), create an **OAuth client ID** (Web application). Add your site's origin and `http://localhost:8765` as **Authorised JavaScript origins**, and add yourself as a test user.
 4. Put that client ID in `CLIENT_ID`, in both `index.html` and `apps_script.gs`.
 5. Back in Apps Script: **Deploy → New deployment → Web app**, execute as **Me**, access **Anyone**. Copy the `/exec` URL into `SYNC_URL` in `index.html`.
-6. Open the site, sign in with Google, and your Sheet fills up with tabs: collections, My Cards, Trade, and one tab per deck. ✨
+6. Open the site, sign in with Google, and your Sheet fills up with tabs: collections, My Cards, Trade, Looking for, and one tab per deck. ✨ Trade and Looking for are the only tabs anyone can read without signing in: they feed the public landing page.
 
 Optional: add a `GITHUB_TOKEN` script property to make the Data page's **Refresh data** button work.
 The step-by-step version, with GitHub Pages hosting, is in [DEPLOY.md](DEPLOY.md).

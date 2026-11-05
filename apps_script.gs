@@ -3,7 +3,9 @@
  *
  * Readable tabs hold the collection, one row per Pokémon form / per card: "Gen 1" and
  * "30th Celebration"; "My Cards", one row per legal print you own; "Trade" and "Traded", the cards
- * set aside to trade and what went out; and one "Deck · <name>" tab per deck. Only the website writes them;
+ * set aside to trade and what went out; "Looking for", the cards still missing (decks, the 30th, Gen 1);
+ * and one "Deck · <name>" tab per deck. "Trade" and "Looking for" are public: the signed-out landing
+ * page reads them with no token. Only the website writes them;
  * every save rewrites all of them. The old "state"
  * tab (one JSON blob) is handed to the site once to fill them, then left alone as a rollback
  * point. See DEPLOY.md.
@@ -24,7 +26,11 @@ const TABS = {
   cards: { name: 'My Cards',         head: ['Card', 'Set', 'Number', 'Card ID', 'Qty', 'Category', 'Price'] },
   trade: { name: 'Trade',            head: ['Card', 'Set', 'Number', 'Card ID', 'Qty', 'Category', 'Price'] },
   traded: { name: 'Traded',          head: ['Date', 'Card', 'Set', 'Number', 'Card ID', 'Qty', 'From', 'Price'] },
+  wants: { name: 'Looking for',      head: ['Card', 'Set', 'Number', 'Card ID', 'Qty', 'For', 'Price'] },
 };
+// The signed-out landing page: anyone may read these two tabs, and only these, so a shared link
+// needs no sign-in. Everything else stays behind the Google check.
+const PUBLIC = ['trade', 'wants'];
 const SITE = ['3', '4'];           // site versions that understand these tabs; anything older is told to reload
 const DECK = 'Deck · ';            // every tab named like this belongs to the site: one per deck
 const OLD_DECKS = 'Decks';         // the earlier all-decks-in-one tab: read once, then removed
@@ -145,7 +151,15 @@ function legacyPost_(ss, body) {
 
 // ---- web app ----
 
+/** What the landing page shows: the Trade binder and the Looking for list. A tab not made yet is null. */
+function public_() {
+  const ss = SpreadsheetApp.getActive(), out = { ok: true, updated: Number(PROPS.getProperty('updated')) || 0 };
+  PUBLIC.forEach(k => { const s = ss.getSheetByName(TABS[k].name); out[k] = s ? rows_(s) : null });
+  return out;
+}
+
 function doGet(e) {
+  if (e.parameter.public) return json_(public_());
   const err = guard_(e.parameter.idToken);
   if (err) return json_({ ok: false, error: err });
   const ss = SpreadsheetApp.getActive(), filled = ss.getSheetByName(TABS.gen1.name);
