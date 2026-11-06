@@ -116,7 +116,7 @@ git commit -am "update" && git push
 
 Every run also rebuilds `cards.js`, the deckbuilder's list of Standard-legal cards (with their
 text and Cardmarket prices; where pokemontcg.io has no € yet — the newest sets, the 30th
-Celebration — the Cardmarket trend comes from TCGdex instead), and `meta.js`: up to 100 archetypes from the 150 biggest Limitless
+Celebration — the Cardmarket trend comes from TCGdex instead; the Black Star Promos pokemontcg.io doesn't carry — all of MEP, a couple dozen of SVP — come from TCGdex too, into the deckbuilder, each Gen 1 Pokémon's card list and, for MEP 094–110, the 30th Celebration's Promo Cards), and `meta.js`: up to 100 archetypes from the 150 biggest Limitless
 online Standard events of the last 4 weeks, with card usage (all lists and top-placing ones) and
 real archetype-vs-archetype match results — what the deck scores, tips and matchups are measured
 against. It takes a few minutes (about 300 requests to Limitless). So a plain
@@ -164,6 +164,14 @@ with Standard-legal cards that the site doesn't have yet. **＋ Add** fetches th
 into that device (no sign-in, no token): they show up in the deckbuilder and My Cards at once. The
 next data refresh bakes the set into `cards.js` for every device, and each device then drops its own
 copy. A set shows up there only once pokemontcg.io lists it, usually around its release day.
+
+**📄 Deck list PDF.** Made in the browser (jsPDF from cdnjs, loaded only when asked). Page 1 is
+`decklist-a4.png`, the official Play! Pokémon A4 deck list at 300 dpi (its footer allows noncommercial
+reproduction), filled in; the REG column reads the regulation mark `fetch_data.py` keeps on each print.
+When a new season's form comes out
+([Play! Pokémon rules & resources](https://www.pokemon.com/us/play-pokemon/about/tournaments-rules-and-resources)),
+swap in the new form as `decklist-a4.png` (2481 × 3508), set `DLF.season` in `index.html`, and check the
+form still lines up with the pixel positions in `DLF`.
 
 ---
 

@@ -382,6 +382,17 @@
   .tgrid .tr-h ~ .tr-h { margin-top: 10px }
   .tr-cc { padding: 6px 0; border: 0; background: none; font-family: inherit; font-weight: 600; cursor: pointer }
   .tr-cc:hover { color: var(--fg) }
+  .cm-add { grid-column: 1/-1; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding: 14px;
+    border: 1px dashed var(--line); border-radius: 14px }
+  .cm-add .sub a, .pk .pset a { color: var(--acc) }
+  .cm-add .pk { width: 130px }
+  .cm-f { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end }
+  .pdf-f input[type=date] { color-scheme: dark }
+  .pdf-f .sub b { color: var(--fg) }
+  .pdf-f .dw { font-size: 13px; color: #fbbf24 }
+  .cm-f label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--dim); flex: 1 1 140px }
+  .cm-f input, .cm-f select { padding: 8px 10px; font: 400 13px Outfit, sans-serif; color: var(--fg);
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 10px }
   .tr-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
     padding: 10px 22px; background: #0d0f16ee; border-top: 1px solid var(--line); backdrop-filter: blur(8px) }
   .tr-bar:empty { display: none }
@@ -928,9 +939,9 @@
 <div id="sheets"></div>
 <footer id="foot"></footer>
 
-<script src="data.js?v=202611051234"></script>
-<script src="cards.js?v=202611031943"></script>
-<script src="meta.js?v=202611031940"></script>
+<script src="data.js?v=202611060136"></script>
+<script src="cards.js?v=202611061631"></script>
+<script src="meta.js?v=202611060136"></script>
 <script>
 const DEX = window.DEX || { collections: {}, tcg: {}, fetched: null };
 const LABELS = { gen1: "Gen 1", anniv: "30th Celebration" };
@@ -939,7 +950,11 @@ const COLLECTIONS = Object.fromEntries(Object.keys(LABELS).map(k =>
 const kindOf = k => COLLECTIONS[k].kind || "species";
 
 const ART = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
-const CARD_IMG = id => `https://images.pokemontcg.io/${id.slice(0, id.lastIndexOf("-"))}/${id.slice(id.lastIndexOf("-") + 1)}.png`;
+const ofTotal = c => c.total ? `${c.number}/${c.total}` : c.number;   // "4/102"; a promo has no total: "101"
+// a card added from a Cardmarket link has no image anywhere: a plain card-shaped stand-in
+const NO_IMG = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 245 342"><rect width="245" height="342" rx="12" fill="#1b1f2b" stroke="#ffffff22"/><text x="122.5" y="160" fill="#8a93a6" font-family="sans-serif" font-size="20" text-anchor="middle">No image</text><text x="122.5" y="188" fill="#8a93a6" font-family="sans-serif" font-size="13" text-anchor="middle">added from Cardmarket</text></svg>`);
+const CM = "https://www.cardmarket.com/en/Pokemon/Products/Singles/";
+const CARD_IMG = id => id.startsWith("cm:") ? NO_IMG : `https://images.pokemontcg.io/${id.slice(0, id.lastIndexOf("-"))}/${id.slice(id.lastIndexOf("-") + 1)}.png`;
 const FORM = /^(Mega|Gigantamax|Alolan|Galarian|Hisuian|Paldean)\b/;
 const SPECIES = n => n.replace(FORM, "").replace(/\s+[XY]$/, "").trim();
 
@@ -1077,9 +1092,9 @@ function render() {
     list.innerHTML = items.length ? items.map((p, n) => !shown(p) ? "" : `
       <article class="tcg ${have.has(p.id) ? "have" : ""}" data-cid="${p.id}" data-n="${n}">
         <span class="idx">#${String(p.i + 1).padStart(3, "0")}</span>
-        <span class="lw"><img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">${lens(p.img || CARD_IMG(p.id), p.name, `${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}`, "", { id: p.id, set: p.set, num: p.number })}</span>
+        <span class="lw"><img loading="lazy" alt="${p.name}" src="${p.img || CARD_IMG(p.id)}">${lens(p.img || CARD_IMG(p.id), p.name, `${p.set} · ${ofTotal(p)}${p.rarity ? " · " + p.rarity : ""}`, "", { id: p.id, set: p.set, num: p.number })}</span>
         <div class="n">${p.name}</div>
-        <div class="s">${p.set} · ${p.number}/${p.total ?? "?"}${p.rarity ? " · " + p.rarity : ""}</div>
+        <div class="s">${p.set} · ${ofTotal(p)}${p.rarity ? " · " + p.rarity : ""}</div>
         <div class="p">${p.price[1]}<small>${p.price[2]}</small></div>
         <div class="own">${have.has(p.id) ? "✓ I own this" : "＋ tap to mark owned"}</div>
       </article>`).join("") : `<p class="empty">No cards cached yet — run python3 fetch_data.py.</p>`;
@@ -1181,9 +1196,9 @@ function renderStrip(keepScroll) {
   document.getElementById("m-content").innerHTML = sorted.length
     ? `<div class="strip" id="strip">${sorted.map(c => `
         <div class="tcg ${have.has(c.id) ? "have" : ""} ${fav?.id === c.id ? "fav" : ""}" data-cid="${c.id}">
-          <span class="lw"><img loading="lazy" alt="${c.name}" src="${CARD_IMG(c.id)}">${lens(CARD_IMG(c.id), c.name, `${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}`, "", { id: c.id, set: c.set, num: c.number })}</span>
+          <span class="lw"><img loading="lazy" alt="${c.name}" src="${c.img || CARD_IMG(c.id)}">${lens(c.img || CARD_IMG(c.id), c.name, `${c.set} · ${ofTotal(c)}${c.rarity ? " · " + c.rarity : ""}`, "", { id: c.id, set: c.set, num: c.number })}</span>
           <div class="n">${c.name}</div>
-          <div class="s">${c.set} · ${c.number}/${c.total ?? "?"}${c.rarity ? " · " + c.rarity : ""}</div>
+          <div class="s">${c.set} · ${ofTotal(c)}${c.rarity ? " · " + c.rarity : ""}</div>
           <div class="s">${c.series} · ${(c.date || "").slice(0, 4)}</div>
           <div class="p">${c.price[1]}<small>${c.price[2]}</small></div>
           <button class="star" data-act="fav" title="favourite print">★</button>
@@ -1283,7 +1298,7 @@ document.getElementById("m-content").addEventListener("click", e => {
   } else if (favs[view.entry.id]?.id === card.id) {
     delete favs[view.entry.id];
   } else {
-    favs[view.entry.id] = { id: card.id, img: CARD_IMG(card.id) };
+    favs[view.entry.id] = { id: card.id, img: card.img || CARD_IMG(card.id) };
   }
   save(); renderStrip(true); render();
 });
@@ -2380,6 +2395,7 @@ function renderDeckList() {
         </div>
         <div class="da">
           <button class="pill sm" data-dk="ins" title="Tips to improve, tested swaps, matchups">💡 Insights${tips ? ` <b class="n">${tips}</b>` : ""}</button>
+          <button class="pill sm" data-dk="pdf" title="The tournament deck list, filled in, plus a page of every card">📄 PDF</button>
           <button class="pill sm" data-dk="dup">Duplicate</button>
           <button class="pill sm" data-dk="del">Delete</button>
         </div>
@@ -2623,7 +2639,8 @@ function renderPanel() {
     ${d.cards.length ? `<div class="price">≈ ${money(price.eur)}${price.usd ? ` + ${money(price.usd, "$")} (no Cardmarket price)` : ""}
       · cheapest prints ${money(price.cheap)}${price.none ? ` · ${price.none} unpriced` : ""}</div>` : ""}
     <textarea class="dk-notes" placeholder="Notes — matchups, cards to try…">${esc(d.notes)}</textarea>
-    <div><button class="pill sm" data-dk="export">⧉ Copy list</button></div>`;
+    <div><button class="pill sm" data-dk="export">⧉ Copy list</button>
+      <button class="pill sm" data-dk="pdf" title="The tournament deck list, filled in, plus a page of every card">📄 Deck list PDF</button></div>`;
   const bar = deckview.querySelector(".ed-bar");
   bar.querySelector(".eb-name").textContent = d.name;
   bar.querySelector(".eb-tally").innerHTML = `<b class="${t.total > DECK_MAX ? "over" : ""}">${t.total}</b>/${DECK_MAX} · ` + Object.keys(RANGE)
@@ -2921,6 +2938,222 @@ async function exportDeck(d) {
   }
 }
 
+// ---- Deck list PDF: page 1 the official Play! Pokémon deck list (A4) filled in, page 2 every card with its count ----
+// decklist-a4.png is that form at 300 dpi (its footer: "Noncommercial reproduction permitted"); DLF is measured in its
+// pixels. A new season's form needs the new image, its season, and these numbers checked again.
+const DLF = {
+  src: "decklist-a4.png", w: 2481, season: 2026,     // divisions this season: born 2014+ Junior, 2010–2013 Senior, else Masters
+  x0: 1020, x1: 2370, top: 668, bottom: 2990,        // the right-hand column: the Pokémon, Trainer and Energy tables
+  head: 109, pitch: 54.8, gap: 78, rows: [10, 18, 4],                // title + column bar, one row, the gap; rows printed
+  tables: [[668, 777], [1402, 1511], [2576, 2685]],  // each table's title and first row on the form
+  qty: 1106.5, name: 1205, nameEnd: [1884, 2345, 2345], set: 1974, num: 2128.5, reg: 2282.5, count: 2340,
+  line: 335, player: [360, 944], id: [1140, 1517], dob: [2056, 2170, 2308],
+  std: [621, 217], div: [[1544, 476], [1544, 532], [1544, 588]],
+};
+const DLF_SET = { "PR-SV": "SVP" };                  // the form's abbreviation where the data's differs
+const DIVISION = ["Junior", "Senior", "Masters"];
+const divisionOf = y => !y ? -1 : y >= DLF.season - 12 ? 0 : y >= DLF.season - 16 ? 1 : 2;
+let pdfDeck = null, jsPDFp = null;
+const loadJsPDF = () => jsPDFp ||= new Promise((ok, no) => {
+  const s = Object.assign(document.createElement("script"), {
+    src: "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", crossOrigin: "anonymous",
+    integrity: "sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==",
+    onload: () => ok(window.jspdf.jsPDF),
+    onerror: () => { jsPDFp = null; s.remove(); no(new Error("the PDF maker didn't load — check the connection")) },
+  });
+  document.head.append(s);
+});
+
+function openPdf(d) {
+  pdfDeck = d; zoomCard = null; dlg.hidden = false;
+  const p = store.get("player", {}), t = tally(d);
+  dlgBox.innerHTML = `
+    <div class="m-head">
+      <div><h2>Deck list PDF</h2>
+        <div class="sub">${esc(d.name)} · page 1 is the Play! Pokémon deck list, filled in; page 2 every card with its count.</div></div>
+      <button class="x" data-z="close">✕</button>
+    </div>
+    <div class="imp pdf-f">
+      <div class="cm-f">
+        <label>Player name<input id="pl-name" value="${esc(p.name)}" maxlength="40" autocomplete="name"></label>
+        <label>Player ID<input id="pl-id" value="${esc(p.id)}" maxlength="20" inputmode="numeric"></label>
+        <label>Date of birth<input id="pl-dob" type="date" value="${esc(p.dob)}"></label>
+      </div>
+      <div class="sub" id="pl-div">${pdfDivText(p.dob)}</div>
+      ${t.total !== DECK_MAX ? `<div class="dw">⚠ This deck has ${t.total} cards; a tournament list needs ${DECK_MAX}.</div>` : ""}
+      <button class="pill on" data-z="pdf">📄 Make the PDF</button>
+      <div class="sub" id="pdf-out">Format: Standard. Your details stay on this device; leave any blank to write in by hand.</div>
+    </div>`;
+}
+const pdfDivText = dob => {
+  const i = divisionOf(+String(dob || "").slice(0, 4));
+  return i < 0 ? "Age division: ticked from the birth year." : `Age division: <b>${DIVISION[i]}</b>`;
+};
+
+// the form's tables: at least the rows it prints, fewer blank ones when a list runs long, shorter rows if even that won't fit
+function formLayout(n) {
+  const F = DLF, add = (a, b) => a + b, room = F.bottom - F.top - 3 * F.head - 2 * F.gap, fit = Math.floor(room / F.pitch);
+  const rows = n.map((x, i) => Math.max(x, F.rows[i]));
+  for (const i of [1, 2, 0]) while (rows.reduce(add) > fit && rows[i] > Math.max(n[i], 1)) rows[i]--;
+  const pitch = Math.min(F.pitch, room / rows.reduce(add));
+  let y = F.top;
+  const at = rows.map(r => { const t = { top: y, row: y + F.head }; y = t.row + r * pitch + F.gap; return t });
+  return { rows, pitch, at, same: rows.every((r, i) => r === F.rows[i]) };
+}
+
+// the form as a JPEG; when the tables need other rows, they're redrawn from the form's own pieces
+function formImage(img, L) {
+  const F = DLF, w = F.x1 - F.x0, cv = document.createElement("canvas"), g = cv.getContext("2d");
+  cv.width = img.width; cv.height = img.height;
+  g.drawImage(img, 0, 0);
+  if (!L.same) {
+    g.fillStyle = "#fff"; g.fillRect(F.x0, F.top - 4, w, F.bottom - F.top + 8);
+    L.at.forEach((t, i) => {
+      const [top, row] = F.tables[i];
+      g.drawImage(img, F.x0, top, w, F.head, F.x0, t.top, w, F.head);
+      for (let k = 0; k < L.rows[i]; k++) g.drawImage(img, F.x0, row, w, F.pitch, F.x0, t.row + k * L.pitch, w, L.pitch);
+    });
+  }
+  return cv.toDataURL("image/jpeg", 0.92);
+}
+
+// a card image as a JPEG on white (the corners are see-through). "reload": a copy cached for an <img> can
+// lack the CORS header, which pokemontcg.io only sends when asked
+async function cardJpeg(url) {
+  const r = await fetch(url, { mode: "cors", cache: "reload" });
+  if (!r.ok) throw new Error(r.status);
+  const bmp = await createImageBitmap(await r.blob()), cv = document.createElement("canvas"), g = cv.getContext("2d");
+  cv.width = bmp.width; cv.height = bmp.height;
+  g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(bmp, 0, 0);
+  return cv.toDataURL("image/jpeg", 0.88);
+}
+const loadImage = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src });
+
+// the PDF's built-in font covers Latin-1 only
+const pdfSafe = s => String(s ?? "").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-").replace(/…/g, "...")
+  .replace(/♀/g, " (F)").replace(/♂/g, " (M)").replace(/[^\x20-\xFF]/g, "");
+
+// the order deck lists use: Pokémon by evolution line (the biggest line first, Basic before its evolutions),
+// Trainers by kind (Supporter, Item, Tool, Stadium) and then most copies, Energy as the deck has them
+function pdfOrder(d) {
+  const of = k => d.cards.filter(l => l.cat === k), K = l => cardOf(l)?.k ?? 1e9, sub = l => cardOf(l)?.sub || [];
+  const stage = l => sub(l).includes("Stage 2") ? 2 : sub(l).includes("Stage 1") ? 1 : 0;
+  const root = l => cardOf(l)?.root || l.name, size = new Map(), first = new Map();
+  of("Pokémon").forEach(l => { const r = root(l); size.set(r, (size.get(r) || 0) + l.n); first.set(r, Math.min(first.get(r) ?? 1e9, K(l))) });
+  const kind = l => { const i = ["Supporter", "Item", "Pokémon Tool", "Stadium"].findIndex(x => sub(l).includes(x)); return i < 0 ? 9 : i };
+  const copies = new Map();
+  of("Trainer").forEach(l => copies.set(l.name, (copies.get(l.name) || 0) + l.n));
+  return [
+    of("Pokémon").sort((a, b) => size.get(root(b)) - size.get(root(a)) || first.get(root(a)) - first.get(root(b)) || stage(a) - stage(b) || K(a) - K(b)),
+    of("Trainer").sort((a, b) => kind(a) - kind(b) || copies.get(b.name) - copies.get(a.name) || a.name.localeCompare(b.name) || K(a) - K(b)),
+    of("Energy").sort((a, b) => K(a) - K(b)),
+  ];
+}
+// text kept inside w mm: smaller type first, then cut short
+function fitText(doc, s, x, y, w, size, opt) {
+  s = pdfSafe(s);
+  let f = size;
+  doc.setFontSize(f);
+  while (f > 6 && doc.getTextWidth(s) > w) doc.setFontSize(f -= 0.5);
+  while (s.length > 1 && doc.getTextWidth(s) > w) s = s.slice(0, -1);
+  doc.text(s, x, y, opt);
+}
+
+async function makePdf() {
+  const d = pdfDeck, out = dlgBox.querySelector("#pdf-out"), btn = dlgBox.querySelector('[data-z="pdf"]');
+  if (!d || !out) return;
+  const val = id => dlgBox.querySelector(id).value.trim();
+  const p = { name: val("#pl-name"), id: val("#pl-id"), dob: val("#pl-dob") };
+  store.set("player", p);
+  btn.disabled = true;
+  try {
+    const [P, T, E] = pdfOrder(d);
+    const byName = ls => [...ls.reduce((m, l) => m.set(l.name, (m.get(l.name) || 0) + l.n), new Map())].map(([name, n]) => ({ name, n }));
+    const lines = [P.map(l => {
+      const pr = PRINT.get(l.id)?.[1];
+      return { n: l.n, name: l.name, set: pr ? DLF_SET[pr[1]] || pr[1] : "", num: pr?.[2] || "", reg: pr?.[6] || "" };
+    }), byName(T), byName(E)];
+    const tiles = [...P, ...T, ...E];
+    const urls = [...new Set(tiles.map(thumb).filter(u => /^https?:/.test(u)))];
+
+    out.textContent = "Getting the deck list form…";
+    const [JsPDF, form] = await Promise.all([loadJsPDF(), loadImage(DLF.src)]);
+    let done = 0;
+    const imgs = new Map(await Promise.all(urls.map(async u => {
+      const j = await cardJpeg(u).catch(() => null);
+      out.textContent = `Card images ${++done} / ${urls.length}…`;
+      return [u, j];
+    })));
+
+    const doc = new JsPDF({ unit: "mm", format: "a4", compress: true }), mm = v => v * 210 / DLF.w;
+    const L = formLayout(lines.map(x => x.length));
+    doc.addImage(formImage(form, L), "JPEG", 0, 0, 210, 297);
+    const tick = (x, y) => { doc.setLineWidth(0.45); doc.line(mm(x) - 0.9, mm(y), mm(x) - 0.2, mm(y) + 0.8); doc.line(mm(x) - 0.2, mm(y) + 0.8, mm(x) + 1.3, mm(y) - 1.2) };
+    doc.setTextColor(0); doc.setDrawColor(0);
+
+    // the header: name, Player ID, date of birth, Standard, the age division
+    doc.setFont("helvetica", "bold");
+    fitText(doc, p.name, mm(DLF.player[0]), mm(DLF.line), mm(DLF.player[1] - DLF.player[0]), 13);
+    fitText(doc, p.id, mm(DLF.id[0]), mm(DLF.line), mm(DLF.id[1] - DLF.id[0]), 13);
+    const [yy, mo, dd] = p.dob ? p.dob.split("-") : [];
+    if (yy) { doc.setFontSize(12); [mo, dd, yy].forEach((v, i) => doc.text(v, mm(DLF.dob[i]), mm(DLF.line), { align: "center" })) }
+    tick(...DLF.std);
+    const dv = divisionOf(+yy);
+    if (dv >= 0) tick(...DLF.div[dv]);
+
+    // the three tables, with each one's count in its title bar
+    const fs = Math.min(10, mm(L.pitch) * 2.2), cap = fs * 0.3528 * 0.72;
+    L.at.forEach((t, i) => {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.text(String(lines[i].reduce((s, l) => s + l.n, 0)), mm(DLF.count), mm(t.top + 27) + 1.4, { align: "right" });
+      lines[i].forEach((l, k) => {
+        const y = mm(t.row + (k + 0.47) * L.pitch) + cap / 2;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(fs);
+        doc.text(String(l.n), mm(DLF.qty), y, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        fitText(doc, l.name, mm(DLF.name), y, mm(DLF.nameEnd[i] - DLF.name), fs);
+        if (i) return;
+        doc.setFontSize(fs);
+        [[l.set, DLF.set], [l.num, DLF.num], [l.reg, DLF.reg]].forEach(([v, x]) => v && fitText(doc, v, mm(x), y, 12, fs, { align: "center" }));
+      });
+    });
+
+    // page 2: every card, as big as one page allows, its count underneath
+    doc.addPage();
+    const t = tally(d);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+    fitText(doc, d.name, 10, 16, 190, 16);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(90);
+    doc.text(pdfSafe(`${t.total} cards · ${t["Pokémon"]} Pokémon · ${t.Trainer} Trainer · ${t.Energy} Energy${p.name ? ` · ${p.name}` : ""}`), 10, 22);
+    const X0 = 10, W = 190, Y0 = 27, H = 297 - 10 - Y0, g = 2.5;
+    let c = 5, w, ch, bh;
+    for (; c < 14; c++) {
+      w = (W - (c - 1) * g) / c; ch = w * 88 / 63; bh = Math.max(3.5, w * 0.2);
+      const r = Math.ceil(tiles.length / c);
+      if (r * (ch + 1 + bh) + (r - 1) * g <= H) break;
+    }
+    tiles.forEach((l, i) => {
+      const x = X0 + (i % c) * (w + g), y = Y0 + Math.floor(i / c) * (ch + 1 + bh + g), u = thumb(l), img = imgs.get(u);
+      if (img) doc.addImage(img, "JPEG", x, y, w, ch, u, "FAST");
+      else {                                            // no image: the card's name on a blank
+        doc.setFillColor(235); doc.setDrawColor(200); doc.roundedRect(x, y, w, ch, 1.5, 1.5, "FD");
+        doc.setTextColor(60); doc.setFont("helvetica", "bold");
+        fitText(doc, l.name, x + w / 2, y + ch / 2, w - 2, 9, { align: "center", baseline: "middle" });
+      }
+      doc.setFillColor(238); doc.setDrawColor(205); doc.roundedRect(x, y + ch + 1, w, bh, 1, 1, "FD");
+      doc.setTextColor(25); doc.setFont("helvetica", "bold"); doc.setFontSize(bh * 2.835 * 0.72);
+      doc.text(String(l.n), x + w / 2, y + ch + 1 + bh / 2, { align: "center", baseline: "middle" });
+    });
+
+    doc.save(`${d.name.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Deck"} - deck list.pdf`);
+    const miss = urls.filter(u => !imgs.get(u)).length;
+    out.textContent = `✓ PDF made${miss ? ` · ${miss} card image${miss > 1 ? "s" : ""} didn't load and show as names` : ""}.`;
+  } catch (err) {
+    out.textContent = `Couldn't make the PDF: ${err.message || err}`;
+  } finally { btn.disabled = false }
+}
+dlg.addEventListener("input", e => { if (e.target.id === "pl-dob") dlgBox.querySelector("#pl-div").innerHTML = pdfDivText(e.target.value) });
+
 function openImport() {
   zoomCard = null; dlg.hidden = false;
   dlgBox.innerHTML = `
@@ -2975,6 +3208,7 @@ deckview.addEventListener("click", e => {
   if (act === "import") return openImport();
   if (act === "back") { openDeck(null); return renderDecks() }
   if (act === "export") return exportDeck(open);
+  if (act === "pdf") return openPdf(tile ? decks[+tile.dataset.i] : open);
   if (act === "buy") return openToBuy();
   if (act === "built") { open.built = !open.built; save(); renderPanel(); return say(open.built ? "Built — this deck holds its cards first" : "No longer marked as built") }
   const mv = e.target.closest("[data-move]");
@@ -3131,6 +3365,7 @@ dlg.addEventListener("click", e => {
   const z = e.target.closest("[data-z]");
   if (e.target === dlg || z?.dataset.z === "close") return dlg.hidden = true;
   if (z?.dataset.z === "import") return doImport();
+  if (z?.dataset.z === "pdf") return makePdf();
   if (!z || !zoomCard) return;
   if (z.dataset.z === "print") return choosePrint(zoomCard, z.dataset.id);
   if (!zoomDeck) return;
@@ -3316,10 +3551,11 @@ function renderTradePick() {
       ${x ? "" : `<div class="seg tr-src">${[["", "Standard-legal"], ["1", "🕰 Every card · older too"]].map(([v, t]) =>
         `<button data-src="${v}" class="${older === !!v ? "on" : ""}">${t}</button>`).join("")}</div>`}
       <input id="tp-q" type="search" autocomplete="off" ${older
-        ? `placeholder="A card name, then a set or number to narrow it…" value="${esc(oldSearch.q)}"`
+        ? `placeholder="A card name, then a set or number — or paste a Cardmarket link" value="${esc(oldSearch.q)}"`
         : `placeholder="Search names and card text…" value="${esc(st.q)}"`}>
       ${older ? `<div class="sub">Searched live on pokemontcg.io, only while this is on: every card ever printed, minus the
-        Standard-legal ones (those are under Standard-legal) · e.g. <i>eevee mcdonalds</i>, <i>charizard base</i>, <i>pikachu 58</i>, <i>gyarados 1999</i></div>` : `
+        Standard-legal ones (those are under Standard-legal) · e.g. <i>eevee mcdonalds</i>, <i>charizard base</i>, <i>pikachu 58</i>, <i>gyarados 1999</i>
+        · or paste a card's Cardmarket link</div>` : `
       <div class="seg pk-cat">${Object.entries({ all: "All", ...CAT }).map(([v, t]) => `<button data-cat="${v}" class="${st.cat === v ? "on" : ""}">${t}</button>`).join("")}</div>
       <div class="chips">${chipsHTML(st).replace(/<button class="chip own[^]*?<\/button>/, x ? "" : "$&")}</div>`}
     </div>
@@ -3332,20 +3568,21 @@ function renderTradePickGrid() {
   // the 30th Celebration's non-legal cards first: open while searching, a one-line toggle otherwise
   const cc = x ? [] : annivPicks(tpick), ccOpen = !!tpick.q || tpick.cc;
   tradeview.querySelector(".tgrid").innerHTML = (cc.length ? `<button class="tr-h tr-cc" data-cc>${ccOpen ? "▴" : "▾"} 30th Celebration · Classic Collection
-      · not Standard-legal · ${cc.length} card${cc.length > 1 ? "s" : ""}</button>${ccOpen ? cc.map(it => oldTile(oldCards[it.id] || annivRec(it))).join("") : ""}` : "")
+      and promos · ${cc.length} card${cc.length > 1 ? "s" : ""}</button>${ccOpen ? cc.map(it => oldTile(oldCards[it.id] || annivRec(it))).join("") : ""}` : "")
     + (shown.length
       ? (cc.length && ccOpen ? `<h3 class="tr-h">Standard-legal</h3>` : "")
         + shown.map(([, g]) => (x ? extraTile : tradeTile)(g) + (listOpen?.view === view && listOpen.g === g ? versionList(g, view) : "")).join("")
       : cc.length ? "" : `<p class="empty">${x ? "No cards in My Cards match these filters." : "No legal cards match these filters."}</p>`);
 }
-// the 30th Celebration cards that aren't Standard-legal (the Classic Collection reprints): the site has them
-// already, from the 30th Celebration tab, so the Trade picker offers them with no request at all
+// the 30th Celebration's extras: the Classic Collection reprints (not Standard-legal, so nowhere else in the
+// picker) and its promos (MEP 094-110, legal, but lost among every other print of their names). The site has
+// them already, from the 30th Celebration tab, so the Trade picker offers them with no request at all
 const annivRec = it => ({ n: it.name, c: it.c || "P", sub: [], t: [], y: (it.date || "").slice(0, 4), old: 1,
   p: [[it.id, it.set, it.number, it.img ? it.img.replace(/\/large$/, "/small") : "",
        it.price?.[1]?.[0] === "€" ? it.price[0] : null, it.price?.[1]?.[0] === "$" ? it.price[0] : null]] });
 function annivPicks(st) {                          // the ones these filters let through (type and stage chips: none)
   if (st.types.size || st.stages.size || st.kinds.size || st.ex) return [];
-  return COLLECTIONS.anniv.items.filter(it => !PRINT.has(it.id) && (st.cat === "all" || (it.c || "P") === st.cat)
+  return COLLECTIONS.anniv.items.filter(it => (!PRINT.has(it.id) || it.section === "Promo Cards") && (st.cat === "all" || (it.c || "P") === st.cat)
     && (!st.q || `${it.name} ${it.set} ${it.number}`.toLowerCase().includes(st.q))
     && (!st.own || have.has(it.id) || trade[it.id]));
 }
@@ -3392,12 +3629,29 @@ const oldQ = t => (t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, 
   .join(" ");
 const asOld = c => {
   const cm = c.cardmarket?.prices || {}, tp = Object.values(c.tcgplayer?.prices || {});
-  return { n: c.name, c: c.supertype[0], sub: c.subtypes || [], t: c.types || [], y: (c.set.releaseDate || "").slice(0, 4), old: 1,
+  return { n: c.name, c: c.supertype[0], sub: c.subtypes || [], t: c.types || [], y: (c.set.releaseDate || "").slice(0, 4), old: 1, pc: c.set.ptcgoCode || "",
            p: [[c.id, c.set.name, c.number, c.images?.small && c.images.small !== CARD_IMG(c.id) ? c.images.small : "",
                 cents(cm.trendPrice || cm.averageSellPrice || cm.avg30), cents(tp.map(p => p.market || p.mid).find(Boolean))]] };
 };
+// a Cardmarket link -> {set, name, number, id, url}: ".../Singles/Base-Set/Charizard-V1-BS4" is Charizard, Base Set, #4.
+// The page itself can't be read from here (no CORS), so the link's own words are all there is
+function cmParse(t) {
+  const m = String(t || "").match(/cardmarket\.com\/[a-z]{2}\/Pokemon\/Products\/Singles\/([^/?#\s]+)\/([^/?#\s]+)/i);
+  if (!m) return null;
+  const setSlug = decodeURIComponent(m[1]), cardSlug = decodeURIComponent(m[2]), parts = cardSlug.split("-");
+  const code = parts.length > 1 && /^[A-Za-z]*\d+[A-Za-z]?$/.test(parts.at(-1)) ? parts.pop() : "";
+  if (parts.length > 1 && /^V\d+$/i.test(parts.at(-1))) parts.pop();          // V1, V2: Cardmarket's own version tag
+  return { set: setSlug.replace(/-/g, " "), name: parts.join(" "), number: (code.match(/\d+[A-Za-z]?$/) || [""])[0].replace(/^0+(?=\d)/, ""),
+           prefix: code.replace(/\d+[A-Za-z]?$/, "").toUpperCase(),   // "BS" of BS4: the set code deck lists use too
+           code, id: `cm:${setSlug}/${cardSlug}`, url: CM + setSlug + "/" + cardSlug };
+}
+const cmWords = t => new Set(String(t).toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean));
+// how well a hit fits the link: the same set code first (Cardmarket's "Base Set" is pokemontcg.io's "Base"), then shared set words
+const cmScore = (link, c) => { const a = cmWords(link.set), b = cmWords(c.p[0][1]);
+  return (link.prefix && link.prefix === (c.pc || "").toUpperCase() ? 1 : 0) + [...a].filter(w => b.has(w)).length / (a.size + b.size) };
 async function runOld(more) {
-  const s = oldSearch, q = oldQ(s.q);
+  const s = oldSearch, link = cmParse(s.q), q = link ? oldQ(`${link.name} ${link.number}`) : oldQ(s.q);
+  s.link = link;
   if (more && (s.busy || s.seen >= s.total)) return;
   if (!more) Object.assign(s, { hits: [], total: 0, seen: 0, page: 0, err: "" });
   const my = more ? oldN : ++oldN;
@@ -3405,10 +3659,15 @@ async function runOld(more) {
   if (!q) return;
   try {
     // pokemontcg.io drops about one call in three at random: try a few more times than elsewhere
-    const d = await getJSON(ptcgCards(q, `&orderBy=-set.releaseDate&pageSize=${OLD_PAGE}&page=${s.page + 1}&select=${OLD_FIELDS}`), 6);
+    let d = await getJSON(ptcgCards(q, `&orderBy=-set.releaseDate&pageSize=${OLD_PAGE}&page=${s.page + 1}&select=${OLD_FIELDS}`), 6);
+    // a link whose number matches nothing (codes aren't always set + number): its name alone, the set decides
+    if (link?.number && !more && !d.totalCount && my === oldN)
+      d = await getJSON(ptcgCards(oldQ(link.name), `&orderBy=-set.releaseDate&pageSize=${OLD_PAGE}&select=${OLD_FIELDS}`), 6);
     if (my !== oldN) return;
     s.page++; s.total = d.totalCount || 0; s.seen += d.data.length;
-    s.hits.push(...d.data.filter(c => !PRINT.has(c.id)).map(asOld));
+    // from a link, legal prints count too (it's that card you want), the closest set first
+    s.hits.push(...d.data.filter(c => link || !PRINT.has(c.id)).map(asOld));
+    if (link) s.hits.sort((a, b) => (pcNum(b.p[0][2]) === pcNum(link.number)) - (pcNum(a.p[0][2]) === pcNum(link.number)) || cmScore(link, b) - cmScore(link, a));
   } catch (e) { if (my !== oldN) return; s.err = e.message }
   s.busy = false;
   if (cur === "trade" && tlook.mode === "add" && tpick.old) renderOldGrid();
@@ -3418,19 +3677,41 @@ function oldTile(c) {
   return `<div class="pk ${n ? "in" : ""}">
     <img loading="lazy" alt="" src="${esc(img)}">${lens(img, c.n, where, "", { id, set: p[1], num: p[2] })}
     ${n ? `<span class="qty">×${n}</span>` : ""}
-    <div class="pn">${esc(c.n)}</div><div class="pset">${esc(where)}${pr.each != null ? `<br>${money(pr.each, pr.sym)}` : ""}</div>
+    <div class="pn">${esc(c.n)}</div><div class="pset">${esc(where)}${pr.each != null ? `<br>${money(pr.each, pr.sym)}` : ""}${id.startsWith("cm:")
+      ? `<br><a href="${esc(CM + id.slice(3))}" target="_blank" rel="noopener">Cardmarket ↗</a>` : ""}</div>
     <span class="vq tile"><button data-tro="-1" data-id="${esc(id)}" ${n ? "" : "disabled"}>−</button><b>${n}</b><button data-tro="1" data-id="${esc(id)}">+</button></span>
   </div>`;
+}
+function cmForm(link) {
+  const have = oldCards[link.id] && trade[link.id];
+  return `<div class="cm-add"><div><b>${have ? "Added from the link" : "Not one of these? Add it as Cardmarket lists it"}</b>
+      <div class="sub">No image or price comes with a link: add the price you see there, if you like. <a href="${esc(link.url)}" target="_blank" rel="noopener">Open on Cardmarket ↗</a></div></div>
+    ${have ? oldTile(oldCards[link.id]) : `<div class="cm-f">
+      <label>Name<input id="cm-n" value="${esc(link.name)}"></label>
+      <label>Set<input id="cm-s" value="${esc(link.set)}"></label>
+      <label>Number<input id="cm-no" value="${esc(link.number)}"></label>
+      <label>Kind<select id="cm-c">${Object.entries(CAT).map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select></label>
+      <label>Price €<input id="cm-p" inputmode="decimal" placeholder="optional"></label>
+      <button class="pill sm on" data-cm="add">＋ Add to Trade binder</button></div>`}</div>`;
 }
 function renderOldGrid() {
   const s = oldSearch, g = tradeview.querySelector(".tgrid");
   if (!g) return;
+  if (s.link) {
+    const l = s.link;
+    g.innerHTML = `<h3 class="tr-h">From the Cardmarket link: ${esc(l.name)} · ${esc(l.set)}${l.number ? ` · #${esc(l.number)}` : ""}</h3>`
+      + (s.err ? `<p class="empty">Couldn't search pokemontcg.io (${esc(s.err)}). <button class="pill sm" data-old="retry">Try again</button></p>`
+        : s.busy && !s.hits.length ? `<p class="empty">Looking for it…</p>`
+        : s.hits.length ? s.hits.map(oldTile).join("") : `<p class="empty">No card in the databases matches this link.</p>`)
+      + cmForm(l);
+    return;
+  }
   const mine = Object.values(oldCards).filter(c => trade[c.p[0][0]]);
   const more = s.seen < s.total ? `<p class="tr-more"><button class="pill sm" data-old="more" ${s.busy ? "disabled" : ""}>${s.busy ? "Loading…" : `Show more · ${(s.total - s.seen).toLocaleString()} left`}</button></p>` : "";
   g.innerHTML = s.err ? `<p class="empty">Couldn't search pokemontcg.io (${esc(s.err)}). <button class="pill sm" data-old="retry">Try again</button></p>`
     : !oldQ(s.q) ? (mine.length ? `<h3 class="tr-h">Older cards in your Trade binder</h3>${mine.map(oldTile).join("")}` : "")
       + `<p class="empty">Type a card name to search every card ever printed.</p>`
-    : !s.hits.length ? `<p class="empty">${s.busy ? "Searching pokemontcg.io…" : s.total ? `Only Standard-legal prints so far for “${esc(s.q)}” — they're under Standard-legal.` : `No card matches “${esc(s.q)}” — try fewer words: the name alone, then add the set or year.`}</p>${more}`
+    : !s.hits.length ? `<p class="empty">${s.busy ? "Searching pokemontcg.io…" : s.total ? `Only Standard-legal prints so far for “${esc(s.q)}” — they're under Standard-legal.` : `No card matches “${esc(s.q)}” — try fewer words: the name alone, then add the set or year. Still nothing? Paste its Cardmarket link here.`}</p>${more}`
     : s.hits.map(oldTile).join("") + more;
 }
 
@@ -3498,10 +3779,18 @@ tradeview.addEventListener("click", e => {
   const to = e.target.closest("[data-tro]");
   if (to) {
     const id = to.dataset.id;
+    if (PRINT.has(id)) return setTrade(id, +to.dataset.tro);
     oldCards[id] ||= oldSearch.hits.find(c => c.p[0][0] === id) || (ANNIV_ID.has(id) ? annivRec(ANNIV_ID.get(id)) : undefined);
     return oldCards[id] && setTrade(id, +to.dataset.tro);
   }
   if (e.target.closest("[data-cc]")) { tpick.cc = !tpick.cc; return renderTradePickGrid() }
+  if (e.target.closest('[data-cm="add"]') && oldSearch.link) {
+    const l = oldSearch.link, v = id => tradeview.querySelector("#" + id)?.value.trim() || "", eur = parseFloat(v("cm-p").replace(",", "."));
+    if (!v("cm-n")) return say("A card needs a name");
+    oldCards[l.id] = { n: v("cm-n"), c: v("cm-c") || "P", sub: [], t: [], y: "", old: 1,
+                       p: [[l.id, v("cm-s") || l.set, v("cm-no"), "", eur > 0 ? Math.round(eur * 100) / 100 : null, null]] };
+    return setTrade(l.id, 1);
+  }
   const ob = e.target.closest("[data-old]")?.dataset.old;
   if (ob) return runOld(ob === "more");
   const act = e.target.closest("[data-tr]")?.dataset.tr;
@@ -3548,7 +3837,10 @@ tradeview.addEventListener("input", e => {
   const older = e.target.id === "tp-q" && tlook.mode === "add" && tpick.old;
   clearTimeout(ttyping);
   ttyping = setTimeout(() => {                     // older: one request per pause, not per letter
-    const q = e.target.value.trim().toLowerCase();
+    const raw = e.target.value.trim(), q = raw.toLowerCase();
+    // a Cardmarket link keeps its capitals (the name comes from it); pasted under Standard-legal, it jumps to Every card
+    if (!older && e.target.id === "tp-q" && tlook.mode === "add" && cmParse(raw)) { tpick.old = true; oldSearch.q = raw; renderTradePick(); return runOld() }
+    if (older && cmParse(raw)) { if (raw !== oldSearch.q) { oldSearch.q = raw; runOld() } return }
     if (older) { if (oldQ(q) !== oldQ(oldSearch.q) || oldSearch.err) { oldSearch.q = q; runOld() } else oldSearch.q = q }
     else if (e.target.id === "tr-q") { tlook.q = q; renderTradeList() }
     else { (tlook.mode === "extra" ? xpick : tpick).q = q; renderTradePickGrid() }
@@ -3560,7 +3852,8 @@ tradeview.addEventListener("input", e => {
 // until a data refresh brings newer ones; a card that refresh left unpriced keeps its live price.
 const TCGDEX = "https://api.tcgdex.net/v2/en";
 const TDX_SET = { "Scarlet & Violet Energies": "sve", "Scarlet & Violet Black Star Promos": "svp",
-                  "Scarlet & Violet Promos": "svp", "30th Celebration: Classic Collection": "30th-c" };   // where the names differ
+                  "Scarlet & Violet Promos": "svp", "30th Celebration: Classic Collection": "30th-c",
+                  "Mega Evolution Black Star Promos": "mep" };   // where the names differ
 let live = store.get("live", null);                // {t, p: {card id: [€, $]}}
 const ANNIV_ID = new Map(COLLECTIONS.anniv.items.map(it => [it.id, it]));
 const baked = () => Date.parse((CARDS.fetched || "").replace(" ", "T") + "Z") || 0;   // the Action runs on UTC
@@ -4019,7 +4312,7 @@ let timer;
 // The Sheet holds one row per Gen 1 form and one per 30th card, so it reads like a checklist.
 // Rows are matched back by name / card id, not position, so a reordered data.js still lands right.
 const UNSORTED = "Unsorted";
-const label = c => c ? `${c.id} (${c.set} ${c.number}/${c.total ?? "?"})` : "";
+const label = c => c ? `${c.id} (${c.set} ${ofTotal(c)})` : "";
 const idsIn = cell => String(cell || "").split("\n").map(l => l.split(" ")[0]).filter(Boolean);
 
 function tabsOut() {
@@ -4032,7 +4325,7 @@ function tabsOut() {
   });
   const anniv = COLLECTIONS.anniv.items.map(c => {
     if (have.has(c.id)) placed.add(c.id);
-    return [c.name, have.has(c.id) ? "✓" : "", c.id, `${c.number}/${c.total ?? "?"}`, c.rarity, c.section];
+    return [c.name, have.has(c.id) ? "✓" : "", c.id, `${ofTotal(c)}`, c.rarity, c.section];
   });
   // owned cards no row claims (a filter change, a dropped species) park here instead of vanishing
   const byId = new Map(Object.values(DEX.tcg).flat().map(c => [c.id, c]));
@@ -4061,7 +4354,7 @@ const WANT = { decks: "Decks", anniv: "30th Celebration", gen1: "Gen 1" };
 const wantRows = () => [
   ...toBuy().map(x => [x.c.n, CARDS.sets[x.p[1]] || x.p[1], x.p[2], x.p[0], String(x.n), WANT.decks, x.each != null ? money(x.each, x.sym) : ""]),
   ...COLLECTIONS.anniv.items.filter(c => !have.has(c.id))
-    .map(c => [c.name, c.set, `${c.number}/${c.total ?? "?"}`, c.id, "1", WANT.anniv, c.price?.[1] || ""]),
+    .map(c => [c.name, c.set, `${ofTotal(c)}`, c.id, "1", WANT.anniv, c.price?.[1] || ""]),
   ...COLLECTIONS.gen1.items.filter(p => !hasCard("gen1", p)).map(p => [p.name, "", p.dex, "", "1", WANT.gen1, ""]),
 ];
 
@@ -4111,7 +4404,7 @@ function fromTabs(r) {
   for (const [name, , ids, fav] of t.gen1 || []) {
     d.have.push(...idsIn(ids));
     const p = byName.get(name), id = idsIn(fav)[0];
-    if (p && id) d.favs["gen1:" + p.i] = { id, img: CARD_IMG(id) };
+    if (p && id) d.favs["gen1:" + p.i] = { id, img: (cardsFor(p) || []).find(c => c.id === id)?.img || CARD_IMG(id) };
   }
   for (const [, own, id] of t.anniv || []) if (own) d.have.push(id);
   d.stock = {};
@@ -4542,7 +4835,7 @@ function lpItem(r, tab) {
     const [c, p] = hit;
     Object.assign(x, { name: c.n, set: `${CARDS.sets[p[1]] || p[1]} ${p[2]}`, img: imgOf(p), kind: CAT[c.c] });
     const live = priceOf(p); if (live.each != null) Object.assign(x, live);
-  } else if (an) Object.assign(x, { img: an.img, set: `${an.set} ${an.number}/${an.total ?? "?"}`, kind: an.rarity,
+  } else if (an) Object.assign(x, { img: an.img, set: `${an.set} ${ofTotal(an)}`, kind: an.rarity,
                                     ...(an.price?.[0] != null ? { each: an.price[0], sym: "€" } : {}) });
   else if (grp === WANT.gen1 && tab === "want") {
     const p = GEN1_BY.get(name);

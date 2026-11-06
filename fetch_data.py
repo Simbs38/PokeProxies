@@ -17,7 +17,10 @@ TCG = "https://api.pokemontcg.io/v2/cards"
 FIELDS = "id,name,number,rarity,set,tcgplayer,cardmarket"
 # pokemontcg.io lags weeks behind on prices for the newest sets; TCGdex carries Cardmarket's already
 TCGDEX = "https://api.tcgdex.net/v2/en"
-TCGDEX_SETS = {"30th Celebration: Classic Collection": "30th Classic Collection"}   # where the names differ
+TCGDEX_SETS = {"30th Celebration: Classic Collection": "30th Classic Collection",   # where the names differ
+               "Scarlet & Violet Black Star Promos": "SVP Black Star Promos",
+               "Scarlet & Violet Energies": "Scarlet & Violet Energy",
+               "Mega Evolution Black Star Promos": "MEP Black Star Promos"}
 
 # pokedex*.txt -> collection key used by index.html
 FILES = {"gen1": "pokedexGen1.txt"}
@@ -29,12 +32,13 @@ LABELS = {"gen1": "Gen 1"}
 ANNIV_KEY = "anniv"
 ANNIV_LABEL = "30th Celebration"
 ANNIV_SETS = ["me55", "me55c"]
+ANNIV_PROMOS = ("mep", 94, 110)    # the 30th Celebration's own promos: MEP 094-110, one or two per product
 
 # Deckbuilder -> cards.js: every card legal in Standard (these regulation marks) plus the basic
 # Energies, which carry no mark and are always legal. Rotation = edit LEGAL and re-run.
 LEGAL = ["H", "I", "J"]
 CARD_FIELDS = ("id,name,supertype,subtypes,types,hp,number,set,images,nationalPokedexNumbers,attacks,abilities,"
-               "rules,weaknesses,resistances,retreatCost,evolvesFrom,cardmarket,tcgplayer")
+               "rules,weaknesses,resistances,retreatCost,evolvesFrom,cardmarket,tcgplayer,regulationMark")
 ECODE = {"Grass": "G", "Fire": "R", "Water": "W", "Lightning": "L", "Psychic": "P", "Fighting": "F",
          "Darkness": "D", "Metal": "M", "Dragon": "N", "Fairy": "Y", "Colorless": "C"}
 
@@ -187,6 +191,73 @@ def tcgdex_eur(want):
 
 ANNIV_FIELDS = FIELDS + ",images,supertype"
 
+# Black Star Promo sets pokemontcg.io lacks or has only part of: the Mega Evolution ones (MEP) not at
+# all, Scarlet & Violet's (SVP) a couple dozen short. TCGdex has them all, so they come from there in
+# pokemontcg.io's own shape and then group, price and show like any other print. Ids follow
+# pokemontcg.io ("mep-101": set + number, no leading zeros): scrydex serves their images under it.
+PROMO_SETS = {"mep": {"id": "mep", "name": "Mega Evolution Black Star Promos", "series": "Mega Evolution",
+                      "ptcgoCode": "MEP", "releaseDate": "2025/09/26"},
+              "svp": {"id": "svp", "name": "Scarlet & Violet Black Star Promos", "series": "Scarlet & Violet",
+                      "ptcgoCode": "PR-SV", "releaseDate": "2023/01/01"}}
+SCRYDEX = "https://images.scrydex.com/pokemon"
+TDX_STAGE = {"Stage1": "Stage 1", "Stage2": "Stage 2"}
+RULE = {"MEGA": "Mega Evolution ex Rule: When your Mega Evolution Pokémon ex is Knocked Out, your opponent takes 3 Prize cards.",
+        "ex": "Pokémon ex rule: When your Pokémon ex is Knocked Out, your opponent takes 2 Prize cards."}
+_promos = None
+
+
+def from_tcgdex(d, st):
+    """A TCGdex card as pokemontcg.io would send it (the fields legal_cards and the 30th read)."""
+    cat = {"Pokemon": "Pokémon", "Trainer": "Trainer", "Energy": "Energy"}.get(d.get("category"), "Pokémon")
+    if cat == "Pokémon":
+        sub = [TDX_STAGE.get(d.get("stage"), d.get("stage") or "Basic")]
+        sub += ["MEGA"] if d["name"].startswith("Mega ") else []
+        sub += ["ex"] if d["name"].endswith(" ex") else []
+    elif cat == "Trainer":
+        sub = [{"Tool": "Pokémon Tool"}.get(d.get("trainerType"), d.get("trainerType") or "Item")]
+    else:
+        sub = ["Special" if d.get("energyType") == "Special" else "Basic"]
+    pr = d.get("pricing") or {}
+    cm, tp = pr.get("cardmarket") or {}, pr.get("tcgplayer") or {}
+    number = d["localId"].lstrip("0") or "0"
+    pid = f"{st['id']}-{number}"
+    rules = [d["effect"]] if d.get("effect") else []
+    rules += [RULE["MEGA"]] if "MEGA" in sub else [RULE["ex"]] if "ex" in sub else []
+    return {"id": pid, "name": d["name"], "supertype": cat, "subtypes": sub, "types": d.get("types") or [],
+            "hp": str(d["hp"]) if d.get("hp") else None, "number": number, "rarity": d.get("rarity") or "Promo",
+            "regulationMark": (d.get("regulationMark") or "").upper() or None, "set": st,
+            "images": {"small": f"{SCRYDEX}/{pid}/small", "large": f"{SCRYDEX}/{pid}/large"},
+            "nationalPokedexNumbers": d.get("dexId") or [], "evolvesFrom": d.get("evolveFrom"),
+            "attacks": [{"name": a["name"], "cost": a.get("cost") or [], "damage": str(a.get("damage") or ""),
+                         "text": a.get("effect") or ""} for a in d.get("attacks") or []],
+            "abilities": [{"name": a["name"], "text": a.get("effect") or ""} for a in d.get("abilities") or []],
+            "rules": rules,
+            "weaknesses": [{"type": w["type"]} for w in d.get("weaknesses") or []],
+            "resistances": [{"type": w["type"]} for w in d.get("resistances") or []],
+            "retreatCost": ["Colorless"] * (d.get("retreat") or 0),
+            "cardmarket": {"prices": {"trendPrice": cm.get("trend") or cm.get("avg30") or cm.get("avg")}},
+            "tcgplayer": {"prices": {k: {"market": v.get("marketPrice"), "mid": v.get("midPrice")}
+                                     for k, v in tp.items() if isinstance(v, dict)}}}
+
+
+def tcgdex_promos(skip=()):
+    """Every card of PROMO_SETS that TCGdex has, as from_tcgdex makes it, minus the ids in skip
+    (what pokemontcg.io already sent). Remembered: the legal cards and the 30th both ask."""
+    global _promos
+    if _promos is None:
+        briefs = []
+        for sid, st in PROMO_SETS.items():
+            cs = (tcgdex(f"/sets/{sid}") or {}).get("cards") or []
+            if not cs:
+                print(f"    ! TCGdex: no cards for {sid}")
+            briefs += [(c, st) for c in cs if re.fullmatch(r"\d+", c.get("localId") or "")]
+        with ThreadPoolExecutor(6) as pool:
+            full = list(pool.map(lambda b: (tcgdex(f"/cards/{b[0]['id']}"), b[1]), briefs))
+        _promos = [from_tcgdex(d, st) for d, st in full if d]
+        print(f"  TCGdex promos: {len(_promos)} of {len(briefs)} cards read ({', '.join(PROMO_SETS)})")
+    skip = set(skip)
+    return [c for c in _promos if c["id"] not in skip]
+
 
 def set_cards(set_id):
     """Every card printed in one TCG set, paging past the 250-per-request cap."""
@@ -228,7 +299,9 @@ def anniv_master_set():
     # alphabetical either -- it walks the TCG's history oldest to newest (Base Set Pikachu ->
     # Gym -> Neo -> EX -> DP -> HGSS -> BW -> XY -> SM -> SWSH -> SV), matching the ETB book's
     # "trip through history" layout, so it's kept as-is rather than re-sorted.
-    promos = []  # not in the TCG API yet for this release -- ask for the checklist to fill this in
+    # the 30th's own promos are Black Star Promos pokemontcg.io doesn't carry: MEP 094-110 from TCGdex
+    sid, lo, hi = ANNIV_PROMOS
+    promos = sorted([c for c in tcgdex_promos() if c["set"]["id"] == sid and lo <= int(c["number"]) <= hi], key=num)
 
     sections = [("All", regular), ("Secret Illustrations", secret),
                 ("Classic Collection", classic), ("Promo Cards", promos)]
@@ -255,6 +328,19 @@ def anniv_master_set():
             it["price"] = [eur[it["id"]], f"€{eur[it['id']]:,.2f}", "cardmarket trend"]
         keep_old(it)
     return {"name": ANNIV_LABEL, "kind": "cards", "items": items}
+
+
+def tcg_item(c):
+    """A card in a Pokémon's list (data.js). The image is kept only where it can't be worked out from
+    the id: the newest sets and the TCGdex promos live on scrydex, not images.pokemontcg.io."""
+    s = c.get("set") or {}
+    img = (c.get("images") or {}).get("small", "")
+    it = {"id": c["id"], "name": c["name"], "number": c.get("number", "?"), "total": s.get("printedTotal"),
+          "set": s.get("name", "?"), "series": s.get("series", ""), "date": s.get("releaseDate", ""),
+          "rarity": c.get("rarity") or "", "price": price(c)}
+    if img and img != f"https://images.pokemontcg.io/{s.get('id')}/{c.get('number')}.png":
+        it["img"] = img
+    return it
 
 
 def eur_usd(card):
@@ -384,6 +470,10 @@ def legal_cards():
         if got is None:
             return None
         raw += got
+    # the Black Star Promos pokemontcg.io lacks, from TCGdex: only the legal ones
+    extra = [c for c in tcgdex_promos({c["id"] for c in raw}) if c.get("regulationMark") in LEGAL]
+    print(f"  + {len(extra)} legal promos pokemontcg.io lacks")
+    raw += extra
     # newest set first; among the basic Energies prefer the prints that carry a set code
     raw.sort(key=lambda c: (c["set"].get("releaseDate", ""), bool(c["set"].get("ptcgoCode"))), reverse=True)
 
@@ -417,8 +507,8 @@ def legal_cards():
                 "rs": "".join(ECODE.get(w["type"], "") for w in c.get("resistances") or []) or None,
                 "rc": len(c.get("retreatCost") or []) if kind == "P" else None,
                 "p": []}.items() if v is not None}
-        # a print: [id, set code, number, image or "", Cardmarket €, TCGplayer $]
-        groups[key]["p"].append([c["id"], code, c["number"], img] + eur_usd(c))
+        # a print: [id, set code, number, image or "", Cardmarket €, TCGplayer $, regulation mark or ""]
+        groups[key]["p"].append([c["id"], code, c["number"], img] + eur_usd(c) + [c.get("regulationMark") or ""])
 
     eur = tcgdex_eur({p[0]: (sets[p[1]], p[2], g["n"]) for g in groups.values() for p in g["p"] if p[4] is None})
     for g in groups.values():
@@ -499,7 +589,7 @@ def main():
         sp_tokens, cards, page, total = tokens(sp), [], 1, None
         while total is None or len(cards) < total:      # the API caps a page at 250
             q = urllib.parse.urlencode({"q": f"name:*{token}*", "pageSize": 250,
-                                        "page": page, "select": FIELDS})
+                                        "page": page, "select": FIELDS + ",images"})
             res = get(f"{TCG}?{q}", fatal=False)
             if res is None:
                 break
@@ -512,20 +602,20 @@ def main():
                 tcg[sp] = old[sp]
             continue
         cards = [c for c in cards if belongs(c["name"], sp_tokens)]  # drop Mewtwo from Mew, etc.
-        tcg[sp] = [{
-            "id": c["id"], "name": c["name"], "number": c.get("number", "?"),
-            "total": (c.get("set") or {}).get("printedTotal"),
-            "set": (c.get("set") or {}).get("name", "?"),
-            "series": (c.get("set") or {}).get("series", ""),
-            "date": (c.get("set") or {}).get("releaseDate", ""),
-            "rarity": c.get("rarity") or "",
-            "price": price(c),
-        } for c in cards]
+        tcg[sp] = [tcg_item(c) for c in cards]
         print(f"  [{n:3}/{len(todo)}] {sp:22} {len(cards):3} cards" +
               (f"  (of {total} name matches)" if total and total != len(cards) else ""))
 
     # previous() carries over every species ever fetched -> keep only the ones still listed
     tcg = {sp: tcg[sp] for sp in wanted if sp in tcg}
+    # the Black Star Promos pokemontcg.io lacks (all of MEP, some of SVP) go in each Pokémon's list too
+    promos, added = tcgdex_promos(), 0
+    for sp, cs in tcg.items():
+        ids, sp_tokens = {c["id"] for c in cs}, tokens(sp)
+        more = [tcg_item(c) for c in promos if c["id"] not in ids and belongs(c["name"], sp_tokens)]
+        cs += more
+        added += len(more)
+    print(f"  + {added} promo prints from TCGdex across the species lists")
     eur = tcgdex_eur({c["id"]: (c["set"], c["number"], c["name"]) for cs in tcg.values() for c in cs if c["price"][0] is None})
     for cs in tcg.values():
         for c in cs:
