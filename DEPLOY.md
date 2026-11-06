@@ -171,7 +171,10 @@ reproduction), filled in; the REG column reads the regulation mark `fetch_data.p
 When a new season's form comes out
 ([Play! Pokémon rules & resources](https://www.pokemon.com/us/play-pokemon/about/tournaments-rules-and-resources)),
 swap in the new form as `decklist-a4.png` (2481 × 3508), set `DLF.season` in `index.html`, and check the
-form still lines up with the pixel positions in `DLF`.
+form still lines up with the pixel positions in `DLF`. The name, Player ID and date of birth it fills in live
+in the Sheet's private **Player** tab (Field / Value rows; type the date as DD/MM/YYYY if you edit it there), so
+every signed-in device has them and the public repo never does. That tab needs the current `apps_script.gs`
+(paste it, then **Deploy → Manage deployments → New version**).
 
 ---
 
@@ -221,6 +224,7 @@ directly.
 | Site (card list, prices, PDF) | Nothing — public, unless you add Cloudflare Access |
 | Your Trade binder and Looking for list | Nothing — public on purpose, read-only (the landing page) |
 | The rest of your collection (cards owned, decks, favourites) | `ALLOWED` script property — Google sign-in |
+| Your name, Player ID and date of birth (the Sheet's **Player** tab, for the deck list PDF) | `ALLOWED` script property — Google sign-in; never in the repo or on the landing page |
 | Sheet contents | Your Google account |
 
 The `/exec` URL on its own is useless now: every call must carry a Google ID token that the script

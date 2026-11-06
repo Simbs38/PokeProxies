@@ -16,7 +16,7 @@
 
 - 📖 **Collections**: checklists to tick off, with card art, rarities and favourite prints.
 - 🗂️ **My Cards**: a binder of every card you own, searchable by name, set, type or kind.
-- 🃏 **Deck builds**: build decks from your cards, see how they hold up against the meta, and what's left to buy. **📄 PDF** on any deck makes the tournament deck list: page 1 is the official Play! Pokémon A4 form filled in (name, Player ID, birth date and division stay on your device), page 2 every card with its count on one page.
+- 🃏 **Deck builds**: build decks from your cards, see how they hold up against the meta, and what's left to buy. **📄 PDF** on any deck makes the tournament deck list: page 1 is the official Play! Pokémon A4 form filled in (name, Player ID and birth date are kept in your Sheet's private Player tab, never in the repo), page 2 every card with its count on one page.
 - 💶 **Prices**: what everything is worth, refreshed live from Cardmarket.
 - 🤝 **Trade page**: signed out, the site is a read-only page of the cards you're looking for and the ones you'd trade. Send the link to anyone, or a link to just one list (only your deck cards, only your collections); **Log in** to edit, **Log out** to see it as they do. Any card's 🔍 can check what it goes for by condition, language and PSA grade (signed in, on request, in €).
 The Trade binder also takes older cards: in **＋ Add cards**, switch to **🕰 Every card** to search every card ever printed (live, only while it's on). The 30th Celebration's Classic Collection and its promos are right in the normal picker. Can't find a card? Paste its Cardmarket link in the search: the site finds it from the link's name, set and number, or adds it as Cardmarket lists it (with the price you see there).
@@ -48,7 +48,7 @@ The site opens behind a Google sign-in and keeps your collection in a Google She
 3. In [Google Cloud](https://console.cloud.google.com), create an **OAuth client ID** (Web application). Add your site's origin and `http://localhost:8765` as **Authorised JavaScript origins**, and add yourself as a test user.
 4. Put that client ID in `CLIENT_ID`, in both `index.html` and `apps_script.gs`.
 5. Back in Apps Script: **Deploy → New deployment → Web app**, execute as **Me**, access **Anyone**. Copy the `/exec` URL into `SYNC_URL` in `index.html`.
-6. Open the site, sign in with Google, and your Sheet fills up with tabs: collections, My Cards, Trade, Looking for, and one tab per deck. ✨ Trade and Looking for are the only tabs anyone can read without signing in: they feed the public landing page.
+6. Open the site, sign in with Google, and your Sheet fills up with tabs: collections, My Cards, Trade, Looking for, one tab per deck, and Player (your deck list details). ✨ Trade and Looking for are the only tabs anyone can read without signing in: they feed the public landing page.
 
 Optional: add a `GITHUB_TOKEN` script property to make the Data page's **Refresh data** button work.
 The step-by-step version, with GitHub Pages hosting, is in [DEPLOY.md](DEPLOY.md).

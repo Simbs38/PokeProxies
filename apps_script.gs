@@ -4,8 +4,9 @@
  * Readable tabs hold the collection, one row per Pokémon form / per card: "Gen 1" and
  * "30th Celebration"; "My Cards", one row per legal print you own; "Trade" and "Traded", the cards
  * set aside to trade and what went out; "Looking for", the cards still missing (decks, the 30th, Gen 1);
- * and one "Deck · <name>" tab per deck. "Trade" and "Looking for" are public: the signed-out landing
- * page reads them with no token. Only the website writes them;
+ * and one "Deck · <name>" tab per deck; "Player", the name, Player ID and date of birth the deck list
+ * PDF fills in. "Trade" and "Looking for" are public: the signed-out landing page reads them with no
+ * token; every other tab, Player included, needs the Google sign-in. Only the website writes them;
  * every save rewrites all of them. The old "state"
  * tab (one JSON blob) is handed to the site once to fill them, then left alone as a rollback
  * point. See DEPLOY.md.
@@ -27,6 +28,7 @@ const TABS = {
   trade: { name: 'Trade',            head: ['Card', 'Set', 'Number', 'Card ID', 'Qty', 'Category', 'Price'] },
   traded: { name: 'Traded',          head: ['Date', 'Card', 'Set', 'Number', 'Card ID', 'Qty', 'From', 'Price'] },
   wants: { name: 'Looking for',      head: ['Card', 'Set', 'Number', 'Card ID', 'Qty', 'For', 'Price'] },
+  player: { name: 'Player',          head: ['Field', 'Value'] },   // private: never in PUBLIC
 };
 // The signed-out landing page: anyone may read these two tabs, and only these, so a shared link
 // needs no sign-in. Everything else stays behind the Google check.

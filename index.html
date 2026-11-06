@@ -970,6 +970,7 @@ const decks = store.get("decks", []);            // [{name, notes, cover, cards:
 const stock = store.get("stock", {});            // My Cards: print id -> copies you own
 const trade = store.get("trade", {});            // Trade binder, apart from My Cards: print id -> copies set aside to trade
 const traded = store.get("traded", []);          // what went out: [{t, items: [{id, n, from: "trade" | "mine", each, sym}]}]
+const player = store.get("player", {});         // the deck list PDF's header: {name, id, dob}; synced to the private Player tab
 // older prints in the Trade binder, outside cards.js (searched on pokemontcg.io when asked, or rebuilt from a Sheet
 // row): print id -> {n, c, sub, t, y, old, p: [[id, set name, number, img, €, $]]}. Only Trade reads them
 const oldCards = store.get("oldCards", {});
@@ -977,7 +978,7 @@ let ALLOC = null;                                // who holds which owned copies
 Object.keys(favs).forEach(k => k.split(":")[0] in COLLECTIONS || delete favs[k]);   // Gen 2/3 leftovers
 const save = (sync = true) => {
   store.set("have", [...have]); store.set("favs", favs); store.set("seen", seen); store.set("decks", decks);
-  store.set("stock", stock); store.set("trade", trade); store.set("traded", traded); ALLOC = null;
+  store.set("stock", stock); store.set("trade", trade); store.set("traded", traded); store.set("player", player); ALLOC = null;
   for (const id in oldCards) if (!trade[id] && !traded.some(e => e.items.some(x => x.id === id))) delete oldCards[id];
   store.set("oldCards", oldCards);
   if (sync) store.set("dirty", Date.now());   // when the Sheet last fell behind; 0 once a save lands
@@ -2966,7 +2967,7 @@ const loadJsPDF = () => jsPDFp ||= new Promise((ok, no) => {
 
 function openPdf(d) {
   pdfDeck = d; zoomCard = null; dlg.hidden = false;
-  const p = store.get("player", {}), t = tally(d);
+  const p = player, t = tally(d);
   dlgBox.innerHTML = `
     <div class="m-head">
       <div><h2>Deck list PDF</h2>
@@ -2982,7 +2983,7 @@ function openPdf(d) {
       <div class="sub" id="pl-div">${pdfDivText(p.dob)}</div>
       ${t.total !== DECK_MAX ? `<div class="dw">⚠ This deck has ${t.total} cards; a tournament list needs ${DECK_MAX}.</div>` : ""}
       <button class="pill on" data-z="pdf">📄 Make the PDF</button>
-      <div class="sub" id="pdf-out">Format: Standard. Your details stay on this device; leave any blank to write in by hand.</div>
+      <div class="sub" id="pdf-out">Format: Standard. Your details are kept in your Sheet's private Player tab (never on the public page); leave any blank to write in by hand.</div>
     </div>`;
 }
 const pdfDivText = dob => {
@@ -3064,7 +3065,7 @@ async function makePdf() {
   if (!d || !out) return;
   const val = id => dlgBox.querySelector(id).value.trim();
   const p = { name: val("#pl-name"), id: val("#pl-id"), dob: val("#pl-dob") };
-  store.set("player", p);
+  if (PLAYER_ROWS.some(([k]) => (player[k] || "") !== p[k])) { Object.assign(player, p); save() }   // to the Sheet too
   btn.disabled = true;
   try {
     const [P, T, E] = pdfOrder(d);
@@ -4315,6 +4316,15 @@ const UNSORTED = "Unsorted";
 const label = c => c ? `${c.id} (${c.set} ${ofTotal(c)})` : "";
 const idsIn = cell => String(cell || "").split("\n").map(l => l.split(" ")[0]).filter(Boolean);
 
+// the private Player tab (never public): what the deck list PDF fills in, so every signed-in device has it
+const PLAYER_ROWS = [["name", "Player name"], ["id", "Player ID"], ["dob", "Date of birth"]];
+const hasPlayer = () => PLAYER_ROWS.some(([k]) => player[k]);
+const playerIn = rows => {
+  const by = new Map((rows || []).map(([label, v]) => [label, String(v || "").trim()]));
+  const p = Object.fromEntries(PLAYER_ROWS.map(([k, label]) => [k, by.get(label) || ""]));
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(p.dob)) { const [a, b, y] = p.dob.split("/"); p.dob = `${y}-${b.padStart(2, "0")}-${a.padStart(2, "0")}` }   // typed in the Sheet as DD/MM/YYYY
+  return p;
+};
 function tabsOut() {
   const placed = new Set();
   const gen1 = COLLECTIONS.gen1.items.map(p => {
@@ -4345,7 +4355,10 @@ function tabsOut() {
     return [new Date(e.t).toISOString().slice(0, 19), r[0], r[1], r[2], x.id, String(x.n), x.from === "mine" ? "My Cards" : "Trade",
             x.each != null ? money(x.each, x.sym || "€") : ""];
   }));
-  return { tabs: { gen1, anniv, cards: rowsOf(stock), trade: rowsOf(trade), traded: tradedRows, wants: wantRows() }, decks: decks.map(deckSheet) };
+  // Player: sent only once this device has the details, so one that never had them can't blank the Sheet's
+  const tabs = { gen1, anniv, cards: rowsOf(stock), trade: rowsOf(trade), traded: tradedRows, wants: wantRows() };
+  if (hasPlayer()) tabs.player = PLAYER_ROWS.map(([k, label]) => [label, player[k] || ""]);
+  return { tabs, decks: decks.map(deckSheet) };
 }
 
 // Looking for: what the signed-out landing page lists — the decks' shortfall (any print will do),
@@ -4401,6 +4414,7 @@ function deckFromSheet(name, rows) {
 function fromTabs(r) {
   const t = r.tabs, byName = new Map(COLLECTIONS.gen1.items.map(p => [p.name, p]));
   const d = { have: [], favs: {} };
+  if (t.player?.length) d.player = playerIn(t.player);
   for (const [name, , ids, fav] of t.gen1 || []) {
     d.have.push(...idsIn(ids));
     const p = byName.get(name), id = idsIn(fav)[0];
@@ -4457,6 +4471,7 @@ function applyState(d) {
   if (d.trade) { Object.keys(trade).forEach(k => delete trade[k]); Object.assign(trade, d.trade) }
   if (d.traded) traded.splice(0, traded.length, ...d.traded);
   for (const [id, c] of Object.entries(d.oldCards || d.old || {})) oldCards[id] ||= c;   // this device's copy knows more
+  if (d.player) Object.assign(player, d.player);
   if (d.decks) {                 // the old state JSON and older backups carry none: keep this device's
     decks.splice(0, decks.length, ...d.decks);
     decks.forEach(x => { x.tags ||= []; x.roles ||= {}; x.versions ||= []; x.holds ||= {}; x.built = !!x.built });
@@ -4492,7 +4507,14 @@ async function pull() {
       applyState(remote);
       store.set("updated", d.updated);
       store.set("dirty", 0);
-    } else if (!d.tabs || dirty !== 0 || store.get("updated", 0) > (d.updated || 0)) push(0);
+    } else {
+      // this device's save wins, but details it never had still come from the Sheet
+      const gap = remote?.player && PLAYER_ROWS.filter(([k]) => !player[k] && remote.player[k]);
+      if (gap?.length) { gap.forEach(([k]) => player[k] = remote.player[k]); store.set("player", player) }
+      if (!d.tabs || dirty !== 0 || store.get("updated", 0) > (d.updated || 0)) push(0);
+    }
+    // a script that knows the Player tab, before it has one: this device's details go up now
+    if (d.tabs && "player" in d.tabs && !d.tabs.player?.length && hasPlayer()) push(0);
     // the landing page's list is worked out, not typed: after a data refresh (new prices, a card
     // dropped from a collection) the Sheet's copy is stale with no edit to send it, so send it now
     if (cfg.pubTabs && JSON.stringify(d.tabs.wants) !== JSON.stringify(wantRows())) push(0);
